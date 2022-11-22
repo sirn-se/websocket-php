@@ -1,7 +1,7 @@
 # Websocket Client and Server for PHP
 
-[![Build Status](https://travis-ci.org/Textalk/websocket-php.svg?branch=master)](https://travis-ci.org/Textalk/websocket-php)
-[![Coverage Status](https://coveralls.io/repos/github/Textalk/websocket-php/badge.svg?branch=master)](https://coveralls.io/github/Textalk/websocket-php)
+[![Build Status](https://travis-ci.org/sirn-se/websocket-php.svg?branch=master)](https://travis-ci.org/sirn-se/websocket-php)
+[![Coverage Status](https://coveralls.io/repos/github/sirn-se/websocket-php/badge.svg?branch=master)](https://coveralls.io/github/sirn-se/websocket-php)
 
 This library contains WebSocket client and server for PHP.
 
@@ -12,7 +12,7 @@ It does not include convenience operations such as listeners and implicit error 
 
 Preferred way to install is with [Composer](https://getcomposer.org/).
 ```
-composer require textalk/websocket
+composer require phrity/websocket
 ```
 
 Current version support PHP versions `^7.1`.
