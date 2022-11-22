@@ -1,12 +1,15 @@
 # Websocket Client and Server for PHP
 
-[![Build Status](https://github.com/Textalk/websocket-php/actions/workflows/acceptance.yml/badge.svg)](https://github.com/Textalk/websocket-php/actions)
-[![Coverage Status](https://coveralls.io/repos/github/Textalk/websocket-php/badge.svg?branch=master)](https://coveralls.io/github/Textalk/websocket-php)
+[![Build Status](https://github.com/sirn-se/websocket-php/actions/workflows/acceptance.yml/badge.svg)](https://github.com/sirn-se/websocket-php/actions)
+[![Coverage Status](https://coveralls.io/repos/github/sirn-se/websocket-php/badge.svg?branch=master)](https://coveralls.io/github/sirn-se/websocket-php)
 
 This library contains WebSocket client and server for PHP.
 
 The client and server provides methods for reading and writing to WebSocket streams.
 It does not include convenience operations such as listeners and implicit error handling.
+
+This fork is maintained by Sören Jensen, who has been maintaining the original textalk/websocket
+repo since `v1.3`.
 
 ## Documentation
 
@@ -20,13 +23,13 @@ It does not include convenience operations such as listeners and implicit error 
 
 Preferred way to install is with [Composer](https://getcomposer.org/).
 ```
-composer require textalk/websocket
+composer require phrity/websocket
 ```
 
 * Current version support PHP versions `^7.4|^8.0`.
-* For PHP `7.2` and `7.3` support use version [`1.5`](https://github.com/Textalk/websocket-php/tree/1.5.0).
-* For PHP `7.1` support use version [`1.4`](https://github.com/Textalk/websocket-php/tree/1.4.0).
-* For PHP `^5.4` and `7.0` support use version [`1.3`](https://github.com/Textalk/websocket-php/tree/1.3.0).
+* For PHP `7.2` and `7.3` support use version [`1.5`](https://github.com/sirn-se/websocket-php/tree/1.5.0).
+* For PHP `7.1` support use version [`1.4`](https://github.com/sirn-se/websocket-php/tree/1.4.0).
+* For PHP `^5.4` and `7.0` support use version [`1.3`](https://github.com/sirn-se/websocket-php/tree/1.3.0).
 
 ## Client
 
