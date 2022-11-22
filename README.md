@@ -4,6 +4,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/sirn-se/websocket-php/badge.svg?branch=master)](https://coveralls.io/github/sirn-se/websocket-php)
 
 This library contains WebSocket client and server for PHP.
+Replaces `textalk/websocket`.
 
 The client and server provides methods for reading and writing to WebSocket streams.
 It does not include convenience operations such as listeners and implicit error handling.
