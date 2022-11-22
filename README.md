@@ -12,7 +12,7 @@ It does not include convenience operations such as listeners and implicit error 
 
 Preferred way to install is with [Composer](https://getcomposer.org/).
 ```
-composer require textalk/websocket
+composer require phrity/websocket
 ```
 
 Current version support PHP versions `^7.1`.

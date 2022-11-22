@@ -1,5 +1,5 @@
 {
-    "name": "textalk/websocket",
+    "name": "phrity/websocket",
     "description": "WebSocket client and server",
     "license": "ISC",
     "type": "library",
