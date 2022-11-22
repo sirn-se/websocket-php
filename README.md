@@ -1,8 +1,8 @@
 Websocket Client for PHP
 ========================
 
-[![Build Status](https://travis-ci.org/Textalk/websocket-php.png)](https://travis-ci.org/Textalk/websocket-php)
-[![Coverage Status](https://coveralls.io/repos/Textalk/websocket-php/badge.png)](https://coveralls.io/r/Textalk/websocket-php)
+[![Build Status](https://travis-ci.org/sirn-se/websocket-php.png)](https://travis-ci.org/sirn-se/websocket-php)
+[![Coverage Status](https://coveralls.io/repos/sirn-se/websocket-php/badge.png)](https://coveralls.io/r/sirn-se/websocket-php)
 
 This package mainly contains a WebSocket client for PHP.
 
@@ -26,7 +26,7 @@ Preferred way to install is with [Composer](https://getcomposer.org/).
 Just add
 
     "require": {
-      "textalk/websocket": "1.0.*"
+      "phrity/websocket": "1.0.*"
     }
 
 in your projects composer.json.
