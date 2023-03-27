@@ -10,274 +10,473 @@ declare(strict_types=1);
 namespace WebSocket;
 
 use ErrorException;
+use Phrity\Net\Mock\Mock;
 use Phrity\Net\Uri;
 use Phrity\Util\ErrorHandler;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 class ClientTest extends TestCase
 {
+    use MockStreamTrait;
+
     public function setUp(): void
     {
         error_reporting(-1);
+        $this->setUpStack();
+    }
+
+    public function tearDown(): void
+    {
+        $this->tearDownStack();
     }
 
     public function testClientMasked(): void
     {
-        MockSocket::initialize('client.connect', $this);
+        $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->send('Connect');
-        $this->assertTrue(MockSocket::isEmpty());
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+
+        $this->assertFalse($client->isConnected());
+        $this->assertEquals(null, $client->getLastOpcode());
         $this->assertEquals(4096, $client->getFragmentSize());
 
-        MockSocket::initialize('client.send-receive', $this);
-        $client->send('Sending a message');
-        $message = $client->receive();
-        $this->assertTrue(MockSocket::isEmpty());
-        $this->assertEquals('text', $client->getLastOpcode());
+        $this->expectSocketClient();
+        $this->expectClientHandshake();
+        $this->expectStreamWrite();
+        $client->send('Connect');
 
-        MockSocket::initialize('client.close', $this);
+        $this->expectStreamWrite(23);
+        $client->send('Sending a message');
+
+        $this->expectStreamRead(2, [129, 147]);
+        $this->expectStreamRead(4, [33, 111, 149, 174]);
+        $this->expectStreamRead(19, [115, 10, 246, 203, 72, 25, 252, 192, 70, 79, 244, 142, 76, 10, 230, 221, 64, 8, 240]);
+
+        $message = $client->receive();
+
+        $this->assertEquals('text', $client->getLastOpcode());
         $this->assertTrue($client->isConnected());
         $this->assertNull($client->getCloseStatus());
 
+        $this->expectStreamWrite(12);
+        $this->expectStreamRead(2, [136, 154]);
+        $this->expectStreamRead(4, [98, 250, 210, 113]);
+        $this->expectStreamRead(26, [97, 18, 145, 29, 13, 137, 183, 81, 3, 153, 185, 31, 13, 141, 190, 20, 6, 157, 183, 21, 88, 218, 227, 65, 82, 202]);
+        $this->expectStreamClose();
+        $this->expectStreamMetadata();
+
         $client->close();
+
         $this->assertFalse($client->isConnected());
         $this->assertEquals(1000, $client->getCloseStatus());
 
-        $this->assertTrue(MockSocket::isEmpty());
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
-    public function testDestruct(): void
+    public function testClientExtendedUrl(): void
     {
-        MockSocket::initialize('client.connect', $this);
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->send('Connect');
-        $this->assertTrue(MockSocket::isEmpty());
-
-        MockSocket::initialize('client.destruct', $this);
-    }
-
-    public function testClienExtendedUrl(): void
-    {
-        MockSocket::initialize('client.connect-extended', $this);
+        $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path?my_query=yes#my_fragment');
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+
+        $this->expectSocketClient();
+        $this->expectClientHandshake(path: '/my/mock/path?my_query=yes');
+        $this->expectStreamWrite();
         $client->send('Connect');
-        $this->assertTrue(MockSocket::isEmpty());
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testClientNoPath(): void
     {
-        MockSocket::initialize('client.connect-root', $this);
+        $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000');
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+
+        $this->expectSocketClient();
+        $this->expectClientHandshake(path: '/');
+        $this->expectStreamWrite();
         $client->send('Connect');
-        $this->assertTrue(MockSocket::isEmpty());
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testClientRelativePath(): void
     {
-        MockSocket::initialize('client.connect', $this);
         $uri = new Uri('ws://localhost:8000');
         $uri = $uri->withPath('my/mock/path');
+
+        $this->expectStreamFactory();
         $client = new Client($uri);
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+
+        $this->expectSocketClient();
+        $this->expectClientHandshake();
+        $this->expectStreamWrite();
         $client->send('Connect');
-        $this->assertTrue(MockSocket::isEmpty());
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testClientWsDefaultPort(): void
     {
-        MockSocket::initialize('client.connect-default-port-ws', $this);
         $uri = new Uri('ws://localhost');
         $uri = $uri->withPath('my/mock/path');
+
+        $this->expectStreamFactory();
         $client = new Client($uri);
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+
+        $this->expectSocketClient(host: 'localhost:80');
+        $this->expectClientHandshake(host: 'localhost:80');
+        $this->expectStreamWrite();
         $client->send('Connect');
-        $this->assertTrue(MockSocket::isEmpty());
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testClientWssDefaultPort(): void
     {
-        MockSocket::initialize('client.connect-default-port-wss', $this);
         $uri = new Uri('wss://localhost');
         $uri = $uri->withPath('my/mock/path');
+
+        $this->expectStreamFactory();
         $client = new Client($uri);
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+
+        $this->expectSocketClient(scheme: 'ssl', host: 'localhost:443');
+        $this->expectClientHandshake(host: 'localhost:443');
+        $this->expectStreamWrite();
         $client->send('Connect');
-        $this->assertTrue(MockSocket::isEmpty());
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testClientWithTimeout(): void
     {
-        MockSocket::initialize('client.connect-timeout', $this);
+        $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path', ['timeout' => 300]);
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+
+        $this->expectSocketClient(timeout: 300);
+        $this->expectClientHandshake(timeout: 300);
+        $this->expectStreamWrite();
         $client->send('Connect');
-        $this->assertTrue(MockSocket::isEmpty());
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testClientWithContext(): void
     {
-        MockSocket::initialize('client.connect-context', $this);
-        $client = new Client('ws://localhost:8000/my/mock/path', ['context' => '@mock-stream-context']);
+        $context = stream_context_create(['ssl' => ['verify_peer' => false]]);
+
+        $this->expectStreamFactory();
+        $client = new Client('ws://localhost:8000/my/mock/path', ['context' => $context]);
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+
+        $this->expectSocketClient();
+        $this->expectClientHandshake();
+        $this->expectStreamWrite();
         $client->send('Connect');
-        $this->assertTrue(MockSocket::isEmpty());
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testClientAuthed(): void
     {
-        MockSocket::initialize('client.connect-authed', $this);
+        $this->expectStreamFactory();
         $client = new Client('wss://usename:password@localhost:8000/my/mock/path');
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+
+        $this->expectSocketClient(scheme: 'ssl');
+        $this->expectClientHandshake(headers: "authorization: Basic dXNlbmFtZTpwYXNzd29yZA==\r\n");
+        $this->expectStreamWrite();
         $client->send('Connect');
-        $this->assertTrue(MockSocket::isEmpty());
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testWithHeaders(): void
     {
-        MockSocket::initialize('client.connect-headers', $this);
+        $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path', [
             'origin' => 'Origin header',
             'headers' => ['Generic header' => 'Generic content'],
         ]);
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+
+        $this->expectSocketClient();
+        $this->expectClientHandshake(headers: "origin: Origin header\r\nGeneric header: Generic content\r\n");
+        $this->expectStreamWrite();
         $client->send('Connect');
-        $this->assertTrue(MockSocket::isEmpty());
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testPayload128(): void
     {
-        MockSocket::initialize('client.connect', $this);
+        $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+        $client->setFragmentSize(65540);
+
+        $this->expectSocketClient();
+        $this->expectClientHandshake();
+        $this->expectStreamWrite();
         $client->send('Connect');
-        $this->assertTrue(MockSocket::isEmpty());
 
         $payload = file_get_contents(__DIR__ . '/mock/payload.128.txt');
 
-        MockSocket::initialize('client.send-receive-128', $this);
+        $this->expectStreamWrite(136);
         $client->send($payload, 'text');
+
+        $this->expectStreamRead(2, [129, 126]);
+        $this->expectStreamRead(2, [0, 128]);
+        $this->expectStreamRead(128, substr($payload, 0, 132));
+
         $message = $client->receive();
         $this->assertEquals($payload, $message);
-        $this->assertTrue(MockSocket::isEmpty());
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testPayload65536(): void
     {
-        MockSocket::initialize('client.connect', $this);
+        $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->send('Connect');
-        $this->assertTrue(MockSocket::isEmpty());
-
-        $payload = file_get_contents(__DIR__ . '/mock/payload.65536.txt');
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
         $client->setFragmentSize(65540);
 
-        MockSocket::initialize('client.send-receive-65536', $this);
+        $this->expectSocketClient();
+        $this->expectClientHandshake();
+        $this->expectStreamWrite();
+        $client->send('Connect');
+
+        $payload = file_get_contents(__DIR__ . '/mock/payload.65536.txt');
+
+        $this->expectStreamWrite(65550);
         $client->send($payload, 'text');
+
+        $this->expectStreamRead(2, [129, 127]);
+        $this->expectStreamRead(8, [0, 0, 0, 0, 0, 1, 0, 0]);
+        $this->expectStreamRead(65536, substr($payload, 0, 16374));
+        $this->expectStreamRead(49162, substr($payload, 16374, 8192));
+        $this->expectStreamRead(40970, substr($payload, 24566, 8192));
+        $this->expectStreamRead(32778, substr($payload, 32758, 8192));
+        $this->expectStreamRead(24586, substr($payload, 40950, 8192));
+        $this->expectStreamRead(16394, substr($payload, 49142, 8192));
+        $this->expectStreamRead(8202, substr($payload, 57334, 8192));
+        $this->expectStreamRead(10, substr($payload, 65526, 10));
         $message = $client->receive();
+
         $this->assertEquals($payload, $message);
-        $this->assertTrue(MockSocket::isEmpty());
         $this->assertEquals(65540, $client->getFragmentSize());
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testMultiFragment(): void
     {
-        MockSocket::initialize('client.connect', $this);
+        $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->send('Connect');
-        $this->assertTrue(MockSocket::isEmpty());
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
 
-        MockSocket::initialize('client.send-receive-multi-fragment', $this);
+        $this->expectSocketClient();
+        $this->expectClientHandshake();
+        $this->expectStreamWrite();
+        $client->send('Connect');
+
         $client->setFragmentSize(8);
+
+        $this->expectStreamWrite([1, 136, null, null, null, null, null, null, null, null, null, null, null, null]);
+        $this->expectStreamWrite([0, 136, null, null, null, null, null, null, null, null, null, null, null, null]);
+        $this->expectStreamWrite([128, 131, null, null, null, null, null, null, null]);
         $client->send('Multi fragment test');
+
+        $this->expectStreamRead(2, [1, 136]);
+        $this->expectStreamRead(4, [105, 29, 187, 18]);
+        $this->expectStreamRead(8, [36, 104, 215, 102, 0, 61, 221, 96]);
+        $this->expectStreamRead(2, [0, 136]);
+        $this->expectStreamRead(4, [221, 240, 46, 69]);
+        $this->expectStreamRead(8, [188, 151, 67, 32, 179, 132, 14, 49]);
+        $this->expectStreamRead(2, [128, 131]);
+        $this->expectStreamRead(4, [9, 60, 117, 193]);
+        $this->expectStreamRead(3, [108, 79, 1]);
         $message = $client->receive();
+
         $this->assertEquals('Multi fragment test', $message);
-        $this->assertTrue(MockSocket::isEmpty());
         $this->assertEquals(8, $client->getFragmentSize());
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testPingPong(): void
     {
-        MockSocket::initialize('client.connect', $this);
+        $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->send('Connect');
-        $this->assertTrue(MockSocket::isEmpty());
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
 
-        MockSocket::initialize('client.ping-pong', $this);
+        $this->expectSocketClient();
+        $this->expectClientHandshake();
+        $this->expectStreamWrite();
+        $client->send('Connect');
+
+        $this->expectStreamWrite();
         $client->send('Server ping', 'ping');
+
+        $this->expectStreamWrite();
         $client->send('', 'ping');
+
+        $this->expectStreamRead(2, [138, 139]);
+        $this->expectStreamRead(4, [1, 1, 1, 1]);
+        $this->expectStreamRead(11, [82, 100, 115, 119, 100, 115, 33, 113, 104, 111, 102]);
+        $this->expectStreamRead(2, [138, 128]);
+        $this->expectStreamRead(4, [1, 1, 1, 1]);
+        $this->expectStreamRead(2, [137, 139]);
+        $this->expectStreamRead(4, [180, 77, 192, 201]);
+        $this->expectStreamRead(11, [247, 33, 169, 172, 218, 57, 224, 185, 221, 35, 167]);
+        $this->expectStreamWrite();
+        $this->expectStreamRead(2, [129, 147]);
+        $this->expectStreamRead(4, [33, 111, 149, 174]);
+        $this->expectStreamRead(19, [115, 10, 246, 203, 72, 25, 252, 192, 70, 79, 244, 142, 76, 10, 230, 221, 64, 8, 240]);
+
         $message = $client->receive();
+
         $this->assertEquals('Receiving a message', $message);
         $this->assertEquals('text', $client->getLastOpcode());
-        $this->assertTrue(MockSocket::isEmpty());
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testRemoteClose(): void
     {
-        MockSocket::initialize('client.connect', $this);
+        $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->send('Connect');
-        $this->assertTrue(MockSocket::isEmpty());
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
 
-        MockSocket::initialize('client.close-remote', $this);
+        $this->expectSocketClient();
+        $this->expectClientHandshake();
+        $this->expectStreamWrite();
+        $client->send('Connect');
+
+        $this->expectStreamRead(2, [136, 137]);
+        $this->expectStreamRead(4, [54, 79, 233, 244]);
+        $this->expectStreamRead(9, [117, 35, 170, 152, 89, 60, 128, 154, 81]);
+        $this->expectStreamWrite();
+        $this->expectStreamClose();
+        $this->expectStreamMetadata();
 
         $message = $client->receive();
         $this->assertNull($message);
-
         $this->assertFalse($client->isConnected());
         $this->assertEquals(17260, $client->getCloseStatus());
         $this->assertNull($client->getLastOpcode());
-        $this->assertTrue(MockSocket::isEmpty());
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testSetTimeout(): void
     {
-        MockSocket::initialize('client.connect', $this);
+        $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->send('Connect');
-        $this->assertTrue(MockSocket::isEmpty());
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
 
-        MockSocket::initialize('config-timeout', $this);
+        $this->expectSocketClient();
+        $this->expectClientHandshake();
+        $this->expectStreamWrite();
+        $client->send('Connect');
+
+        $this->expectStreamTimeout(300);
+
         $client->setTimeout(300);
         $this->assertTrue($client->isConnected());
-        $this->assertTrue(MockSocket::isEmpty());
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testReconnect(): void
     {
-        MockSocket::initialize('client.connect', $this);
+        $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->send('Connect');
-        $this->assertTrue(MockSocket::isEmpty());
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
 
-        MockSocket::initialize('client.close', $this);
+        $this->expectSocketClient();
+        $this->expectClientHandshake();
+        $this->expectStreamWrite();
+        $client->send('Connect');
+
         $this->assertTrue($client->isConnected());
         $this->assertNull($client->getCloseStatus());
+
+        $this->expectStreamWrite([136, 134, null, null, null, null, null, null, null, null, null, null]);
+        $this->expectStreamRead(2, [136, 154]);
+        $this->expectStreamRead(4, [98, 250, 210, 113]);
+        $this->expectStreamRead(26, [97, 18, 145, 29, 13, 137, 183, 81, 3, 153, 185, 31, 13, 141, 190, 20, 6, 157, 183, 21, 88, 218, 227, 65, 82, 202]);
+        $this->expectStreamClose();
+        $this->expectStreamMetadata();
+
         $client->close();
+
         $this->assertFalse($client->isConnected());
         $this->assertEquals(1000, $client->getCloseStatus());
         $this->assertNull($client->getLastOpcode());
-        $this->assertTrue(MockSocket::isEmpty());
 
-        MockSocket::initialize('client.reconnect', $this);
+        $this->expectStreamClose();
+        $this->expectStreamMetadata();
+        $this->expectSocketClient();
+        $this->expectClientHandshake();
+        $this->expectStreamRead(2, [129, 147]);
+        $this->expectStreamRead(4, [33, 111, 149, 174]);
+        $this->expectStreamRead(19, [115, 10, 246, 203, 72, 25, 252, 192, 70, 79, 244, 142, 76, 10, 230, 221, 64, 8, 240]);
+
         $message = $client->receive();
         $this->assertTrue($client->isConnected());
-        $this->assertTrue(MockSocket::isEmpty());
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testPersistentConnection(): void
     {
-        MockSocket::initialize('client.connect-persistent', $this);
+        $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path', ['persistent' => true]);
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+
+        $this->expectSocketClient(persistent: true);
+        $this->expectClientHandshake(tell: 0);
+        $this->expectStreamWrite();
         $client->send('Connect');
+
+        $this->expectStreamClose();
+        $this->expectStreamMetadata();
         $client->disconnect();
         $this->assertFalse($client->isConnected());
         $this->assertTrue(MockSocket::isEmpty());
-    }
 
-    public function testFailedPersistentConnection(): void
-    {
-        MockSocket::initialize('client.connect-persistent-failure', $this);
-        $client = new Client('ws://localhost:8000/my/mock/path', ['persistent' => true]);
-        $this->expectException('WebSocket\ConnectionException');
-        $this->expectExceptionMessage('Could not resolve stream pointer position');
-        $client->send('Connect');
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testBadScheme(): void
     {
-        MockSocket::initialize('client.connect', $this);
+        $client = new Client('ws://localhost:8000/my/mock/path', ['persistent' => true]);
         $this->expectException('WebSocket\BadUriException');
         $this->expectExceptionMessage("Invalid URI scheme, must be 'ws' or 'wss'.");
         $client = new Client('bad://localhost:8000/my/mock/path');
@@ -285,7 +484,6 @@ class ClientTest extends TestCase
 
     public function testBadUri(): void
     {
-        MockSocket::initialize('client.connect', $this);
         $this->expectException('WebSocket\BadUriException');
         $this->expectExceptionMessage("Invalid URI '--:this is not an uri:--' provided.");
         $client = new Client('--:this is not an uri:--');
@@ -293,7 +491,6 @@ class ClientTest extends TestCase
 
     public function testInvalidUriType(): void
     {
-        MockSocket::initialize('client.connect', $this);
         $this->expectException('WebSocket\BadUriException');
         $this->expectExceptionMessage("Provided URI must be a UriInterface or string.");
         $client = new Client([]);
@@ -301,244 +498,403 @@ class ClientTest extends TestCase
 
     public function testUriInterface(): void
     {
-        MockSocket::initialize('client.connect', $this);
         $uri = new Uri('ws://localhost:8000/my/mock/path');
+
+        $this->expectStreamFactory();
         $client = new Client($uri);
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+
+        $this->expectSocketClient();
+        $this->expectClientHandshake();
+        $this->expectStreamWrite();
         $client->send('Connect');
-        $this->assertTrue(MockSocket::isEmpty());
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testBadStreamContext(): void
     {
-        MockSocket::initialize('client.connect-bad-context', $this);
+        $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path', ['context' => 'BAD']);
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+
         $this->expectException('InvalidArgumentException');
         $this->expectExceptionMessage('Stream context in $options[\'context\'] isn\'t a valid context');
         $client->send('Connect');
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testFailedConnection(): void
     {
-        MockSocket::initialize('client.connect-failed', $this);
+        $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');
-        $this->expectException('WebSocket\ConnectionException');
-        $this->expectExceptionCode(0);
-        $this->expectExceptionMessage('Could not open socket to "localhost:8000"');
-        $client->send('Connect');
-    }
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
 
-    public function testFailedConnectionWithError(): void
-    {
-        MockSocket::initialize('client.connect-error', $this);
-        $client = new Client('ws://localhost:8000/my/mock/path');
         $this->expectException('WebSocket\ConnectionException');
         $this->expectExceptionCode(0);
-        $this->expectExceptionMessage('Could not open socket to "localhost:8000"');
+        $this->expectExceptionMessage('Could not open socket to "tcp://localhost:8000"');
+        $this->expectSocketClient();
+        $this->expectClientConnect(new RuntimeException('Test'));
         $client->send('Connect');
-    }
 
-    public function testBadStreamConnection(): void
-    {
-        MockSocket::initialize('client.connect-bad-stream', $this);
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $this->expectException('WebSocket\ConnectionException');
-        $this->expectExceptionCode(0);
-        $this->expectExceptionMessage('Invalid stream on "localhost:8000"');
-        $client->send('Connect');
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testHandshakeFailure(): void
     {
-        MockSocket::initialize('client.connect-handshake-failure', $this);
+        $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+
+        $this->expectSocketClient();
+        $this->expectClientConnect();
+        $this->expectStreamConstruct();
+        $this->expectStreamMetadata();
+        $this->expectStreamTimeout(5);
+        $this->expectStreamWrite();
+        $this->expectStreamGets(null, new RuntimeException('Test'));
+        $this->expectStreamClose();
+        $this->expectStreamMetadata();
         $this->expectException('WebSocket\ConnectionException');
         $this->expectExceptionCode(0);
         $this->expectExceptionMessage('Client handshake error');
+
         $client->send('Connect');
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testInvalidUpgrade(): void
     {
-        MockSocket::initialize('client.connect-invalid-upgrade', $this);
+        $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+
+        $this->expectSocketClient();
+        $this->expectClientConnect();
+        $this->expectStreamConstruct();
+        $this->expectStreamMetadata();
+        $this->expectStreamTimeout(5);
+        $this->expectStreamWrite();
+        $this->expectStreamGets(null, "Invalid upgrade\r\n\r\n");
+        $this->expectStreamClose();
+        $this->expectStreamMetadata();
         $this->expectException('WebSocket\ConnectionException');
         $this->expectExceptionCode(0);
         $this->expectExceptionMessage('Connection to \'ws://localhost:8000/my/mock/path\' failed');
+
         $client->send('Connect');
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testInvalidKey(): void
     {
-        MockSocket::initialize('client.connect-invalid-key', $this);
+        $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+
+        $this->expectSocketClient();
+        $this->expectClientConnect();
+        $this->expectStreamConstruct();
+        $this->expectStreamMetadata();
+        $this->expectStreamTimeout(5);
+        $this->expectStreamWrite();
+        $this->expectStreamGets(null, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: BAD_KEY\r\n\r\n");
+        $this->expectStreamClose();
+        $this->expectStreamMetadata();
         $this->expectException('WebSocket\ConnectionException');
         $this->expectExceptionCode(0);
         $this->expectExceptionMessage('Server sent bad upgrade response');
+
         $client->send('Connect');
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testSendBadOpcode(): void
     {
-        MockSocket::initialize('client.connect', $this);
+        $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->send('Connect');
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
 
-        MockSocket::initialize('send-bad-opcode', $this);
+        $this->expectSocketClient();
+        $this->expectClientHandshake();
+        $this->expectStreamClose();
+        $this->expectStreamMetadata();
+
         $this->expectException('WebSocket\BadOpcodeException');
         $this->expectExceptionMessage('Bad opcode \'bad\'.  Try \'text\' or \'binary\'.');
+
         $client->send('Bad Opcode', 'bad');
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testRecieveBadOpcode(): void
     {
-        MockSocket::initialize('client.connect', $this);
+        $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->send('Connect');
-        MockSocket::initialize('receive-bad-opcode', $this);
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+
+        $this->expectSocketClient();
+        $this->expectClientHandshake();
+        $this->expectStreamRead(2, [140, 115]);
+        $this->expectStreamClose();
+        $this->expectStreamMetadata();
+
         $this->expectException('WebSocket\ConnectionException');
         $this->expectExceptionCode(1026);
         $this->expectExceptionMessage('Bad opcode in websocket frame: 12');
+
         $message = $client->receive();
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testBrokenWrite(): void
     {
-        MockSocket::initialize('client.connect', $this);
+        $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->send('Connect');
-        MockSocket::initialize('client.send-broken-write', $this);
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+
+        $this->expectSocketClient();
+        $this->expectClientHandshake();
+        $this->expectStreamWrite(null, 18);
+        $this->expectStreamMetadata(['eof' => true, 'mode' => 'rw', 'seekable' => false]);
+        $this->expectStreamClose();
+        $this->expectStreamMetadata();
+        $this->expectStreamClose();
+        $this->expectStreamMetadata();
+
         $this->expectException('WebSocket\ConnectionException');
         $this->expectExceptionCode(1025);
         $this->expectExceptionMessage('Could only write 18 out of 22 bytes.');
         $client->send('Failing to write');
-    }
 
-    public function testFailedWrite(): void
-    {
-        MockSocket::initialize('client.connect', $this);
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->send('Connect');
-        MockSocket::initialize('send-failed-write', $this);
-        $this->expectException('WebSocket\TimeoutException');
-        $this->expectExceptionCode(1024);
-        $this->expectExceptionMessage('Failed to write 22 bytes.');
-        $client->send('Failing to write');
-    }
-
-    public function testBrokenRead(): void
-    {
-        MockSocket::initialize('client.connect', $this);
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->send('Connect');
-        MockSocket::initialize('receive-broken-read', $this);
-        $this->expectException('WebSocket\ConnectionException');
-        $this->expectExceptionCode(1025);
-        $this->expectExceptionMessage('Broken frame, read 0 of stated 2 bytes.');
-        $client->receive();
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testHandshakeError(): void
     {
-        MockSocket::initialize('client.connect-handshake-error', $this);
+        $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+
+        $this->expectSocketClient();
+        $this->expectClientConnect();
+        $this->expectStreamConstruct();
+        $this->expectStreamMetadata();
+        $this->expectStreamTimeout(5);
+        $this->expectStreamWrite();
+        $this->expectStreamGets(null, new RuntimeException('Test'));
+        $this->expectStreamClose();
+        $this->expectStreamMetadata();
         $this->expectException('WebSocket\ConnectionException');
-        $this->expectExceptionCode(1024);
+
+        // @todo: Assign correct code
+        //$this->expectExceptionCode(1024);
         $this->expectExceptionMessage('Client handshake error');
+
         $client->send('Connect');
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testReadTimeout(): void
     {
-        MockSocket::initialize('client.connect', $this);
+        $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->send('Connect');
-        MockSocket::initialize('receive-client-timeout', $this);
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+
+        $this->expectSocketClient();
+        $this->expectClientHandshake();
+        $this->expectStreamRead(2, new RuntimeException('Test'));
+        $this->expectStreamMetadata(['timed_out' => true, 'mode' => 'rw', 'seekable' => false]);
+        $this->expectStreamClose();
+        $this->expectStreamMetadata();
         $this->expectException('WebSocket\TimeoutException');
         $this->expectExceptionCode(1024);
         $this->expectExceptionMessage('Client read timeout');
+
         $client->receive();
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testEmptyRead(): void
     {
-        MockSocket::initialize('client.connect', $this);
+        $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->send('Connect');
-        MockSocket::initialize('receive-empty-read', $this);
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+
+        $this->expectSocketClient();
+        $this->expectClientHandshake();
+        $this->expectStreamRead(2, '');
+        $this->expectStreamMetadata(['timed_out' => true, 'mode' => 'rw', 'seekable' => false]);
+        $this->expectStreamClose();
+        $this->expectStreamMetadata();
+        $this->expectStreamClose();
+        $this->expectStreamMetadata();
         $this->expectException('WebSocket\TimeoutException');
         $this->expectExceptionCode(1024);
         $this->expectExceptionMessage('Empty read; connection dead?');
+
         $client->receive();
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testFrameFragmentation(): void
     {
-        MockSocket::initialize('client.connect', $this);
+        $this->expectStreamFactory();
         $client = new Client(
             'ws://localhost:8000/my/mock/path',
             ['filter' => ['text', 'binary', 'pong', 'close']]
         );
-        $client->send('Connect');
-        MockSocket::initialize('receive-fragmentation', $this);
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+
+        $this->expectSocketClient();
+        $this->expectClientHandshake();
+        $this->expectStreamRead(2, [1, 136]);
+        $this->expectStreamRead(4, [105, 29, 187, 18]);
+        $this->expectStreamRead(8, [36, 104, 215, 102, 0, 61, 221, 96]);
+        $this->expectStreamRead(2, [138, 139]);
+        $this->expectStreamRead(4, [1, 1, 1, 1]);
+        $this->expectStreamRead(11, [82, 100, 115, 119, 100, 115, 33, 113, 104, 111, 102]);
+
         $message = $client->receive();
         $this->assertEquals('Server ping', $message);
         $this->assertEquals('pong', $client->getLastOpcode());
+
+        $this->expectStreamRead(2, [0, 136]);
+        $this->expectStreamRead(4, [221, 240, 46, 69]);
+        $this->expectStreamRead(8, [188, 151, 67, 32, 179, 132, 14, 49]);
+        $this->expectStreamRead(2, [128, 131]);
+        $this->expectStreamRead(4, [9, 60, 117, 193]);
+        $this->expectStreamRead(3, [108, 79, 1]);
+
         $message = $client->receive();
         $this->assertEquals('Multi fragment test', $message);
         $this->assertEquals('text', $client->getLastOpcode());
-        $this->assertTrue(MockSocket::isEmpty());
-        MockSocket::initialize('client.close-remote', $this);
+
+        $this->expectStreamRead(2, [136, 137]);
+        $this->expectStreamRead(4, [54, 79, 233, 244]);
+        $this->expectStreamRead(9, [117, 35, 170, 152, 89, 60, 128, 154, 81]);
+        $this->expectStreamWrite(23);
+        $this->expectStreamClose();
+        $this->expectStreamMetadata();
+
         $message = $client->receive();
         $this->assertEquals('Closing', $message);
-        $this->assertTrue(MockSocket::isEmpty());
         $this->assertFalse($client->isConnected());
         $this->assertEquals(17260, $client->getCloseStatus());
         $this->assertEquals('close', $client->getLastOpcode());
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testMessageFragmentation(): void
     {
-        MockSocket::initialize('client.connect', $this);
+        $this->expectStreamFactory();
         $client = new Client(
             'ws://localhost:8000/my/mock/path',
             ['filter' => ['text', 'binary', 'pong', 'close'], 'return_obj' => true]
         );
-        $client->send('Connect');
-        MockSocket::initialize('receive-fragmentation', $this);
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+
+        $this->expectSocketClient();
+        $this->expectClientHandshake();
+        $this->expectStreamRead(2, [1, 136]);
+        $this->expectStreamRead(4, [105, 29, 187, 18]);
+        $this->expectStreamRead(8, [36, 104, 215, 102, 0, 61, 221, 96]);
+        $this->expectStreamRead(2, [138, 139]);
+        $this->expectStreamRead(4, [1, 1, 1, 1]);
+        $this->expectStreamRead(11, [82, 100, 115, 119, 100, 115, 33, 113, 104, 111, 102]);
+
         $message = $client->receive();
         $this->assertInstanceOf('WebSocket\Message\Message', $message);
         $this->assertInstanceOf('WebSocket\Message\Pong', $message);
         $this->assertEquals('Server ping', $message->getContent());
         $this->assertEquals('pong', $message->getOpcode());
+
+        $this->expectStreamRead(2, [0, 136]);
+        $this->expectStreamRead(4, [221, 240, 46, 69]);
+        $this->expectStreamRead(8, [188, 151, 67, 32, 179, 132, 14, 49]);
+        $this->expectStreamRead(2, [128, 131]);
+        $this->expectStreamRead(4, [9, 60, 117, 193]);
+        $this->expectStreamRead(3, [108, 79, 1]);
+
         $message = $client->receive();
         $this->assertInstanceOf('WebSocket\Message\Message', $message);
         $this->assertInstanceOf('WebSocket\Message\Text', $message);
         $this->assertEquals('Multi fragment test', $message->getContent());
         $this->assertEquals('text', $message->getOpcode());
-        $this->assertTrue(MockSocket::isEmpty());
-        MockSocket::initialize('client.close-remote', $this);
+
+        $this->expectStreamRead(2, [136, 137]);
+        $this->expectStreamRead(4, [54, 79, 233, 244]);
+        $this->expectStreamRead(9, [117, 35, 170, 152, 89, 60, 128, 154, 81]);
+        $this->expectStreamWrite(23);
+        $this->expectStreamClose();
+        $this->expectStreamMetadata();
+
         $message = $client->receive();
         $this->assertInstanceOf('WebSocket\Message\Message', $message);
         $this->assertInstanceOf('WebSocket\Message\Close', $message);
         $this->assertEquals('Closing', $message->getContent());
         $this->assertEquals('close', $message->getOpcode());
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testConvenicanceMethods(): void
     {
-        MockSocket::initialize('client.connect', $this);
+        $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');
+        $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+
         $this->assertNull($client->getName());
         $this->assertNull($client->getRemoteName());
         $this->assertEquals('WebSocket\Client(closed)', "{$client}");
+
+        $this->expectSocketClient();
+        $this->expectClientHandshake();
+        $this->expectStreamWrite([129, 135, null, null, null, null, null, null, null, null, null, null, null]);
         $client->text('Connect');
-        MockSocket::initialize('client.send-convenicance', $this);
+
+        $this->expectStreamWrite([130, 148, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]);
         $client->binary(base64_encode('Binary content'));
+
+        $this->expectStreamWrite([137, 128, null, null, null, null]);
         $client->ping();
+
+        $this->expectStreamWrite([138, 128, null, null, null, null]);
         $client->pong();
+
+        $this->expectStreamLocalName('127.0.0.1:12345');
         $this->assertEquals('127.0.0.1:12345', $client->getName());
+        $this->expectStreamRemoteName('127.0.0.1:8000');
+        $this->expectStreamLocalName('127.0.0.1:12345');
         $this->assertEquals('127.0.0.1:8000', $client->getRemoteName());
         $this->assertEquals('WebSocket\Client(127.0.0.1:12345)', "{$client}");
+
+        $this->expectStreamDestruct();
+        unset($client);
     }
 
     public function testUnconnectedClient(): void

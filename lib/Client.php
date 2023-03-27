@@ -12,6 +12,7 @@ namespace WebSocket;
 use ErrorException;
 use InvalidArgumentException;
 use Phrity\Net\Uri;
+use Phrity\Net\StreamFactory;
 use Phrity\Util\ErrorHandler;
 use Psr\Http\Message\UriInterface;
 use Psr\Log\{
@@ -46,6 +47,7 @@ class Client implements LoggerAwareInterface
     private $options = [];
     private $listen = false;
     private $last_opcode = null;
+    private $stream_factory;
 
 
     /* ---------- Magic methods ------------------------------------------------------ */
@@ -66,6 +68,7 @@ class Client implements LoggerAwareInterface
             'logger' => new NullLogger(),
         ], $options);
         $this->setLogger($this->options['logger']);
+        $this->setStreamFactory(new StreamFactory());
     }
 
     /**
@@ -106,6 +109,9 @@ class Client implements LoggerAwareInterface
     public function setFragmentSize(int $fragment_size): self
     {
         $this->options['fragment_size'] = $fragment_size;
+        if (!$this->isConnected()) {
+            return $this;
+        }
         $this->connection->setOptions($this->options);
         return $this;
     }
@@ -117,6 +123,11 @@ class Client implements LoggerAwareInterface
     public function getFragmentSize(): int
     {
         return $this->options['fragment_size'];
+    }
+
+    public function setStreamFactory(StreamFactory $stream_factory)
+    {
+        $this->stream_factory = $stream_factory;
     }
 
 
@@ -300,6 +311,9 @@ class Client implements LoggerAwareInterface
 
     /* ---------- Helper functions --------------------------------------------------- */
 
+
+
+
     /**
      * Perform WebSocket handshake
      */
@@ -328,7 +342,7 @@ class Client implements LoggerAwareInterface
         // Set the stream context options if they're already set in the config
         if (isset($this->options['context'])) {
             // Suppress the error since we'll catch it below
-            if (@get_resource_type($this->options['context']) === 'stream-context') {
+            if (is_resource($this->options['context']) && get_resource_type($this->options['context']) === 'stream-context') {
                 $context = $this->options['context'];
             } else {
                 $error = "Stream context in \$options['context'] isn't a valid context.";
@@ -342,35 +356,29 @@ class Client implements LoggerAwareInterface
         $persistent = $this->options['persistent'] === true;
         $flags = STREAM_CLIENT_CONNECT;
         $flags = $persistent ? $flags | STREAM_CLIENT_PERSISTENT : $flags;
-        $socket = null;
+        $stream = null;
 
         try {
-            $handler = new ErrorHandler();
-            $socket = $handler->with(function () use ($host_uri, $flags, $context) {
-                $error = $errno = $errstr = null;
-                // Open the socket.
-                return stream_socket_client(
-                    $host_uri,
-                    $errno,
-                    $errstr,
-                    $this->options['timeout'],
-                    $flags,
-                    $context
-                );
-            });
-            if (!$socket) {
-                throw new ErrorException('No socket');
+
+            $client = $this->stream_factory->createSocketClient($host_uri);
+            $client->setPersistent($persistent);
+            $client->setTimeout($this->options['timeout']);
+            $client->setContext($context);
+            $stream = $client->connect();
+
+            if (!$stream) {
+                throw new \RuntimeException('No socket');
             }
-        } catch (ErrorException $e) {
-            $error = "Could not open socket to \"{$host_uri->getAuthority()}\": {$e->getMessage()} ({$e->getCode()}).";
-            $this->logger->error($error, ['severity' => $e->getSeverity()]);
+        } catch (\RuntimeException $e) {
+            $error = "Could not open socket to \"{$host_uri}\": {$e->getMessage()} ({$e->getCode()}).";
+            $this->logger->error($error, []);
             throw new ConnectionException($error, 0, [], $e);
         }
 
-        $this->connection = new Connection($socket, $this->options);
+        $this->connection = new Connection($stream, $this->options);
         $this->connection->setLogger($this->logger);
         if (!$this->isConnected()) {
-            $error = "Invalid stream on \"{$host_uri->getAuthority()}\".";
+            $error = "Invalid stream on \"{$host_uri}\".";
             $this->logger->error($error);
             throw new ConnectionException($error);
         }
@@ -428,8 +436,8 @@ class Client implements LoggerAwareInterface
                     $buffer = $this->connection->gets(1024);
                     $response .= $buffer;
                 } while (substr_count($response, "\r\n\r\n") == 0);
-            } catch (Exception $e) {
-                throw new ConnectionException('Client handshake error', $e->getCode(), $e->getData(), $e);
+            } catch (\RuntimeException $e) {
+                throw new ConnectionException('Client handshake error', $e->getCode());
             }
 
             // Validate response.

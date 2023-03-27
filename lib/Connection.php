@@ -9,11 +9,14 @@
 
 namespace WebSocket;
 
+use Phrity\Net\SocketStream;
 use Psr\Log\{
     LoggerAwareInterface,
     LoggerAwareTrait,
-    LoggerInterface, NullLogger
+    LoggerInterface,
+    NullLogger
 };
+use RuntimeException;
 use WebSocket\Message\{
     Factory,
     Message
@@ -36,7 +39,7 @@ class Connection implements LoggerAwareInterface
 
     /* ---------- Construct & Destruct ----------------------------------------------- */
 
-    public function __construct($stream, array $options = [])
+    public function __construct(SocketStream $stream, array $options = [])
     {
         $this->stream = $stream;
         $this->setOptions($options);
@@ -46,9 +49,7 @@ class Connection implements LoggerAwareInterface
 
     public function __destruct()
     {
-        if ($this->getType() === 'stream') {
-            fclose($this->stream);
-        }
+        $this->stream->close();
     }
 
     public function setOptions(array $options = []): void
@@ -325,7 +326,8 @@ class Connection implements LoggerAwareInterface
     public function disconnect(): bool
     {
         $this->logger->debug('Closing connection');
-        return fclose($this->stream);
+        $this->stream->close();
+        return true;
     }
 
     /**
@@ -343,7 +345,7 @@ class Connection implements LoggerAwareInterface
      */
     public function getType(): ?string
     {
-        return get_resource_type($this->stream);
+        return $this->stream->getResourceType();
     }
 
     /**
@@ -352,7 +354,7 @@ class Connection implements LoggerAwareInterface
      */
     public function getName(): ?string
     {
-        return stream_socket_get_name($this->stream, false);
+        return $this->stream->getLocalName();
     }
 
     /**
@@ -361,7 +363,7 @@ class Connection implements LoggerAwareInterface
      */
     public function getRemoteName(): ?string
     {
-        return stream_socket_get_name($this->stream, true);
+        return $this->stream->getRemoteName();
     }
 
     /**
@@ -370,7 +372,7 @@ class Connection implements LoggerAwareInterface
      */
     public function getMeta(): array
     {
-        return stream_get_meta_data($this->stream);
+        return $this->stream->getMetadata();
     }
 
     /**
@@ -380,11 +382,7 @@ class Connection implements LoggerAwareInterface
      */
     public function tell(): int
     {
-        $tell = ftell($this->stream);
-        if ($tell === false) {
-            $this->throwException('Could not resolve stream pointer position');
-        }
-        return $tell;
+        return $this->stream->tell();
     }
 
     /**
@@ -393,7 +391,7 @@ class Connection implements LoggerAwareInterface
      */
     public function eof(): int
     {
-        return feof($this->stream);
+        return $this->stream->eof();
     }
 
 
@@ -408,7 +406,7 @@ class Connection implements LoggerAwareInterface
     public function setTimeout(int $seconds, int $microseconds = 0): bool
     {
         $this->logger->debug("Setting timeout {$seconds}:{$microseconds} seconds");
-        return stream_set_timeout($this->stream, $seconds, $microseconds);
+        return $this->stream->setTimeout($seconds, $microseconds);
     }
 
 
@@ -438,10 +436,7 @@ class Connection implements LoggerAwareInterface
      */
     public function gets(int $length): string
     {
-        $line = fgets($this->stream, $length);
-        if ($line === false) {
-            $this->throwException('Could not read from stream');
-        }
+        $line = $this->stream->gets($length);
         $read = strlen($line);
         $this->logger->debug("Read {$read} bytes of line.");
         return $line;
@@ -454,29 +449,27 @@ class Connection implements LoggerAwareInterface
      */
     public function read(string $length): string
     {
-        $data = '';
-        while (strlen($data) < $length) {
-            $buffer = fread($this->stream, $length - strlen($data));
-            if (!$buffer) {
-                $meta = stream_get_meta_data($this->stream);
-                if (!empty($meta['timed_out'])) {
-                    $message = 'Client read timeout';
-                    $this->logger->error($message, $meta);
-                    throw new TimeoutException($message, ConnectionException::TIMED_OUT, $meta);
+        try {
+            $data = '';
+            while (strlen($data) < $length) {
+                $buffer = $this->stream->read($length - strlen($data));
+                if ($buffer === '') {
+                    $this->throwException("Empty read; connection dead?");
                 }
-            }
-            if ($buffer === false) {
+                $data .= $buffer;
                 $read = strlen($data);
-                $this->throwException("Broken frame, read {$read} of stated {$length} bytes.");
+                $this->logger->debug("Read {$read} of {$length} bytes.");
             }
-            if ($buffer === '') {
-                $this->throwException("Empty read; connection dead?");
+            return $data;
+        } catch (RuntimeException $e) {
+            $meta = $this->stream->getMetadata();
+            if (!empty($meta['timed_out'])) {
+                $message = 'Client read timeout';
+                $this->logger->error($message, $meta);
+                throw new TimeoutException($message, ConnectionException::TIMED_OUT, $meta);
             }
-            $data .= $buffer;
-            $read = strlen($data);
-            $this->logger->debug("Read {$read} of {$length} bytes.");
+            throw $e;
         }
-        return $data;
     }
 
     /**
@@ -486,7 +479,7 @@ class Connection implements LoggerAwareInterface
     public function write(string $data): void
     {
         $length = strlen($data);
-        $written = fwrite($this->stream, $data);
+        $written = $this->stream->write($data);
         if ($written === false) {
             $this->throwException("Failed to write {$length} bytes.");
         }
