@@ -2,6 +2,16 @@
 
 # Websocket: Changelog
 
+## `v1.7`
+
+ > PHP version `^8.0`
+
+### `1.7.0`
+
+ * Dropped PHP `7.4` support (@sirn-se)
+ * Using managed streams (@sirn-se)
+ * Unit test rewrite (@sirn-se)
+
 ## `v1.6`
 
  > PHP version `^7.4|^8.0`

@@ -90,10 +90,10 @@ trait MockStreamTrait
         };
     }
 
-    private function expectStreamGets(?int $expect = null, $return = null): void
+    private function expectStreamReadLine(?int $expect = null, $return = null): void
     {
         $this->stack[] = function (string $method, array $params, callable $default) use ($expect, $return): string {
-            $this->assertEquals('SocketStream.gets', $method);
+            $this->assertEquals('SocketStream.readLine', $method);
             $this->assertCount(1, $params);
             if (!is_null($expect)) {
                 $this->assertEquals($expect, $params[0]);
@@ -160,7 +160,7 @@ trait MockStreamTrait
             $this->assertEquals('SocketClient.connect', $method);
             $this->assertCount(0, $params);
             if ($exception) {
-               throw $exception;
+                throw $exception;
             }
             return $default($params);
         };
@@ -190,6 +190,14 @@ trait MockStreamTrait
         };
     }
 
+    private function expectStreamResourceType($return = null): void
+    {
+        $this->stack[] = function (string $method, array $params, callable $default) use ($return): ?string {
+            $this->assertEquals('SocketStream.getResourceType', $method);
+            return is_null($return) ? $default($params) : $return;
+        };
+    }
+
 
     /* ---------- Combined asserts --------------------------------------------------------------------------------- */
 
@@ -198,8 +206,7 @@ trait MockStreamTrait
         string $host = 'localhost:8000',
         int $timeout = 5,
         bool $persistent = false,
-    ): void
-    {
+    ): void {
         $this->stack[] = function (string $method, array $params, callable $default) use ($scheme, $host): object {
             $this->assertEquals('StreamFactory.createSocketClient', $method);
             $this->assertCount(1, $params);
@@ -239,11 +246,11 @@ trait MockStreamTrait
         string $headers = '',
         int $timeout = 5,
         $tell = null,
-    ): void
-    {
+    ): void {
         $this->expectClientConnect();
         $this->expectStreamConstruct();
         $this->expectStreamMetadata();
+        $this->expectStreamResourceType();
         if (!is_null($tell)) {
             $this->expectStreamTell(null, false);
         }
@@ -253,16 +260,19 @@ trait MockStreamTrait
             preg_match('/Sec-WebSocket-Key: ([\S]*)\r\n/', $params[0], $m);
             $this->last_ws_key = $m[1];
             $this->assertEquals(
-                "GET {$path} HTTP/1.1\r\nHost: {$host}\r\nUser-Agent: websocket-client-php\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Key: {$this->last_ws_key}\r\nSec-WebSocket-Version: 13\r\n{$headers}\r\n",
-                 $params[0]
+                "GET {$path} HTTP/1.1\r\nHost: {$host}\r\nUser-Agent: websocket-client-php\r\nConnection: Upgrade"
+                . "\r\nUpgrade: websocket\r\nSec-WebSocket-Key: {$this->last_ws_key}\r\nSec-WebSocket-Version: 13"
+                . "\r\n{$headers}\r\n",
+                $params[0]
             );
             return strlen($params[0]);
         };
         $this->stack[] = function (string $method, array $params, callable $default): string {
-            $this->assertEquals('SocketStream.gets', $method);
+            $this->assertEquals('SocketStream.readLine', $method);
             $this->assertEquals(1024, $params[0]);
             $ws_key_res = base64_encode(pack('H*', sha1($this->last_ws_key . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')));
-            return "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {$ws_key_res}\r\n\r\n";
+            return "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade"
+            . "\r\nSec-WebSocket-Accept: {$ws_key_res}\r\n\r\n";
         };
     }
 
@@ -271,14 +281,6 @@ trait MockStreamTrait
         $this->expectStreamClose();
         $this->expectStreamMetadata();
     }
-
-
-
-
-
-
-
-
 
     private function expectCreate(): void
     {
@@ -299,9 +301,19 @@ trait MockStreamTrait
         string $path = '/my/mock/path',
         string $headers = '',
         int $timeout = 5
-    ): void
-    {
-        Mock::setCallback(function ($counter, $method, $params, $default) use ($scheme, $host, $path, $headers, $timeout) {
+    ): void {
+        Mock::setCallback(function (
+            $counter,
+            $method,
+            $params,
+            $default
+        ) use (
+            $scheme,
+            $host,
+            $path,
+            $headers,
+            $timeout
+        ) {
             switch ($counter) {
                 case 0:
                     $this->assertEquals('StreamFactory.createSocketClient', $method);
@@ -342,15 +354,20 @@ trait MockStreamTrait
                     preg_match('/Sec-WebSocket-Key: ([\S]*)\r\n/', $params[0], $m);
                     $this->last_ws_key = $m[1];
                     $this->assertEquals(
-                        "GET {$path} HTTP/1.1\r\nHost: {$host}\r\nUser-Agent: websocket-client-php\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Key: {$this->last_ws_key}\r\nSec-WebSocket-Version: 13\r\n{$headers}\r\n",
-                         $params[0]
+                        "GET {$path} HTTP/1.1\r\nHost: {$host}\r\nUser-Agent: websocket-client-php\r\n"
+                        . "Connection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Key: {$this->last_ws_key}\r\n"
+                        . "Sec-WebSocket-Version: 13\r\n{$headers}\r\n",
+                        $params[0]
                     );
                     return strlen($params[0]);
                 case 10:
-                    $this->assertEquals('SocketStream.gets', $method);
+                    $this->assertEquals('SocketStream.readLine', $method);
                     $this->assertEquals(1024, $params[0]);
-                    $ws_key_res = base64_encode(pack('H*', sha1($this->last_ws_key . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')));
-                    return "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {$ws_key_res}\r\n\r\n";
+                    $ws_key_res = base64_encode(
+                        pack('H*', sha1($this->last_ws_key . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'))
+                    );
+                    return "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\n"
+                        . "Connection: Upgrade\r\nSec-WebSocket-Accept: {$ws_key_res}\r\n\r\n";
                 case 11:
                     $this->assertEquals('SocketStream.write', $method);
                     $this->assertEquals(13, strlen($params[0]));
@@ -360,9 +377,4 @@ trait MockStreamTrait
             }
         });
     }
-
-
-
-
-
 }

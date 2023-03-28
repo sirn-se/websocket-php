@@ -434,9 +434,9 @@ class Connection implements LoggerAwareInterface
      * @param int $length Maximum number of bytes to read
      * @return string Read data
      */
-    public function gets(int $length): string
+    public function readLine(int $length): string
     {
-        $line = $this->stream->gets($length);
+        $line = $this->stream->readLine($length);
         $read = strlen($line);
         $this->logger->debug("Read {$read} bytes of line.");
         return $line;

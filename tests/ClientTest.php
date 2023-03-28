@@ -46,28 +46,38 @@ class ClientTest extends TestCase
         $this->expectStreamWrite();
         $client->send('Connect');
 
+        $this->expectStreamResourceType();
         $this->expectStreamWrite(23);
         $client->send('Sending a message');
 
+        $this->expectStreamResourceType();
         $this->expectStreamRead(2, [129, 147]);
         $this->expectStreamRead(4, [33, 111, 149, 174]);
-        $this->expectStreamRead(19, [115, 10, 246, 203, 72, 25, 252, 192, 70, 79, 244, 142, 76, 10, 230, 221, 64, 8, 240]);
-
+        $this->expectStreamRead(19, [
+            115, 10, 246, 203, 72, 25, 252, 192, 70, 79, 244, 142, 76, 10, 230, 221, 64, 8, 240
+        ]);
         $message = $client->receive();
 
         $this->assertEquals('text', $client->getLastOpcode());
+        $this->expectStreamResourceType();
         $this->assertTrue($client->isConnected());
+        $this->expectStreamResourceType();
         $this->assertNull($client->getCloseStatus());
 
+        $this->expectStreamResourceType();
         $this->expectStreamWrite(12);
         $this->expectStreamRead(2, [136, 154]);
         $this->expectStreamRead(4, [98, 250, 210, 113]);
-        $this->expectStreamRead(26, [97, 18, 145, 29, 13, 137, 183, 81, 3, 153, 185, 31, 13, 141, 190, 20, 6, 157, 183, 21, 88, 218, 227, 65, 82, 202]);
+        $this->expectStreamRead(26, [
+            97, 18, 145, 29, 13, 137, 183, 81, 3, 153, 185, 31, 13, 141, 190,
+            20, 6, 157, 183, 21, 88, 218, 227, 65, 82, 202
+        ]);
         $this->expectStreamClose();
         $this->expectStreamMetadata();
-
+        $this->expectStreamResourceType();
         $client->close();
 
+        $this->expectStreamResourceType();
         $this->assertFalse($client->isConnected());
         $this->assertEquals(1000, $client->getCloseStatus());
 
@@ -238,9 +248,11 @@ class ClientTest extends TestCase
 
         $payload = file_get_contents(__DIR__ . '/mock/payload.128.txt');
 
+        $this->expectStreamResourceType();
         $this->expectStreamWrite(136);
         $client->send($payload, 'text');
 
+        $this->expectStreamResourceType();
         $this->expectStreamRead(2, [129, 126]);
         $this->expectStreamRead(2, [0, 128]);
         $this->expectStreamRead(128, substr($payload, 0, 132));
@@ -266,9 +278,11 @@ class ClientTest extends TestCase
 
         $payload = file_get_contents(__DIR__ . '/mock/payload.65536.txt');
 
+        $this->expectStreamResourceType();
         $this->expectStreamWrite(65550);
         $client->send($payload, 'text');
 
+        $this->expectStreamResourceType();
         $this->expectStreamRead(2, [129, 127]);
         $this->expectStreamRead(8, [0, 0, 0, 0, 0, 1, 0, 0]);
         $this->expectStreamRead(65536, substr($payload, 0, 16374));
@@ -299,13 +313,16 @@ class ClientTest extends TestCase
         $this->expectStreamWrite();
         $client->send('Connect');
 
+        $this->expectStreamResourceType();
         $client->setFragmentSize(8);
 
+        $this->expectStreamResourceType();
         $this->expectStreamWrite([1, 136, null, null, null, null, null, null, null, null, null, null, null, null]);
         $this->expectStreamWrite([0, 136, null, null, null, null, null, null, null, null, null, null, null, null]);
         $this->expectStreamWrite([128, 131, null, null, null, null, null, null, null]);
         $client->send('Multi fragment test');
 
+        $this->expectStreamResourceType();
         $this->expectStreamRead(2, [1, 136]);
         $this->expectStreamRead(4, [105, 29, 187, 18]);
         $this->expectStreamRead(8, [36, 104, 215, 102, 0, 61, 221, 96]);
@@ -335,12 +352,15 @@ class ClientTest extends TestCase
         $this->expectStreamWrite();
         $client->send('Connect');
 
+        $this->expectStreamResourceType();
         $this->expectStreamWrite();
         $client->send('Server ping', 'ping');
 
+        $this->expectStreamResourceType();
         $this->expectStreamWrite();
         $client->send('', 'ping');
 
+        $this->expectStreamResourceType();
         $this->expectStreamRead(2, [138, 139]);
         $this->expectStreamRead(4, [1, 1, 1, 1]);
         $this->expectStreamRead(11, [82, 100, 115, 119, 100, 115, 33, 113, 104, 111, 102]);
@@ -352,7 +372,9 @@ class ClientTest extends TestCase
         $this->expectStreamWrite();
         $this->expectStreamRead(2, [129, 147]);
         $this->expectStreamRead(4, [33, 111, 149, 174]);
-        $this->expectStreamRead(19, [115, 10, 246, 203, 72, 25, 252, 192, 70, 79, 244, 142, 76, 10, 230, 221, 64, 8, 240]);
+        $this->expectStreamRead(19, [
+            115, 10, 246, 203, 72, 25, 252, 192, 70, 79, 244, 142, 76, 10, 230, 221, 64, 8, 240
+        ]);
 
         $message = $client->receive();
 
@@ -374,15 +396,19 @@ class ClientTest extends TestCase
         $this->expectStreamWrite();
         $client->send('Connect');
 
+        $this->expectStreamResourceType();
         $this->expectStreamRead(2, [136, 137]);
         $this->expectStreamRead(4, [54, 79, 233, 244]);
         $this->expectStreamRead(9, [117, 35, 170, 152, 89, 60, 128, 154, 81]);
         $this->expectStreamWrite();
         $this->expectStreamClose();
         $this->expectStreamMetadata();
+        $this->expectStreamResourceType();
 
         $message = $client->receive();
         $this->assertNull($message);
+
+        $this->expectStreamResourceType();
         $this->assertFalse($client->isConnected());
         $this->assertEquals(17260, $client->getCloseStatus());
         $this->assertNull($client->getLastOpcode());
@@ -402,9 +428,11 @@ class ClientTest extends TestCase
         $this->expectStreamWrite();
         $client->send('Connect');
 
+        $this->expectStreamResourceType();
         $this->expectStreamTimeout(300);
-
         $client->setTimeout(300);
+
+        $this->expectStreamResourceType();
         $this->assertTrue($client->isConnected());
 
         $this->expectStreamDestruct();
@@ -422,31 +450,41 @@ class ClientTest extends TestCase
         $this->expectStreamWrite();
         $client->send('Connect');
 
+        $this->expectStreamResourceType();
         $this->assertTrue($client->isConnected());
+        $this->expectStreamResourceType();
         $this->assertNull($client->getCloseStatus());
 
+        $this->expectStreamResourceType();
         $this->expectStreamWrite([136, 134, null, null, null, null, null, null, null, null, null, null]);
         $this->expectStreamRead(2, [136, 154]);
         $this->expectStreamRead(4, [98, 250, 210, 113]);
-        $this->expectStreamRead(26, [97, 18, 145, 29, 13, 137, 183, 81, 3, 153, 185, 31, 13, 141, 190, 20, 6, 157, 183, 21, 88, 218, 227, 65, 82, 202]);
+        $this->expectStreamRead(26, [
+            97, 18, 145, 29, 13, 137, 183, 81, 3, 153, 185, 31, 13, 141, 190,
+            20, 6, 157, 183, 21, 88, 218, 227, 65, 82, 202
+        ]);
         $this->expectStreamClose();
         $this->expectStreamMetadata();
-
+        $this->expectStreamResourceType();
         $client->close();
 
+        $this->expectStreamResourceType();
         $this->assertFalse($client->isConnected());
         $this->assertEquals(1000, $client->getCloseStatus());
         $this->assertNull($client->getLastOpcode());
 
+        $this->expectStreamResourceType();
         $this->expectStreamClose();
         $this->expectStreamMetadata();
         $this->expectSocketClient();
         $this->expectClientHandshake();
         $this->expectStreamRead(2, [129, 147]);
         $this->expectStreamRead(4, [33, 111, 149, 174]);
-        $this->expectStreamRead(19, [115, 10, 246, 203, 72, 25, 252, 192, 70, 79, 244, 142, 76, 10, 230, 221, 64, 8, 240]);
-
+        $this->expectStreamRead(19, [
+            115, 10, 246, 203, 72, 25, 252, 192, 70, 79, 244, 142, 76, 10, 230, 221, 64, 8, 240
+        ]);
         $message = $client->receive();
+        $this->expectStreamResourceType();
         $this->assertTrue($client->isConnected());
 
         $this->expectStreamDestruct();
@@ -464,8 +502,10 @@ class ClientTest extends TestCase
         $this->expectStreamWrite();
         $client->send('Connect');
 
+        $this->expectStreamResourceType();
         $this->expectStreamClose();
         $this->expectStreamMetadata();
+        $this->expectStreamResourceType();
         $client->disconnect();
         $this->assertFalse($client->isConnected());
         $this->assertTrue(MockSocket::isEmpty());
@@ -554,9 +594,10 @@ class ClientTest extends TestCase
         $this->expectClientConnect();
         $this->expectStreamConstruct();
         $this->expectStreamMetadata();
+        $this->expectStreamResourceType();
         $this->expectStreamTimeout(5);
         $this->expectStreamWrite();
-        $this->expectStreamGets(null, new RuntimeException('Test'));
+        $this->expectStreamReadLine(null, new RuntimeException('Test'));
         $this->expectStreamClose();
         $this->expectStreamMetadata();
         $this->expectException('WebSocket\ConnectionException');
@@ -579,9 +620,10 @@ class ClientTest extends TestCase
         $this->expectClientConnect();
         $this->expectStreamConstruct();
         $this->expectStreamMetadata();
+        $this->expectStreamResourceType();
         $this->expectStreamTimeout(5);
         $this->expectStreamWrite();
-        $this->expectStreamGets(null, "Invalid upgrade\r\n\r\n");
+        $this->expectStreamReadLine(null, "Invalid upgrade\r\n\r\n");
         $this->expectStreamClose();
         $this->expectStreamMetadata();
         $this->expectException('WebSocket\ConnectionException');
@@ -604,9 +646,14 @@ class ClientTest extends TestCase
         $this->expectClientConnect();
         $this->expectStreamConstruct();
         $this->expectStreamMetadata();
+        $this->expectStreamResourceType();
         $this->expectStreamTimeout(5);
         $this->expectStreamWrite();
-        $this->expectStreamGets(null, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: BAD_KEY\r\n\r\n");
+        $this->expectStreamReadLine(
+            null,
+            "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+            . "Sec-WebSocket-Accept: BAD_KEY\r\n\r\n"
+        );
         $this->expectStreamClose();
         $this->expectStreamMetadata();
         $this->expectException('WebSocket\ConnectionException');
@@ -670,6 +717,7 @@ class ClientTest extends TestCase
         $this->expectSocketClient();
         $this->expectClientHandshake();
         $this->expectStreamWrite(null, 18);
+        $this->expectStreamResourceType();
         $this->expectStreamMetadata(['eof' => true, 'mode' => 'rw', 'seekable' => false]);
         $this->expectStreamClose();
         $this->expectStreamMetadata();
@@ -695,9 +743,10 @@ class ClientTest extends TestCase
         $this->expectClientConnect();
         $this->expectStreamConstruct();
         $this->expectStreamMetadata();
+        $this->expectStreamResourceType();
         $this->expectStreamTimeout(5);
         $this->expectStreamWrite();
-        $this->expectStreamGets(null, new RuntimeException('Test'));
+        $this->expectStreamReadLine(null, new RuntimeException('Test'));
         $this->expectStreamClose();
         $this->expectStreamMetadata();
         $this->expectException('WebSocket\ConnectionException');
@@ -743,6 +792,7 @@ class ClientTest extends TestCase
         $this->expectSocketClient();
         $this->expectClientHandshake();
         $this->expectStreamRead(2, '');
+        $this->expectStreamResourceType();
         $this->expectStreamMetadata(['timed_out' => true, 'mode' => 'rw', 'seekable' => false]);
         $this->expectStreamClose();
         $this->expectStreamMetadata();
@@ -780,6 +830,7 @@ class ClientTest extends TestCase
         $this->assertEquals('Server ping', $message);
         $this->assertEquals('pong', $client->getLastOpcode());
 
+        $this->expectStreamResourceType();
         $this->expectStreamRead(2, [0, 136]);
         $this->expectStreamRead(4, [221, 240, 46, 69]);
         $this->expectStreamRead(8, [188, 151, 67, 32, 179, 132, 14, 49]);
@@ -791,12 +842,15 @@ class ClientTest extends TestCase
         $this->assertEquals('Multi fragment test', $message);
         $this->assertEquals('text', $client->getLastOpcode());
 
+        $this->expectStreamResourceType();
         $this->expectStreamRead(2, [136, 137]);
         $this->expectStreamRead(4, [54, 79, 233, 244]);
         $this->expectStreamRead(9, [117, 35, 170, 152, 89, 60, 128, 154, 81]);
         $this->expectStreamWrite(23);
         $this->expectStreamClose();
         $this->expectStreamMetadata();
+        $this->expectStreamResourceType();
+        $this->expectStreamResourceType();
 
         $message = $client->receive();
         $this->assertEquals('Closing', $message);
@@ -832,6 +886,7 @@ class ClientTest extends TestCase
         $this->assertEquals('Server ping', $message->getContent());
         $this->assertEquals('pong', $message->getOpcode());
 
+        $this->expectStreamResourceType();
         $this->expectStreamRead(2, [0, 136]);
         $this->expectStreamRead(4, [221, 240, 46, 69]);
         $this->expectStreamRead(8, [188, 151, 67, 32, 179, 132, 14, 49]);
@@ -845,12 +900,14 @@ class ClientTest extends TestCase
         $this->assertEquals('Multi fragment test', $message->getContent());
         $this->assertEquals('text', $message->getOpcode());
 
+        $this->expectStreamResourceType();
         $this->expectStreamRead(2, [136, 137]);
         $this->expectStreamRead(4, [54, 79, 233, 244]);
         $this->expectStreamRead(9, [117, 35, 170, 152, 89, 60, 128, 154, 81]);
         $this->expectStreamWrite(23);
         $this->expectStreamClose();
         $this->expectStreamMetadata();
+        $this->expectStreamResourceType();
 
         $message = $client->receive();
         $this->assertInstanceOf('WebSocket\Message\Message', $message);
@@ -877,18 +934,27 @@ class ClientTest extends TestCase
         $this->expectStreamWrite([129, 135, null, null, null, null, null, null, null, null, null, null, null]);
         $client->text('Connect');
 
-        $this->expectStreamWrite([130, 148, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]);
+        $this->expectStreamResourceType();
+        $this->expectStreamWrite([
+            130, 148, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null, null
+        ]);
         $client->binary(base64_encode('Binary content'));
 
+        $this->expectStreamResourceType();
         $this->expectStreamWrite([137, 128, null, null, null, null]);
         $client->ping();
 
+        $this->expectStreamResourceType();
         $this->expectStreamWrite([138, 128, null, null, null, null]);
         $client->pong();
 
+        $this->expectStreamResourceType();
         $this->expectStreamLocalName('127.0.0.1:12345');
         $this->assertEquals('127.0.0.1:12345', $client->getName());
+        $this->expectStreamResourceType();
         $this->expectStreamRemoteName('127.0.0.1:8000');
+        $this->expectStreamResourceType();
         $this->expectStreamLocalName('127.0.0.1:12345');
         $this->assertEquals('127.0.0.1:8000', $client->getRemoteName());
         $this->assertEquals('WebSocket\Client(127.0.0.1:12345)', "{$client}");

@@ -23,7 +23,7 @@
         }
     },
     "require": {
-        "php": "^7.4 | ^8.0",
+        "php": "^8.0",
         "phrity/net-uri": "^1.2",
         "phrity/net-stream": "dev-extending as 1.1.1",
         "phrity/util-errorhandler": "^1.0",

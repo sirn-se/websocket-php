@@ -342,7 +342,10 @@ class Client implements LoggerAwareInterface
         // Set the stream context options if they're already set in the config
         if (isset($this->options['context'])) {
             // Suppress the error since we'll catch it below
-            if (is_resource($this->options['context']) && get_resource_type($this->options['context']) === 'stream-context') {
+            if (
+                is_resource($this->options['context'])
+                && get_resource_type($this->options['context']) === 'stream-context'
+            ) {
                 $context = $this->options['context'];
             } else {
                 $error = "Stream context in \$options['context'] isn't a valid context.";
@@ -359,7 +362,6 @@ class Client implements LoggerAwareInterface
         $stream = null;
 
         try {
-
             $client = $this->stream_factory->createSocketClient($host_uri);
             $client->setPersistent($persistent);
             $client->setTimeout($this->options['timeout']);
@@ -433,7 +435,7 @@ class Client implements LoggerAwareInterface
             $response = '';
             try {
                 do {
-                    $buffer = $this->connection->gets(1024);
+                    $buffer = $this->connection->readLine(1024);
                     $response .= $buffer;
                 } while (substr_count($response, "\r\n\r\n") == 0);
             } catch (\RuntimeException $e) {
