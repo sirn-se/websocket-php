@@ -468,6 +468,11 @@ class Connection implements LoggerAwareInterface
                 $this->logger->error($message, $meta);
                 throw new TimeoutException($message, ConnectionException::TIMED_OUT, $meta);
             }
+            if (!empty($meta['eof'])) {
+                $message = "Broken frame, read 0 of stated {$length} bytes.";
+                $this->logger->error($message, $meta);
+                throw new ConnectionException($message, ConnectionException::EOF, $meta);
+            }
             throw $e;
         }
     }
@@ -478,15 +483,27 @@ class Connection implements LoggerAwareInterface
      */
     public function write(string $data): void
     {
-        $length = strlen($data);
-        $written = $this->stream->write($data);
-        if ($written === false) {
-            $this->throwException("Failed to write {$length} bytes.");
+        try {
+            $length = strlen($data);
+            $written = $this->stream->write($data);
+            if ($written < strlen($data)) {
+                $this->throwException("Could only write {$written} out of {$length} bytes.");
+            }
+            $this->logger->debug("Wrote {$written} of {$length} bytes.");
+        } catch (RuntimeException $e) {
+            $meta = $this->stream->getMetadata();
+            if (!empty($meta['timed_out'])) {
+                $message = 'Client write timeout';
+                $this->logger->error($message, $meta);
+                throw new TimeoutException($message, ConnectionException::TIMED_OUT, $meta);
+            }
+            if (!empty($meta['eof'])) {
+                $message = "Broken frame, wrote 0 of stated {$length} bytes.";
+                $this->logger->error($message, $meta);
+                throw new ConnectionException($message, ConnectionException::EOF, $meta);
+            }
+            throw $e;
         }
-        if ($written < strlen($data)) {
-            $this->throwException("Could only write {$written} out of {$length} bytes.");
-        }
-        $this->logger->debug("Wrote {$written} of {$length} bytes.");
     }
 
 

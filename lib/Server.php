@@ -12,6 +12,8 @@ namespace WebSocket;
 use Closure;
 use ErrorException;
 use Phrity\Util\ErrorHandler;
+use Phrity\Net\StreamFactory;
+use Phrity\Net\Uri;
 use Psr\Log\{
     LoggerAwareInterface,
     LoggerAwareTrait,
@@ -26,6 +28,9 @@ class Server implements LoggerAwareInterface
     use LoggerAwareTrait; // Provides setLogger(LoggerInterface $logger)
     use OpcodeTrait;
 
+    private $stream_factory;
+
+
     // Default options
     protected static $default_options = [
         'filter'        => ['text', 'binary'],
@@ -34,6 +39,7 @@ class Server implements LoggerAwareInterface
         'masked'        => false,
         'port'          => 8000,
         'return_obj'    => false,
+        'schema'        => 'tcp',
         'timeout'       => null,
     ];
 
@@ -57,6 +63,7 @@ class Server implements LoggerAwareInterface
      *   - logger:        PSR-3 compatible logger.  Default NullLogger.
      *   - port:          Chose port for listening.  Default 8000.
      *   - return_obj:    If receive() function return Message instance.  Default false.
+     *   - schema:        Set socket schema (tcp or ssl).
      *   - timeout:       Set the socket timeout in seconds.
      */
     public function __construct(array $options = [])
@@ -66,26 +73,12 @@ class Server implements LoggerAwareInterface
         ], $options);
         $this->port = $this->options['port'];
         $this->setLogger($this->options['logger']);
+        $this->setStreamFactory(new StreamFactory());
+    }
 
-        $error = $errno = $errstr = null;
-        set_error_handler(function (int $severity, string $message, string $file, int $line) use (&$error) {
-            $this->logger->warning($message, ['severity' => $severity]);
-            $error = $message;
-        }, E_ALL);
-
-        do {
-            $this->listening = stream_socket_server("tcp://0.0.0.0:$this->port", $errno, $errstr);
-        } while ($this->listening === false && $this->port++ < 10000);
-
-        restore_error_handler();
-
-        if (!$this->listening) {
-            $error = "Could not open listening socket: {$errstr} ({$errno}) {$error}";
-            $this->logger->error($error);
-            throw new ConnectionException($error, (int)$errno);
-        }
-
-        $this->logger->info("Server listening to port {$this->port}");
+    public function setStreamFactory(StreamFactory $stream_factory)
+    {
+        $this->stream_factory = $stream_factory;
     }
 
     /**
@@ -112,6 +105,26 @@ class Server implements LoggerAwareInterface
     public function accept(): bool
     {
         $this->disconnect();
+        $exception = null;
+
+        do {
+            try {
+                $uri = new Uri("{$this->options['schema']}://0.0.0.0:{$this->port}");
+                $this->listening = $this->stream_factory->createSocketServer($uri);
+            } catch (\RuntimeException $e) {
+                $this->logger->error("Could not connect on port {$this->port}: {$e->getMessage()}");
+                $exception = $e;
+            }
+        } while (is_null($this->listening) && $this->port++ < 10000);
+
+        if (!$this->listening) {
+            $error = "Could not open listening socket: {$exception->getMessage()}";
+            $this->logger->error($error);
+            throw new ConnectionException($error, $exception->getCode());
+        }
+
+        $this->logger->info("Server listening to port {$uri}");
+
         return (bool)$this->listening;
     }
 
@@ -239,9 +252,7 @@ class Server implements LoggerAwareInterface
     public function close(int $status = 1000, string $message = 'ttfn'): void
     {
         foreach ($this->connections as $connection) {
-            if ($connection->isConnected()) {
-                $connection->close($status, $message);
-            }
+            $connection->close($status, $message);
         }
     }
 
@@ -394,21 +405,17 @@ class Server implements LoggerAwareInterface
     private function connect(): void
     {
         try {
-            $handler = new ErrorHandler();
-            $socket = $handler->with(function () {
-                if (isset($this->options['timeout'])) {
-                    $socket = stream_socket_accept($this->listening, $this->options['timeout']);
-                } else {
-                    $socket = stream_socket_accept($this->listening);
-                }
-                if (!$socket) {
-                    throw new ErrorException('No socket');
-                }
-                return $socket;
-            });
-        } catch (ErrorException $e) {
+            if (isset($this->options['timeout'])) {
+                $socket = $this->listening->accept($this->options['timeout']);
+            } else {
+                $socket = $this->listening->accept();
+            }
+            if (!$socket) {
+                throw new \RuntimeException('No socket');
+            }
+        } catch (\RuntimeException $e) {
             $error = "Server failed to connect. {$e->getMessage()}";
-            $this->logger->error($error, ['severity' => $e->getSeverity()]);
+            $this->logger->error($error);
             throw new ConnectionException($error, 0, [], $e);
         }
 
@@ -431,11 +438,14 @@ class Server implements LoggerAwareInterface
     private function performHandshake(Connection $connection): void
     {
         $request = '';
-        do {
-            $buffer = $connection->getLine(1024, "\r\n");
-            $request .= $buffer . "\n";
-            $metadata = $connection->getMeta();
-        } while (!$connection->eof() && $metadata['unread_bytes'] > 0);
+        try {
+            do {
+                $buffer = $connection->readLine(1024);
+                $request .= $buffer;
+            } while (substr_count($request, "\r\n\r\n") == 0);
+        } catch (\RuntimeException $e) {
+            throw new ConnectionException('Client handshake error', $e->getCode());
+        }
 
         if (!preg_match('/GET (.*) HTTP\//mUi', $request, $matches)) {
             $error = "No GET in request: {$request}";
@@ -445,7 +455,7 @@ class Server implements LoggerAwareInterface
         $get_uri = trim($matches[1]);
         $uri_parts = parse_url($get_uri);
 
-        $this->request = explode("\n", $request);
+        $this->request = array_filter(array_map('trim', explode("\n", $request)));
         $this->request_path = $uri_parts['path'];
         /// @todo Get query and fragment as well.
 

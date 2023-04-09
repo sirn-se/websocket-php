@@ -111,7 +111,7 @@ trait MockStreamTrait
         };
     }
 
-    private function expectStreamWrite($expect = null, ?int $return = null): void
+    private function expectStreamWrite($expect = null, $return = null): void
     {
         $this->stack[] = function (string $method, array $params, callable $default) use ($expect, $return): int {
             $this->assertEquals('SocketStream.write', $method);
@@ -131,6 +131,10 @@ trait MockStreamTrait
                 case 'string':
                     $this->assertEquals($expect, $params[0]);
                     break;
+            }
+            switch (gettype($return)) {
+                case 'object':
+                    throw $return;
             }
             return is_null($return) ? strlen($params[0]) : $return;
         };
@@ -166,11 +170,11 @@ trait MockStreamTrait
         };
     }
 
-    private function expectStreamConstruct(): void
+    private function expectStreamConstruct($return = null): void
     {
-        $this->stack[] = function (string $method, array $params, callable $default): void {
+        $this->stack[] = function (string $method, array $params, callable $default) use ($return): ?string {
             $this->assertEquals('SocketStream.__construct', $method);
-            $default($params);
+            return is_null($return) ? $default($params) : $return;
         };
     }
 
@@ -198,8 +202,53 @@ trait MockStreamTrait
         };
     }
 
+    private function expectServerAccept($return = null): void
+    {
+        $this->stack[] = function (string $method, array $params, callable $default) use ($return): object {
+            $this->assertEquals('SocketServer.accept', $method);
+            return $default($params);
+        };
+    }
+
+    private function expectFactoryCreateSockerServer(int $port = 8000): void
+    {
+        $this->stack[] = function (string $method, array $params, callable $default) use ($port): object {
+            $this->assertEquals('StreamFactory.createSocketServer', $method);
+            $this->assertCount(1, $params);
+            $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
+            $this->assertEquals("tcp://0.0.0.0:{$port}", "{$params[0]}");
+            return $default($params);
+        };
+    }
+
+    private function expectSockerServerConstruct(int $port = 8000, $return = null): void
+    {
+        $this->stack[] = function (string $method, array $params, callable $default) use ($port, $return): void {
+            $this->assertEquals('SocketServer.__construct', $method);
+            $this->assertCount(1, $params);
+            $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
+            $this->assertEquals("tcp://0.0.0.0:{$port}", "{$params[0]}");
+            switch (gettype($return)) {
+                case 'object':
+                    throw $return;
+            }
+            $default($params);
+        };
+    }
 
     /* ---------- Combined asserts --------------------------------------------------------------------------------- */
+
+    private function expectSocketServer(): void
+    {
+        $this->expectFactoryCreateSockerServer();
+        $this->expectSockerServerConstruct();
+        $this->stack[] = function (string $method, array $params, callable $default): array {
+            $this->assertEquals('SocketServer.getTransports', $method);
+            $this->assertCount(0, $params);
+            return ['tcp', 'ssl'];
+        };
+    }
+
 
     private function expectSocketClient(
         string $scheme = 'tcp',
@@ -274,6 +323,21 @@ trait MockStreamTrait
             return "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade"
             . "\r\nSec-WebSocket-Accept: {$ws_key_res}\r\n\r\n";
         };
+    }
+
+    private function expectServerHandshake(?int $timeout = null)
+    {
+        $this->expectServerAccept();
+        $this->expectStreamConstruct();
+        $this->expectStreamMetadata();
+        if (!is_null($timeout)) {
+            $this->expectStreamTimeout($timeout);
+        }
+        $this->expectStreamRemoteName('localhost:8000');
+        $this->expectStreamReadLine(1024, "GET /my/mock/path HTTP/1.1\r\nHost: localhost:8000\r\nUser-Agent: websocket-client-php\r\nConnection: Upgrade"
+                . "\r\nUpgrade: websocket\r\nSec-WebSocket-Key: cktLWXhUdDQ2OXF0ZCFqOQ==\r\nSec-WebSocket-Version: 13"
+                . "\r\n\r\n");
+        $this->expectStreamWrite("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: YmysboNHNoWzWVeQpduY7xELjgU=\r\n\r\n", 129);
     }
 
     private function expectStreamDestruct(): void
