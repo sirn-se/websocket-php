@@ -74,7 +74,10 @@ class ServerTest extends TestCase
         $this->expectStreamResourceType();
         $this->expectStreamRead(2, [129, 147]);
         $this->expectStreamRead(4, [33, 111, 149, 174]);
-        $this->expectStreamRead(19, [115, 10, 246, 203, 72, 25, 252, 192, 70, 79, 244, 142, 76, 10, 230, 221, 64, 8, 240]);
+        $this->expectStreamRead(
+            19,
+            [115, 10, 246, 203, 72, 25, 252, 192, 70, 79, 244, 142, 76, 10, 230, 221, 64, 8, 240]
+        );
         $message = $server->receive();
         $this->assertEquals('Receiving a message', $message);
         $this->assertNull($server->getCloseStatus());
@@ -84,7 +87,11 @@ class ServerTest extends TestCase
         $this->expectStreamWrite(null, 8);
         $this->expectStreamRead(2, [136, 154]);
         $this->expectStreamRead(4, [245, 55, 62, 8]);
-        $this->expectStreamRead(26, [246, 223, 125, 100, 154, 68, 91, 40, 148, 84, 85, 102, 154, 64, 82, 109, 145, 80, 91, 108, 207, 23, 15, 56, 197, 7]);
+        $this->expectStreamRead(
+            26,
+            [246, 223, 125, 100, 154, 68, 91, 40, 148, 84, 85, 102, 154, 64, 82, 109, 145, 80, 91, 108, 207,
+            23, 15, 56, 197, 7]
+        );
         $this->expectStreamClose();
         $this->expectStreamMetadata();
         $this->expectStreamResourceType();
@@ -114,7 +121,10 @@ class ServerTest extends TestCase
         $this->expectServerHandshake();
         $this->expectStreamRead(2, [129, 147]);
         $this->expectStreamRead(4, [33, 111, 149, 174]);
-        $this->expectStreamRead(19, [115, 10, 246, 203, 72, 25, 252, 192, 70, 79, 244, 142, 76, 10, 230, 221, 64, 8, 240]);
+        $this->expectStreamRead(
+            19,
+            [115, 10, 246, 203, 72, 25, 252, 192, 70, 79, 244, 142, 76, 10, 230, 221, 64, 8, 240]
+        );
         $message = $server->receive();
 
         $this->expectStreamDestruct();
@@ -279,7 +289,10 @@ class ServerTest extends TestCase
         $this->expectStreamWrite(13);
         $this->expectStreamRead(2, [129, 147]);
         $this->expectStreamRead(4, [33, 111, 149, 174]);
-        $this->expectStreamRead(19, [115, 10, 246, 203, 72, 25, 252, 192, 70, 79, 244, 142, 76, 10, 230, 221, 64, 8, 240]);
+        $this->expectStreamRead(
+            19,
+            [115, 10, 246, 203, 72, 25, 252, 192, 70, 79, 244, 142, 76, 10, 230, 221, 64, 8, 240]
+        );
         $message = $server->receive();
 
         $this->assertEquals('Receiving a message', $message);

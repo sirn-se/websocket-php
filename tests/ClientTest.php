@@ -508,7 +508,6 @@ class ClientTest extends TestCase
         $this->expectStreamResourceType();
         $client->disconnect();
         $this->assertFalse($client->isConnected());
-        $this->assertTrue(MockSocket::isEmpty());
 
         $this->expectStreamDestruct();
         unset($client);

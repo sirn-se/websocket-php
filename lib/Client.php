@@ -346,6 +346,8 @@ class Client implements LoggerAwareInterface
                 is_resource($this->options['context'])
                 && get_resource_type($this->options['context']) === 'stream-context'
             ) {
+                $context = stream_context_get_options($this->options['context']);
+            } elseif (is_array($this->options['context'])) {
                 $context = $this->options['context'];
             } else {
                 $error = "Stream context in \$options['context'] isn't a valid context.";
@@ -353,7 +355,7 @@ class Client implements LoggerAwareInterface
                 throw new \InvalidArgumentException($error);
             }
         } else {
-            $context = stream_context_create();
+            $context = [];
         }
 
         $persistent = $this->options['persistent'] === true;

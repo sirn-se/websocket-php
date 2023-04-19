@@ -247,6 +247,11 @@ trait MockStreamTrait
             $this->assertCount(0, $params);
             return ['tcp', 'ssl'];
         };
+        $this->stack[] = function (string $method, array $params, callable $default): array {
+            $this->assertEquals('SocketServer.getMetadata', $method);
+            $this->assertCount(0, $params);
+            return $default($params);
+        };
     }
 
 
@@ -334,10 +339,18 @@ trait MockStreamTrait
             $this->expectStreamTimeout($timeout);
         }
         $this->expectStreamRemoteName('localhost:8000');
-        $this->expectStreamReadLine(1024, "GET /my/mock/path HTTP/1.1\r\nHost: localhost:8000\r\nUser-Agent: websocket-client-php\r\nConnection: Upgrade"
-                . "\r\nUpgrade: websocket\r\nSec-WebSocket-Key: cktLWXhUdDQ2OXF0ZCFqOQ==\r\nSec-WebSocket-Version: 13"
-                . "\r\n\r\n");
-        $this->expectStreamWrite("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: YmysboNHNoWzWVeQpduY7xELjgU=\r\n\r\n", 129);
+        $this->expectStreamReadLine(
+            1024,
+            "GET /my/mock/path HTTP/1.1\r\nHost: localhost:8000\r\nUser-Agent: websocket-client-php\r\n"
+            . "Connection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Key: cktLWXhUdDQ2OXF0ZCFqOQ==\r\n"
+            . "Sec-WebSocket-Version: 13"
+            . "\r\n\r\n"
+        );
+        $this->expectStreamWrite(
+            "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+            . "Sec-WebSocket-Accept: YmysboNHNoWzWVeQpduY7xELjgU=\r\n\r\n",
+            129
+        );
     }
 
     private function expectStreamDestruct(): void
