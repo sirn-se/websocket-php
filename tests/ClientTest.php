@@ -221,12 +221,12 @@ class ClientTest extends TestCase
         $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path', [
             'origin' => 'Origin header',
-            'headers' => ['Generic header' => 'Generic content'],
+            'headers' => ['Generic-header' => 'Generic content'],
         ]);
         $client->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
 
         $this->expectSocketClient();
-        $this->expectClientHandshake(headers: "origin: Origin header\r\nGeneric header: Generic content\r\n");
+        $this->expectClientHandshake(headers: "origin: Origin header\r\nGeneric-header: Generic content\r\n");
         $this->expectStreamWrite();
         $client->send('Connect');
 
@@ -622,7 +622,10 @@ class ClientTest extends TestCase
         $this->expectStreamResourceType();
         $this->expectStreamTimeout(5);
         $this->expectStreamWrite();
-        $this->expectStreamReadLine(null, "Invalid upgrade\r\n\r\n");
+        $this->expectStreamReadLine(
+            null,
+            "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nInvalid upgrade\r\n\r\n"
+        );
         $this->expectStreamClose();
         $this->expectStreamMetadata();
         $this->expectException('WebSocket\ConnectionException');

@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Copyright (C) 2014-2022 Textalk/Abicart and contributors.
+ * Copyright (C) 2014-2023 Textalk/Abicart and contributors.
  *
  * This file is part of Websocket PHP and is free software under the ISC License.
- * License text: https://raw.githubusercontent.com/Textalk/websocket-php/master/COPYING
+ * License text: https://raw.githubusercontent.com/sirn-se/websocket-php/master/COPYING.md
  */
 
 namespace WebSocket;
@@ -22,6 +22,7 @@ use Psr\Log\{
     NullLogger
 };
 use WebSocket\Message\Factory;
+use WebSocket\Message\Message;
 
 class Client implements LoggerAwareInterface
 {
@@ -31,14 +32,14 @@ class Client implements LoggerAwareInterface
     // Default options
     protected static $default_options = [
         'context'       => null,
-        'filter'        => ['text', 'binary'],
+        'filter'        => ['text', 'binary'], // @deprecated
         'fragment_size' => 4096,
-        'headers'       => null,
+        'headers'       => [],
         'logger'        => null,
         'masked'        => true,
         'origin'        => null, // @deprecated
         'persistent'    => false,
-        'return_obj'    => false,
+        'return_obj'    => false, // @deprecated
         'timeout'       => 5,
     ];
 
@@ -48,6 +49,8 @@ class Client implements LoggerAwareInterface
     private $listen = false;
     private $last_opcode = null;
     private $stream_factory;
+    private $message_factory;
+    private $handshake_response;
 
 
     /* ---------- Magic methods ------------------------------------------------------ */
@@ -64,11 +67,10 @@ class Client implements LoggerAwareInterface
     public function __construct($uri, array $options = [])
     {
         $this->socket_uri = $this->parseUri($uri);
-        $this->options = array_merge(self::$default_options, [
-            'logger' => new NullLogger(),
-        ], $options);
-        $this->setLogger($this->options['logger']);
+        $this->options = array_merge(self::$default_options, $options);
+        $this->setLogger($this->options['logger'] ?: new NullLogger());
         $this->setStreamFactory(new StreamFactory());
+        $this->message_factory = new Factory();
     }
 
     /**
@@ -171,25 +173,27 @@ class Client implements LoggerAwareInterface
 
     /**
      * Send message.
-     * @param string $payload Message to send.
+     * @param Message|string $payload Message to send, as Meessage instance or string.
      * @param string $opcode Opcode to use, default: 'text'.
      * @param bool $masked If message should be masked default: true.
      */
-    public function send(string $payload, string $opcode = 'text', ?bool $masked = null): void
+    public function send($payload, string $opcode = 'text', ?bool $masked = null): void
     {
         $masked = is_null($masked) ? true : $masked;
         if (!$this->isConnected()) {
             $this->connect();
         }
-
+        if ($payload instanceof Message) {
+            $this->connection->pushMessage($payload, $masked);
+            return;
+        }
         if (!in_array($opcode, array_keys(self::$opcodes))) {
             $warning = "Bad opcode '{$opcode}'.  Try 'text' or 'binary'.";
             $this->logger->warning($warning);
             throw new BadOpcodeException($warning);
         }
 
-        $factory = new Factory();
-        $message = $factory->create($opcode, $payload);
+        $message = $this->message_factory->create($opcode, $payload);
         $this->connection->pushMessage($message, $masked);
     }
 
@@ -204,6 +208,61 @@ class Client implements LoggerAwareInterface
             return;
         }
         $this->connection->close($status, $message);
+    }
+
+    /**
+     * Connect to server and perform upgrade.
+     * @throws ConnectionException On failed connection
+     */
+    public function connect(): void
+    {
+        $this->connection = null;
+
+        $host_uri = (new Uri())
+            ->withScheme($this->socket_uri->getScheme() == 'wss' ? 'ssl' : 'tcp')
+            ->withHost($this->socket_uri->getHost(Uri::IDNA))
+            ->withPort($this->socket_uri->getPort(Uri::REQUIRE_PORT));
+
+        $http_uri = (new Uri())
+            ->withPath($this->socket_uri->getPath(), Uri::ABSOLUTE_PATH)
+            ->withQuery($this->socket_uri->getQuery());
+
+        $context = $this->parseContext();
+        $persistent = $this->options['persistent'] === true;
+        $stream = null;
+
+        try {
+            $client = $this->stream_factory->createSocketClient($host_uri);
+            $client->setPersistent($persistent);
+            $client->setTimeout($this->options['timeout']);
+            $client->setContext($context);
+            $stream = $client->connect();
+
+            if (!$stream) {
+                throw new \RuntimeException('No socket');
+            }
+        } catch (\RuntimeException $e) {
+            $error = "Could not open socket to \"{$host_uri}\": {$e->getMessage()} ({$e->getCode()}).";
+            $this->logger->error($error, []);
+            throw new ConnectionException($error, 0, [], $e);
+        }
+
+        $this->connection = new Connection($stream, $this->options);
+        $this->connection->setLogger($this->logger);
+        if (!$this->isConnected()) {
+            $error = "Invalid stream on \"{$host_uri}\".";
+            $this->logger->error($error);
+            throw new ConnectionException($error);
+        }
+
+        if (!$persistent || $this->connection->tell() == 0) {
+            // Set timeout on the stream as well.
+            $this->connection->setTimeout($this->options['timeout']);
+
+            $this->handshake_response = $this->performHandshake($host_uri, $http_uri);
+        }
+
+        $this->logger->info("Client connected to {$this->socket_uri}");
     }
 
     /**
@@ -259,6 +318,15 @@ class Client implements LoggerAwareInterface
     }
 
     /**
+     * Get last received opcode.
+     * @return string|null Opcode.
+     */
+    public function getHandshakeResponse(): ?\WebSocket\Http\Response
+    {
+        return $this->connection ? $this->handshake_response : null;
+    }
+
+    /**
      * Get close status on connection.
      * @return int|null Close status.
      */
@@ -311,170 +379,83 @@ class Client implements LoggerAwareInterface
 
     /* ---------- Helper functions --------------------------------------------------- */
 
-
-
-
     /**
-     * Perform WebSocket handshake
+     * Perform upgrade handshake on new connections.
+     * @throws ConnectionException On failed handshake
      */
-    protected function connect(): void
+    protected function performHandshake($host_uri, $http_uri): \WebSocket\Http\Response
     {
-        $this->connection = null;
+        // Generate the WebSocket key.
+        $key = $this->generateKey();
 
-        $host_uri = $this->socket_uri
-            ->withScheme($this->socket_uri->getScheme() == 'wss' ? 'ssl' : 'tcp')
-            ->withPort($this->socket_uri->getPort() ?? ($this->socket_uri->getScheme() == 'wss' ? 443 : 80))
-            ->withPath('')
-            ->withQuery('')
-            ->withFragment('')
-            ->withUserInfo('');
+        $request = new \WebSocket\Http\Request('GET', $http_uri);
+        $response = new \WebSocket\Http\Response();
 
-        // Path must be absolute
-        $http_path = $this->socket_uri->getPath();
-        if ($http_path === '' || $http_path[0] !== '/') {
-            $http_path = "/{$http_path}";
+        $request = $request
+            ->withHeader('Host', $host_uri->getAuthority())
+            ->withHeader('User-Agent', 'websocket-client-php')
+            ->withHeader('Connection', 'Upgrade')
+            ->withHeader('Upgrade', 'websocket')
+            ->withHeader('Sec-WebSocket-Key', $key)
+            ->withHeader('Sec-WebSocket-Version', '13');
+
+        // Handle basic authentication.
+        if ($userinfo = $this->socket_uri->getUserInfo()) {
+            $request = $request->withHeader('authorization', 'Basic ' . base64_encode($userinfo));
         }
 
-        $http_uri = (new Uri())
-            ->withPath($http_path)
-            ->withQuery($this->socket_uri->getQuery());
-
-        // Set the stream context options if they're already set in the config
-        if (isset($this->options['context'])) {
-            // Suppress the error since we'll catch it below
-            if (
-                is_resource($this->options['context'])
-                && get_resource_type($this->options['context']) === 'stream-context'
-            ) {
-                $context = stream_context_get_options($this->options['context']);
-            } elseif (is_array($this->options['context'])) {
-                $context = $this->options['context'];
-            } else {
-                $error = "Stream context in \$options['context'] isn't a valid context.";
-                $this->logger->error($error);
-                throw new \InvalidArgumentException($error);
-            }
-        } else {
-            $context = [];
+        // Deprecated way of adding origin (use headers instead).
+        if (isset($this->options['origin'])) {
+            $request = $request->withHeader('origin', $this->options['origin']);
         }
 
-        $persistent = $this->options['persistent'] === true;
-        $flags = STREAM_CLIENT_CONNECT;
-        $flags = $persistent ? $flags | STREAM_CLIENT_PERSISTENT : $flags;
-        $stream = null;
+        // Add and override with headers from options.
+        foreach ($this->options['headers'] as $name => $content) {
+            $request = $request->withHeader($name, $content);
+        }
 
         try {
-            $client = $this->stream_factory->createSocketClient($host_uri);
-            $client->setPersistent($persistent);
-            $client->setTimeout($this->options['timeout']);
-            $client->setContext($context);
-            $stream = $client->connect();
-
-            if (!$stream) {
-                throw new \RuntimeException('No socket');
-            }
+            $this->connection->pushHttp($request);
+            $response = $this->connection->pullHttp($response);
         } catch (\RuntimeException $e) {
-            $error = "Could not open socket to \"{$host_uri}\": {$e->getMessage()} ({$e->getCode()}).";
-            $this->logger->error($error, []);
-            throw new ConnectionException($error, 0, [], $e);
+            $error = 'Client handshake error';
+            $this->logger->error($error);
+            throw new ConnectionException($error, $e->getCode());
         }
 
-        $this->connection = new Connection($stream, $this->options);
-        $this->connection->setLogger($this->logger);
-        if (!$this->isConnected()) {
-            $error = "Invalid stream on \"{$host_uri}\".";
+        if ($response->getStatusCode() != 101) {
+            $error = "Invalid status code {$response->getStatusCode()}.";
             $this->logger->error($error);
             throw new ConnectionException($error);
         }
 
-        if (!$persistent || $this->connection->tell() == 0) {
-            // Set timeout on the stream as well.
-            $this->connection->setTimeout($this->options['timeout']);
-
-            // Generate the WebSocket key.
-            $key = self::generateKey();
-
-            // Default headers
-            $headers = [
-                'Host'                  => $host_uri->getAuthority(),
-                'User-Agent'            => 'websocket-client-php',
-                'Connection'            => 'Upgrade',
-                'Upgrade'               => 'websocket',
-                'Sec-WebSocket-Key'     => $key,
-                'Sec-WebSocket-Version' => '13',
-            ];
-
-            // Handle basic authentication.
-            if ($userinfo = $this->socket_uri->getUserInfo()) {
-                $headers['authorization'] = 'Basic ' . base64_encode($userinfo);
-            }
-
-            // Deprecated way of adding origin (use headers instead).
-            if (isset($this->options['origin'])) {
-                $headers['origin'] = $this->options['origin'];
-            }
-
-            // Add and override with headers from options.
-            if (isset($this->options['headers'])) {
-                $headers = array_merge($headers, $this->options['headers']);
-            }
-
-            $header = "GET {$http_uri} HTTP/1.1\r\n" . implode(
-                "\r\n",
-                array_map(
-                    function ($key, $value) {
-                        return "$key: $value";
-                    },
-                    array_keys($headers),
-                    $headers
-                )
-            ) . "\r\n\r\n";
-
-            // Send headers.
-            $this->connection->write($header);
-
-            // Get server response header (terminated with double CR+LF).
-            $response = '';
-            try {
-                do {
-                    $buffer = $this->connection->readLine(1024);
-                    $response .= $buffer;
-                } while (substr_count($response, "\r\n\r\n") == 0);
-            } catch (\RuntimeException $e) {
-                throw new ConnectionException('Client handshake error', $e->getCode());
-            }
-
-            // Validate response.
-            if (!preg_match('#Sec-WebSocket-Accept:\s(.*)$#mUi', $response, $matches)) {
-                $error = sprintf(
-                    "Connection to '%s' failed: Server sent invalid upgrade response: %s",
-                    (string)$this->socket_uri,
-                    (string)$response
-                );
-                $this->logger->error($error);
-                throw new ConnectionException($error);
-            }
-
-            $keyAccept = trim($matches[1]);
-            $expectedResonse = base64_encode(
-                pack('H*', sha1($key . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'))
+        if (empty($response->getHeaderLine('Sec-WebSocket-Accept'))) {
+            $error = sprintf(
+                "Connection to '%s' failed: Server sent invalid upgrade response.",
+                (string)$this->socket_uri
             );
-
-            if ($keyAccept !== $expectedResonse) {
-                $error = 'Server sent bad upgrade response.';
-                $this->logger->error($error);
-                throw new ConnectionException($error);
-            }
+            $this->logger->error($error);
+            throw new ConnectionException($error);
         }
 
-        $this->logger->info("Client connected to {$this->socket_uri}");
+        $response_key = trim($response->getHeaderLine('Sec-WebSocket-Accept'));
+        $expected_key = base64_encode(
+            pack('H*', sha1($key . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'))
+        );
+
+        if ($response_key !== $expected_key) {
+            $error = 'Server sent bad upgrade response.';
+            $this->logger->error($error);
+            throw new ConnectionException($error);
+        }
+        return $response;
     }
 
     /**
      * Generate a random string for WebSocket key.
      * @return string Random string
      */
-    protected static function generateKey(): string
+    protected function generateKey(): string
     {
         $key = '';
         for ($i = 0; $i < 16; $i++) {
@@ -483,22 +464,57 @@ class Client implements LoggerAwareInterface
         return base64_encode($key);
     }
 
+    /**
+     * Ensure URI insatnce to use in client.
+     * @param UriInterface|string $uri A ws/wss-URI
+     * @return Uri
+     * @throws BadUriException On invalid URI
+     */
     protected function parseUri($uri): UriInterface
     {
-        if ($uri instanceof UriInterface) {
-            $uri = $uri;
+        if ($uri instanceof Uri) {
+            $uri_instance = $uri;
+        } elseif ($uri instanceof UriInterface) {
+            $uri_instance = new Uri("{$uri}");
         } elseif (is_string($uri)) {
             try {
-                $uri = new Uri($uri);
+                $uri_instance = new Uri($uri);
             } catch (InvalidArgumentException $e) {
-                throw new BadUriException("Invalid URI '{$uri}' provided.", 0, $e);
+                throw new BadUriException("Invalid URI '{$uri}' provided.");
             }
         } else {
             throw new BadUriException("Provided URI must be a UriInterface or string.");
         }
-        if (!in_array($uri->getScheme(), ['ws', 'wss'])) {
+        if (!in_array($uri_instance->getScheme(), ['ws', 'wss'])) {
             throw new BadUriException("Invalid URI scheme, must be 'ws' or 'wss'.");
         }
-        return $uri;
+        if (!$uri_instance->getHost()) {
+            throw new BadUriException("Invalid URI host.");
+        }
+        return $uri_instance;
+    }
+
+    /**
+     * Ensure context in correct format.
+     * @return array
+     * @throws InvalidArgumentException On invalid context
+     */
+    protected function parseContext(): array
+    {
+        if (empty($this->options['context'])) {
+            return [];
+        }
+        if (is_array($this->options['context'])) {
+            return $this->options['context'];
+        }
+        if (
+            is_resource($this->options['context'])
+            && get_resource_type($this->options['context']) === 'stream-context'
+        ) {
+            return stream_context_get_options($this->options['context']);
+        }
+        $error = "Stream context in \$options['context'] isn't a valid context.";
+        $this->logger->error($error);
+        throw new \InvalidArgumentException($error);
     }
 }

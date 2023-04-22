@@ -395,6 +395,21 @@ class Connection implements LoggerAwareInterface
     }
 
 
+    public function pushHttp(\WebSocket\Http\Message $message): void
+    {
+        $this->stream->write($message->render());
+    }
+
+    public function pullHttp(\WebSocket\Http\Message $message): \WebSocket\Http\Message
+    {
+        $response = '';
+        do {
+            $buffer = $this->stream->readLine(1024);
+            $response .= $buffer;
+        } while (substr_count($response, "\r\n\r\n") == 0);
+        return $message->parse($response);
+    }
+
     /* ---------- Stream option methods ---------------------------------------------- */
 
     /**
