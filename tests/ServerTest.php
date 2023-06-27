@@ -12,12 +12,23 @@ namespace WebSocket;
 use ErrorException;
 use Phrity\Net\Mock\Mock;
 use Phrity\Net\Uri;
+use Phrity\Net\StreamException;
 use Phrity\Util\ErrorHandler;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use Phrity\Net\Mock\Stack\{
+    ExpectSocketServerTrait,
+    ExpectSocketStreamTrait,
+    ExpectStreamFactoryTrait,
+    StackItem
+};
+use Phrity\Net\Mock\StreamFactory;
 
 class ServerTest extends TestCase
 {
+    use ExpectSocketServerTrait;
+    use ExpectSocketStreamTrait;
+    use ExpectStreamFactoryTrait;
     use MockStreamTrait;
 
     public function setUp(): void
@@ -35,23 +46,31 @@ class ServerTest extends TestCase
     {
         $this->expectStreamFactory();
         $server = new Server();
-        $server->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+        $server->setStreamFactory(new StreamFactory());
 
         $this->assertFalse($server->isConnected());
         $this->assertEquals(null, $server->getLastOpcode());
         $this->assertEquals(4096, $server->getFragmentSize());
 
+        $this->expectStreamFactoryCreateSockerServer();
         $this->expectSocketServer();
+        $this->expectSocketServerGetTransports();
+        $this->expectSocketServerGetMetadata();
         $server->accept();
 
-        $this->expectServerHandshake();
-        $this->expectStreamWrite(null, 9);
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectWsServerPerformHandshake();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(9, strlen($params[0]));
+        });
         $server->send('Connect');
 
         $this->assertEquals(8000, $server->getPort());
         $this->assertEquals('/my/mock/path', $server->getPath());
 
-        $this->expectStreamResourceType();
+        $this->expectSocketStreamIsConnected();
         $this->assertTrue($server->isConnected());
         $this->assertEquals(4096, $server->getFragmentSize());
         $this->assertNull($server->getCloseStatus());
@@ -67,84 +86,91 @@ class ServerTest extends TestCase
         $this->assertEquals('websocket-client-php', $server->getHeader('USER-AGENT'));
         $this->assertNull($server->getHeader('no such header'));
 
-        $this->expectStreamResourceType();
-        $this->expectStreamWrite(null, 19);
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(19, strlen($params[0]));
+        });
         $server->send('Sending a message');
 
-        $this->expectStreamResourceType();
-        $this->expectStreamRead(2, [129, 147]);
-        $this->expectStreamRead(4, [33, 111, 149, 174]);
-        $this->expectStreamRead(
-            19,
-            [115, 10, 246, 203, 72, 25, 252, 192, 70, 79, 244, 142, 76, 10, 230, 221, 64, 8, 240]
-        );
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('gZM=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('IW+Vrg==');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(19, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('cwr2y0gZ/MBGT/SOTArm3UAI8A==');
+        });
         $message = $server->receive();
+
         $this->assertEquals('Receiving a message', $message);
         $this->assertNull($server->getCloseStatus());
         $this->assertEquals('text', $server->getLastOpcode());
 
-        $this->expectStreamResourceType();
-        $this->expectStreamWrite(null, 8);
-        $this->expectStreamRead(2, [136, 154]);
-        $this->expectStreamRead(4, [245, 55, 62, 8]);
-        $this->expectStreamRead(
-            26,
-            [246, 223, 125, 100, 154, 68, 91, 40, 148, 84, 85, 102, 154, 64, 82, 109, 145, 80, 91, 108, 207,
-            23, 15, 56, 197, 7]
-        );
-        $this->expectStreamClose();
-        $this->expectStreamMetadata();
-        $this->expectStreamResourceType();
-
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(8, strlen($params[0]));
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('iJo=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('9Tc+CA==');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(26, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('9t99ZJpEWyiUVFVmmkBSbZFQW2zPFw84xQc=');
+        });
+        $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
         $server->close();
 
-        $this->expectStreamResourceType();
+        $this->expectSocketStreamIsConnected();
         $this->assertFalse($server->isConnected());
         $this->assertEquals(1000, $server->getCloseStatus());
 
-        $this->expectStreamResourceType();
+        $this->expectSocketStreamIsConnected();
         $server->close(); // Already closed
-
-        $this->expectStreamDestruct();
-        unset($server);
-    }
-
-    public function testDestruct(): void
-    {
-        $this->expectStreamFactory();
-        $server = new Server();
-        $server->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
-
-        $this->expectSocketServer();
-        $server->accept();
-
-        $this->expectServerHandshake();
-        $this->expectStreamRead(2, [129, 147]);
-        $this->expectStreamRead(4, [33, 111, 149, 174]);
-        $this->expectStreamRead(
-            19,
-            [115, 10, 246, 203, 72, 25, 252, 192, 70, 79, 244, 142, 76, 10, 230, 221, 64, 8, 240]
-        );
-        $message = $server->receive();
-
-        $this->expectStreamDestruct();
-        unset($server);
     }
 
     public function testServerWithTimeout(): void
     {
         $this->expectStreamFactory();
         $server = new Server(['timeout' => 300]);
-        $server->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+        $server->setStreamFactory(new StreamFactory());
 
+        $this->expectStreamFactoryCreateSockerServer();
         $this->expectSocketServer();
+        $this->expectSocketServerGetTransports();
+        $this->expectSocketServerGetMetadata();
         $server->accept();
 
-        $this->expectServerHandshake(timeout: 300);
-        $this->expectStreamWrite(null, 9);
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamSetTimeout()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(300, $params[0]);
+        });
+        $this->expectWsServerPerformHandshake();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(9, strlen($params[0]));
+        });
         $server->send('Connect');
 
-        $this->expectStreamDestruct();
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
         unset($server);
     }
 
@@ -152,31 +178,52 @@ class ServerTest extends TestCase
     {
         $this->expectStreamFactory();
         $server = new Server();
-        $server->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+        $server->setStreamFactory(new StreamFactory());
         $server->setFragmentSize(65540);
 
+        $this->expectStreamFactoryCreateSockerServer();
         $this->expectSocketServer();
+        $this->expectSocketServerGetTransports();
+        $this->expectSocketServerGetMetadata();
         $server->accept();
 
-        $this->expectServerHandshake();
-        $this->expectStreamWrite(null, 9);
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectWsServerPerformHandshake();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(9, strlen($params[0]));
+        });
         $server->send('Connect');
 
         $payload = file_get_contents(__DIR__ . '/mock/payload.128.txt');
 
-        $this->expectStreamResourceType();
-        $this->expectStreamWrite(136);
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(132, strlen($params[0]));
+        });
         $server->send($payload, 'text');
 
-        $this->expectStreamResourceType();
-        $this->expectStreamRead(2, [129, 126]);
-        $this->expectStreamRead(2, [0, 128]);
-        $this->expectStreamRead(128, substr($payload, 0, 132));
-
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('gX4=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('AIA=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(128, $params[0]);
+        })->setReturn(function () use ($payload) {
+            return $payload;
+        });
         $message = $server->receive();
-        $this->assertEquals($payload, $message);
 
-        $this->expectStreamDestruct();
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
         unset($server);
     }
 
@@ -184,38 +231,89 @@ class ServerTest extends TestCase
     {
         $this->expectStreamFactory();
         $server = new Server();
-        $server->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+        $server->setStreamFactory(new StreamFactory());
         $server->setFragmentSize(65540);
 
+        $this->expectStreamFactoryCreateSockerServer();
         $this->expectSocketServer();
+        $this->expectSocketServerGetTransports();
+        $this->expectSocketServerGetMetadata();
         $server->accept();
 
-        $this->expectServerHandshake();
-        $this->expectStreamWrite(null, 9);
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectWsServerPerformHandshake();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(9, strlen($params[0]));
+        });
         $server->send('Connect');
 
         $payload = file_get_contents(__DIR__ . '/mock/payload.65536.txt');
 
-        $this->expectStreamResourceType();
-        $this->expectStreamWrite(65550);
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(65546, strlen($params[0]));
+        });
         $server->send($payload, 'text');
 
-        $this->expectStreamResourceType();
-        $this->expectStreamRead(2, [129, 127]);
-        $this->expectStreamRead(8, [0, 0, 0, 0, 0, 1, 0, 0]);
-        $this->expectStreamRead(65536, substr($payload, 0, 16374));
-        $this->expectStreamRead(49162, substr($payload, 16374, 8192));
-        $this->expectStreamRead(40970, substr($payload, 24566, 8192));
-        $this->expectStreamRead(32778, substr($payload, 32758, 8192));
-        $this->expectStreamRead(24586, substr($payload, 40950, 8192));
-        $this->expectStreamRead(16394, substr($payload, 49142, 8192));
-        $this->expectStreamRead(8202, substr($payload, 57334, 8192));
-        $this->expectStreamRead(10, substr($payload, 65526, 10));
-
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('gX8=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(8, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('AAAAAAABAAA=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(65536, $params[0]);
+        })->setReturn(function () use ($payload) {
+            return substr($payload, 0, 16374);
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(49162, $params[0]);
+        })->setReturn(function () use ($payload) {
+            return substr($payload, 16374, 8192);
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(40970, $params[0]);
+        })->setReturn(function () use ($payload) {
+            return substr($payload, 24566, 8192);
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(32778, $params[0]);
+        })->setReturn(function () use ($payload) {
+            return substr($payload, 32758, 8192);
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(24586, $params[0]);
+        })->setReturn(function () use ($payload) {
+            return substr($payload, 40950, 8192);
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(16394, $params[0]);
+        })->setReturn(function () use ($payload) {
+            return substr($payload, 49142, 8192);
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(8202, $params[0]);
+        })->setReturn(function () use ($payload) {
+            return substr($payload, 57334, 8192);
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(10, $params[0]);
+        })->setReturn(function () use ($payload) {
+            return substr($payload, 65526, 10);
+        });
         $message = $server->receive();
+
         $this->assertEquals($payload, $message);
 
-        $this->expectStreamDestruct();
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
         unset($server);
     }
 
@@ -223,36 +321,88 @@ class ServerTest extends TestCase
     {
         $this->expectStreamFactory();
         $server = new Server();
-        $server->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+        $server->setStreamFactory(new StreamFactory());
 
+        $this->expectStreamFactoryCreateSockerServer();
         $this->expectSocketServer();
+        $this->expectSocketServerGetTransports();
+        $this->expectSocketServerGetMetadata();
         $server->accept();
 
-        $this->expectServerHandshake();
-        $this->expectStreamWrite(null, 9);
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectWsServerPerformHandshake();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(9, strlen($params[0]));
+        });
         $server->send('Connect');
 
-        $this->expectStreamResourceType();
-        $this->expectStreamWrite(10);
-        $this->expectStreamWrite(10);
-        $this->expectStreamWrite(5);
         $server->setFragmentSize(8);
+
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(10, strlen($params[0]));
+        });
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(10, strlen($params[0]));
+        });
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(5, strlen($params[0]));
+        });
         $server->send('Multi fragment test');
 
-        $this->expectStreamResourceType();
-        $this->expectStreamRead(2, [1, 136]);
-        $this->expectStreamRead(4, [105, 29, 187, 18]);
-        $this->expectStreamRead(8, [36, 104, 215, 102, 0, 61, 221, 96]);
-        $this->expectStreamRead(2, [0, 136]);
-        $this->expectStreamRead(4, [221, 240, 46, 69]);
-        $this->expectStreamRead(8, [188, 151, 67, 32, 179, 132, 14, 49]);
-        $this->expectStreamRead(2, [128, 131]);
-        $this->expectStreamRead(4, [9, 60, 117, 193]);
-        $this->expectStreamRead(3, [108, 79, 1]);
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('AYg=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('aR27Eg=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(8, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('JGjXZgA93WA=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('AIg=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('3fAuRQ==');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(8, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('vJdDILOEDjE=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('gIM=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('CTx1wQ==');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(3, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('bE8B');
+        });
         $message = $server->receive();
         $this->assertEquals('Multi fragment test', $message);
 
-        $this->expectStreamDestruct();
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
         unset($server);
     }
 
@@ -260,45 +410,101 @@ class ServerTest extends TestCase
     {
         $this->expectStreamFactory();
         $server = new Server();
-        $server->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+        $server->setStreamFactory(new StreamFactory());
 
+        $this->expectStreamFactoryCreateSockerServer();
         $this->expectSocketServer();
+        $this->expectSocketServerGetTransports();
+        $this->expectSocketServerGetMetadata();
         $server->accept();
 
-        $this->expectServerHandshake();
-        $this->expectStreamWrite(null, 9);
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectWsServerPerformHandshake();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(9, strlen($params[0]));
+        });
         $server->send('Connect');
 
-        $this->expectStreamResourceType();
-        $this->expectStreamWrite(13);
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(13, strlen($params[0]));
+        });
         $server->send('Server ping', 'ping');
 
-        $this->expectStreamResourceType();
-        $this->expectStreamWrite(2);
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(2, strlen($params[0]));
+        });
         $server->send('', 'ping');
 
-        $this->expectStreamResourceType();
-        $this->expectStreamRead(2, [138, 139]);
-        $this->expectStreamRead(4, [1, 1, 1, 1]);
-        $this->expectStreamRead(11, [82, 100, 115, 119, 100, 115, 33, 113, 104, 111, 102]);
-        $this->expectStreamRead(2, [138, 128]);
-        $this->expectStreamRead(4, [1, 1, 1, 1]);
-        $this->expectStreamRead(2, [137, 139]);
-        $this->expectStreamRead(4, [180, 77, 192, 201]);
-        $this->expectStreamRead(11, [247, 33, 169, 172, 218, 57, 224, 185, 221, 35, 167]);
-        $this->expectStreamWrite(13);
-        $this->expectStreamRead(2, [129, 147]);
-        $this->expectStreamRead(4, [33, 111, 149, 174]);
-        $this->expectStreamRead(
-            19,
-            [115, 10, 246, 203, 72, 25, 252, 192, 70, 79, 244, 142, 76, 10, 230, 221, 64, 8, 240]
-        );
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('ios=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('AQEBAQ==');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(11, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('UmRzd2RzIXFob2Y=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('ioA=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('AQEBAQ==');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('iYs=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('tE3AyQ==');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(11, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('9yGprNo54LndI6c=');
+        });
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(13, strlen($params[0]));
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('gZM=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('IW+Vrg==');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(19, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('cwr2y0gZ/MBGT/SOTArm3UAI8A==');
+        });
         $message = $server->receive();
 
         $this->assertEquals('Receiving a message', $message);
         $this->assertEquals('text', $server->getLastOpcode());
 
-        $this->expectStreamDestruct();
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
         unset($server);
     }
 
@@ -306,31 +512,47 @@ class ServerTest extends TestCase
     {
         $this->expectStreamFactory();
         $server = new Server();
-        $server->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+        $server->setStreamFactory(new StreamFactory());
 
+        $this->expectStreamFactoryCreateSockerServer();
         $this->expectSocketServer();
+        $this->expectSocketServerGetTransports();
+        $this->expectSocketServerGetMetadata();
         $server->accept();
 
-        $this->expectServerHandshake();
-        $this->expectStreamWrite(null, 9);
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectWsServerPerformHandshake();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(9, strlen($params[0]));
+        });
         $server->send('Connect');
 
-        $this->expectStreamResourceType();
-        $this->expectStreamRead(2, [136, 137]);
-        $this->expectStreamRead(4, [54, 79, 233, 244]);
-        $this->expectStreamRead(9, [117, 35, 170, 152, 89, 60, 128, 154, 81]);
-        $this->expectStreamWrite(29);
-        $this->expectStreamClose();
-        $this->expectStreamMetadata();
-        $this->expectStreamResourceType();
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('iIk=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('Nk/p9A==');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(9, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('dSOqmFk8gJpR');
+        });
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(29, strlen($params[0]));
+        });
+
+        $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
         $message = $server->receive();
 
-        $this->expectStreamResourceType();
-        $this->assertFalse($server->isConnected());
-        $this->assertEquals(17260, $server->getCloseStatus());
-        $this->assertNull($server->getLastOpcode());
-
-        $this->expectStreamDestruct();
         unset($server);
     }
 
@@ -338,20 +560,29 @@ class ServerTest extends TestCase
     {
         $this->expectStreamFactory();
         $server = new Server();
-        $server->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+        $server->setStreamFactory(new StreamFactory());
 
+        $this->expectStreamFactoryCreateSockerServer();
         $this->expectSocketServer();
+        $this->expectSocketServerGetTransports();
+        $this->expectSocketServerGetMetadata();
         $server->accept();
 
-        $this->expectServerHandshake();
-        $this->expectStreamWrite(null, 9);
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectWsServerPerformHandshake();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(9, strlen($params[0]));
+        });
         $server->send('Connect');
 
-        $this->expectStreamResourceType();
-        $this->expectStreamTimeout(300);
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamSetTimeout(300);
         $server->setTimeout(300);
 
-        $this->expectStreamDestruct();
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
         unset($server);
     }
 
@@ -359,18 +590,29 @@ class ServerTest extends TestCase
     {
         $this->expectStreamFactory();
         $server = new Server(['port' => 9999]);
-        $server->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+        $server->setStreamFactory(new StreamFactory());
 
-        $this->expectFactoryCreateSockerServer(9999);
-        $this->expectSockerServerConstruct(9999, new RuntimeException("Could not create socket for 'test'."));
-        $this->expectFactoryCreateSockerServer(10000);
-        $this->expectSockerServerConstruct(10000, new RuntimeException("Could not create socket for 'test'."));
+        $this->expectStreamFactoryCreateSockerServer()->addAssert(function ($method, $params) {
+            $this->assertEquals(9999, $params[0]->getPort());
+        });
+        $this->expectSocketServer()->addAssert(function ($method, $params) {
+            $this->assertEquals(9999, $params[0]->getPort());
+        })->setReturn(function ($params) {
+            throw new StreamException(StreamException::SERVER_SOCKET_ERR, ['uri' => $params[0]->__toString()]);
+        });
+        $this->expectStreamFactoryCreateSockerServer()->addAssert(function ($method, $params) {
+            $this->assertEquals(10000, $params[0]->getPort());
+        });
+        $this->expectSocketServer()->addAssert(function ($method, $params) {
+            $this->assertEquals(10000, $params[0]->getPort());
+        })->setReturn(function ($params) {
+            throw new StreamException(StreamException::SERVER_SOCKET_ERR, ['uri' => $params[0]->__toString()]);
+        });
         $this->expectException('WebSocket\ConnectionException');
-        $this->expectExceptionCode(0);
+        $this->expectExceptionCode(ConnectionException::SERVER_SOCKET_ERR);
         $this->expectExceptionMessage('Could not open listening socket:');
         $server->accept();
 
-        $this->expectStreamDestruct();
         unset($server);
     }
 
@@ -378,42 +620,22 @@ class ServerTest extends TestCase
     {
         $this->expectStreamFactory();
         $server = new Server();
-        $server->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+        $server->setStreamFactory(new StreamFactory());
 
+        $this->expectStreamFactoryCreateSockerServer();
         $this->expectSocketServer();
+        $this->expectSocketServerGetTransports();
+        $this->expectSocketServerGetMetadata();
         $server->accept();
 
-        $this->expectServerAccept(new RuntimeException("Could not accept on socket."));
+        $this->expectSocketServerAccept()->setReturn(function ($params) {
+            throw new StreamException(StreamException::SERVER_ACCEPT_ERR);
+        });
         $this->expectException('WebSocket\ConnectionException');
-        $this->expectExceptionCode(0);
+        $this->expectExceptionCode(ConnectionException::SERVER_ACCEPT_ERR);
         $this->expectExceptionMessage('Server failed to connect');
         $server->send('Connect');
 
-        $this->expectStreamDestruct();
-        unset($server);
-    }
-
-    public function testFailedHttp(): void
-    {
-        $this->expectStreamFactory();
-        $server = new Server();
-        $server->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
-
-        $this->expectSocketServer();
-        $server->accept();
-        $this->expectServerAccept();
-        $this->expectStreamConstruct();
-        $this->expectStreamMetadata();
-        $this->expectStreamRemoteName('localhost:8000');
-        $this->expectStreamReadLine(1024, "FAIL /my/mock/path HTTP/1.1\r\n\r\n");
-        $this->expectStreamClose();
-        $this->expectStreamMetadata();
-        $this->expectException('WebSocket\ConnectionException');
-        $this->expectExceptionCode(0);
-        $this->expectExceptionMessage('No GET in request');
-        $server->send('Connect');
-
-        $this->expectStreamDestruct();
         unset($server);
     }
 
@@ -421,23 +643,33 @@ class ServerTest extends TestCase
     {
         $this->expectStreamFactory();
         $server = new Server();
-        $server->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+        $server->setStreamFactory(new StreamFactory());
 
+        $this->expectStreamFactoryCreateSockerServer();
         $this->expectSocketServer();
+        $this->expectSocketServerGetTransports();
+        $this->expectSocketServerGetMetadata();
         $server->accept();
-        $this->expectServerAccept();
-        $this->expectStreamConstruct();
-        $this->expectStreamMetadata();
-        $this->expectStreamRemoteName('localhost:8000');
-        $this->expectStreamReadLine(1024, "GET /my/mock/path HTTP/1.1\r\n\r\n");
-        $this->expectStreamClose();
-        $this->expectStreamMetadata();
+
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+
+        $this->expectSocketStreamReadLine()->addAssert(function (string $method, array $params): void {
+            $this->assertEquals(1024, $params[0]);
+        })->setReturn(function (array $params) {
+            return "GET /my/mock/path HTTP/1.1\r\nHost: localhost:8000\r\nUser-Agent: websocket-client-php\r\n"
+            . "Connection: Upgrade\r\nUpgrade: websocket\r\n"
+            . "Sec-WebSocket-Version: 13"
+            . "\r\n\r\n";
+        });
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
         $this->expectException('WebSocket\ConnectionException');
-        $this->expectExceptionCode(0);
+        $this->expectExceptionCode(ConnectionException::SERVER_HANDSHAKE_ERR);
         $this->expectExceptionMessage('Client had no Key in upgrade request');
         $server->send('Connect');
 
-        $this->expectStreamDestruct();
         unset($server);
     }
 
@@ -445,50 +677,66 @@ class ServerTest extends TestCase
     {
         $this->expectStreamFactory();
         $server = new Server();
-        $server->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+        $server->setStreamFactory(new StreamFactory());
 
+        $this->expectStreamFactoryCreateSockerServer();
         $this->expectSocketServer();
+        $this->expectSocketServerGetTransports();
+        $this->expectSocketServerGetMetadata();
         $server->accept();
 
-        $this->expectServerHandshake();
-        $this->expectStreamWrite(null, 9);
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectWsServerPerformHandshake();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(9, strlen($params[0]));
+        });
         $server->send('Connect');
 
-        $this->expectStreamResourceType();
-        $this->expectStreamClose();
-        $this->expectStreamMetadata();
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
         $this->expectException('WebSocket\BadOpcodeException');
-        $this->expectExceptionCode(0);
+        $this->expectExceptionCode(ConnectionException::BAD_OPCODE);
         $this->expectExceptionMessage('Bad opcode \'bad\'.  Try \'text\' or \'binary\'.');
         $server->send('Bad Opcode', 'bad');
-
-        $this->expectStreamDestruct();
-        unset($server);
     }
 
     public function testRecieveBadOpcode(): void
     {
         $this->expectStreamFactory();
         $server = new Server();
-        $server->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+        $server->setStreamFactory(new StreamFactory());
 
+        $this->expectStreamFactoryCreateSockerServer();
         $this->expectSocketServer();
+        $this->expectSocketServerGetTransports();
+        $this->expectSocketServerGetMetadata();
         $server->accept();
 
-        $this->expectServerHandshake();
-        $this->expectStreamWrite(null, 9);
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectWsServerPerformHandshake();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(9, strlen($params[0]));
+        });
         $server->send('Connect');
 
-        $this->expectStreamResourceType();
-        $this->expectStreamRead(2, [140, 115]);
-        $this->expectStreamClose();
-        $this->expectStreamMetadata();
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamRead()->setReturn(function () {
+            return base64_decode('jHM=');
+        });
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
         $this->expectException('WebSocket\ConnectionException');
         $this->expectExceptionCode(1026);
         $this->expectExceptionMessage('Bad opcode in websocket frame: 12');
         $message = $server->receive();
 
-        $this->expectStreamDestruct();
         unset($server);
     }
 
@@ -496,25 +744,38 @@ class ServerTest extends TestCase
     {
         $this->expectStreamFactory();
         $server = new Server();
-        $server->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+        $server->setStreamFactory(new StreamFactory());
 
+        $this->expectStreamFactoryCreateSockerServer();
         $this->expectSocketServer();
+        $this->expectSocketServerGetTransports();
+        $this->expectSocketServerGetMetadata();
         $server->accept();
 
-        $this->expectServerHandshake();
-        $this->expectStreamWrite(null, 14);
-        $this->expectStreamResourceType();
-        $this->expectStreamMetadata(['eof' => true, 'mode' => 'rw', 'seekable' => false]);
-        $this->expectStreamClose();
-        $this->expectStreamMetadata(['eof' => true, 'mode' => 'rw', 'seekable' => false]);
-        $this->expectStreamClose();
-        $this->expectStreamMetadata(['eof' => true, 'mode' => 'rw', 'seekable' => false]);
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectWsServerPerformHandshake();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(9, strlen($params[0]));
+        });
+        $server->send('Connect');
+
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamWrite()->setReturn(function () {
+            return 14;
+        });
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamGetMetadata()->setReturn(function () {
+            return ['eof' => true, 'mode' => 'rw', 'seekable' => false];
+        });
+        $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
         $this->expectException('WebSocket\ConnectionException');
         $this->expectExceptionCode(1025);
         $this->expectExceptionMessage('Could only write 14 out of 18 bytes.');
         $server->send('Failing to write');
 
-        $this->expectStreamDestruct();
         unset($server);
     }
 
@@ -522,22 +783,32 @@ class ServerTest extends TestCase
     {
         $this->expectStreamFactory();
         $server = new Server();
-        $server->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+        $server->setStreamFactory(new StreamFactory());
 
+        $this->expectStreamFactoryCreateSockerServer();
         $this->expectSocketServer();
+        $this->expectSocketServerGetTransports();
+        $this->expectSocketServerGetMetadata();
         $server->accept();
 
-        $this->expectServerHandshake();
-        $this->expectStreamWrite(null, new RuntimeException('Stream is not writable.'));
-        $this->expectStreamMetadata(['timed_out' => true, 'mode' => 'rw', 'seekable' => false]);
-        $this->expectStreamClose();
-        $this->expectStreamMetadata(['timed_out' => true, 'mode' => 'rw', 'seekable' => false]);
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectWsServerPerformHandshake();
+        $this->expectSocketStreamWrite()->setReturn(function () {
+            throw new StreamException(StreamException::NOT_WRITABLE);
+        });
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamGetMetadata()->setReturn(function () {
+            return ['timed_out' => true, 'mode' => 'rw', 'seekable' => false];
+        });
+        $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
         $this->expectException('WebSocket\TimeoutException');
-        $this->expectExceptionCode(1024);
-        $this->expectExceptionMessage('Client write timeout');
+        $this->expectExceptionCode(ConnectionException::TIMED_OUT);
+        $this->expectExceptionMessage('Connection timeout');
         $server->send('Failing to write');
 
-        $this->expectStreamDestruct();
         unset($server);
     }
 
@@ -545,22 +816,32 @@ class ServerTest extends TestCase
     {
         $this->expectStreamFactory();
         $server = new Server();
-        $server->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+        $server->setStreamFactory(new StreamFactory());
 
+        $this->expectStreamFactoryCreateSockerServer();
         $this->expectSocketServer();
+        $this->expectSocketServerGetTransports();
+        $this->expectSocketServerGetMetadata();
         $server->accept();
 
-        $this->expectServerHandshake();
-        $this->expectStreamRead(null, new RuntimeException('Stream is not readable.'));
-        $this->expectStreamMetadata(['eof' => true, 'mode' => 'rw', 'seekable' => false]);
-        $this->expectStreamClose();
-        $this->expectStreamMetadata(['eof' => true, 'mode' => 'rw', 'seekable' => false]);
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectWsServerPerformHandshake();
+        $this->expectSocketStreamRead()->setReturn(function () {
+            throw new StreamException(StreamException::NOT_READABLE);
+        });
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamGetMetadata()->setReturn(function () {
+            return ['eof' => true, 'mode' => 'rw', 'seekable' => false];
+        });
+        $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
         $this->expectException('WebSocket\ConnectionException');
-        $this->expectExceptionCode(1025);
-        $this->expectExceptionMessage('Broken frame, read 0 of stated 2 bytes.');
+        $this->expectExceptionCode(ConnectionException::EOF);
+        $this->expectExceptionMessage('Connection closed');
         $server->receive();
 
-        $this->expectStreamDestruct();
         unset($server);
     }
 
@@ -568,25 +849,32 @@ class ServerTest extends TestCase
     {
         $this->expectStreamFactory();
         $server = new Server();
-        $server->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+        $server->setStreamFactory(new StreamFactory());
 
+        $this->expectStreamFactoryCreateSockerServer();
         $this->expectSocketServer();
+        $this->expectSocketServerGetTransports();
+        $this->expectSocketServerGetMetadata();
         $server->accept();
 
-        $this->expectServerHandshake();
-        $this->expectStreamRead(null, '');
-        $this->expectStreamResourceType();
-        $this->expectStreamMetadata(['timed_out' => true, 'mode' => 'rw', 'seekable' => false]);
-        $this->expectStreamClose();
-        $this->expectStreamMetadata(['timed_out' => true, 'mode' => 'rw', 'seekable' => false]);
-        $this->expectStreamClose();
-        $this->expectStreamMetadata(['timed_out' => true, 'mode' => 'rw', 'seekable' => false]);
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectWsServerPerformHandshake();
+        $this->expectSocketStreamRead()->setReturn(function () {
+            return '';
+        });
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamGetMetadata()->setReturn(function () {
+            return ['timed_out' => true, 'mode' => 'rw', 'seekable' => false];
+        });
+        $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
         $this->expectException('WebSocket\TimeoutException');
         $this->expectExceptionCode(1024);
         $this->expectExceptionMessage('Empty read; connection dead?');
         $server->receive();
 
-        $this->expectStreamDestruct();
         unset($server);
     }
 
@@ -594,53 +882,116 @@ class ServerTest extends TestCase
     {
         $this->expectStreamFactory();
         $server = new Server(['filter' => ['text', 'binary', 'pong', 'close']]);
-        $server->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+        $server->setStreamFactory(new StreamFactory());
 
+        $this->expectStreamFactoryCreateSockerServer();
         $this->expectSocketServer();
+        $this->expectSocketServerGetTransports();
+        $this->expectSocketServerGetMetadata();
         $server->accept();
 
-        $this->expectServerHandshake();
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectWsServerPerformHandshake();
 
-        $this->expectStreamRead(2, [1, 136]);
-        $this->expectStreamRead(4, [105, 29, 187, 18]);
-        $this->expectStreamRead(8, [36, 104, 215, 102, 0, 61, 221, 96]);
-        $this->expectStreamRead(2, [138, 139]);
-        $this->expectStreamRead(4, [1, 1, 1, 1]);
-        $this->expectStreamRead(11, [82, 100, 115, 119, 100, 115, 33, 113, 104, 111, 102]);
-
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('AYg=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('aR27Eg==');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(8, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('JGjXZgA93WA=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('ios=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('AQEBAQ==');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(11, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('UmRzd2RzIXFob2Y=');
+        });
         $message = $server->receive();
         $this->assertEquals('Server ping', $message);
         $this->assertEquals('pong', $server->getLastOpcode());
 
-        $this->expectStreamResourceType();
-        $this->expectStreamRead(2, [0, 136]);
-        $this->expectStreamRead(4, [221, 240, 46, 69]);
-        $this->expectStreamRead(8, [188, 151, 67, 32, 179, 132, 14, 49]);
-        $this->expectStreamRead(2, [128, 131]);
-        $this->expectStreamRead(4, [9, 60, 117, 193]);
-        $this->expectStreamRead(3, [108, 79, 1]);
-
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('AIg=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('3fAuRQ==');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(8, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('vJdDILOEDjE=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('gIM=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('CTx1wQ==');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(3, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('bE8B');
+        });
         $message = $server->receive();
         $this->assertEquals('Multi fragment test', $message);
         $this->assertEquals('text', $server->getLastOpcode());
 
-        $this->expectStreamResourceType();
-        $this->expectStreamRead(2, [136, 137]);
-        $this->expectStreamRead(4, [54, 79, 233, 244]);
-        $this->expectStreamRead(9, [117, 35, 170, 152, 89, 60, 128, 154, 81]);
-        $this->expectStreamWrite(23);
-        $this->expectStreamClose();
-        $this->expectStreamMetadata();
-        $this->expectStreamResourceType();
-        $this->expectStreamResourceType();
-
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('iIk=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('Nk/p9A==');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(9, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('dSOqmFk8gJpR');
+        });
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(29, strlen($params[0]));
+        });
+        $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
         $message = $server->receive();
         $this->assertEquals('Closing', $message);
+        $this->expectSocketStreamIsConnected();
         $this->assertFalse($server->isConnected());
         $this->assertEquals(17260, $server->getCloseStatus());
         $this->assertEquals('close', $server->getLastOpcode());
 
-        $this->expectStreamDestruct();
         unset($server);
     }
 
@@ -648,56 +999,81 @@ class ServerTest extends TestCase
     {
         $this->expectStreamFactory();
         $server = new Server(['filter' => ['text', 'binary', 'pong', 'close'], 'return_obj' => true]);
-        $server->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+        $server->setStreamFactory(new StreamFactory());
 
+        $this->expectStreamFactoryCreateSockerServer();
         $this->expectSocketServer();
+        $this->expectSocketServerGetTransports();
+        $this->expectSocketServerGetMetadata();
         $server->accept();
 
-        $this->expectServerHandshake();
-
-        $this->expectStreamRead(2, [1, 136]);
-        $this->expectStreamRead(4, [105, 29, 187, 18]);
-        $this->expectStreamRead(8, [36, 104, 215, 102, 0, 61, 221, 96]);
-        $this->expectStreamRead(2, [138, 139]);
-        $this->expectStreamRead(4, [1, 1, 1, 1]);
-        $this->expectStreamRead(11, [82, 100, 115, 119, 100, 115, 33, 113, 104, 111, 102]);
-
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectWsServerPerformHandshake();
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('AYg=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('aR27Eg==');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(8, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('JGjXZgA93WA=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('ios=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('AQEBAQ==');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(11, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('UmRzd2RzIXFob2Y=');
+        });
         $message = $server->receive();
         $this->assertInstanceOf('WebSocket\Message\Message', $message);
         $this->assertInstanceOf('WebSocket\Message\Pong', $message);
         $this->assertEquals('Server ping', $message->getContent());
         $this->assertEquals('pong', $message->getOpcode());
 
-        $this->expectStreamResourceType();
-        $this->expectStreamRead(2, [0, 136]);
-        $this->expectStreamRead(4, [221, 240, 46, 69]);
-        $this->expectStreamRead(8, [188, 151, 67, 32, 179, 132, 14, 49]);
-        $this->expectStreamRead(2, [128, 131]);
-        $this->expectStreamRead(4, [9, 60, 117, 193]);
-        $this->expectStreamRead(3, [108, 79, 1]);
-
-        $message = $server->receive();
-        $this->assertInstanceOf('WebSocket\Message\Message', $message);
-        $this->assertInstanceOf('WebSocket\Message\Text', $message);
-        $this->assertEquals('Multi fragment test', $message->getContent());
-        $this->assertEquals('text', $message->getOpcode());
-
-        $this->expectStreamResourceType();
-        $this->expectStreamRead(2, [136, 137]);
-        $this->expectStreamRead(4, [54, 79, 233, 244]);
-        $this->expectStreamRead(9, [117, 35, 170, 152, 89, 60, 128, 154, 81]);
-        $this->expectStreamWrite(23);
-        $this->expectStreamClose();
-        $this->expectStreamMetadata();
-        $this->expectStreamResourceType();
-
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('iIk=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('Nk/p9A==');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(9, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('dSOqmFk8gJpR');
+        });
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(29, strlen($params[0]));
+        });
+        $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
         $message = $server->receive();
         $this->assertInstanceOf('WebSocket\Message\Message', $message);
         $this->assertInstanceOf('WebSocket\Message\Close', $message);
         $this->assertEquals('Closing', $message->getContent());
         $this->assertEquals('close', $message->getOpcode());
 
-        $this->expectStreamDestruct();
         unset($server);
     }
 
@@ -705,45 +1081,66 @@ class ServerTest extends TestCase
     {
         $this->expectStreamFactory();
         $server = new Server();
-        $server->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+        $server->setStreamFactory(new StreamFactory());
 
         $this->assertNull($server->getName());
         $this->assertNull($server->getRemoteName());
         $this->assertEquals('WebSocket\Server(closed)', "{$server}");
 
+        $this->expectStreamFactoryCreateSockerServer();
         $this->expectSocketServer();
+        $this->expectSocketServerGetTransports();
+        $this->expectSocketServerGetMetadata();
         $server->accept();
 
-        $this->expectServerHandshake();
-        $this->expectStreamWrite([129, 7, null, null, null, null, null, null, null]);
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectWsServerPerformHandshake();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(9, strlen($params[0]));
+        });
         $server->text('Connect');
 
-        $this->expectStreamResourceType();
-        $this->expectStreamWrite([
-            130, 20, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null
-        ]);
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(22, strlen($params[0]));
+        });
         $server->binary(base64_encode('Binary content'));
 
-        $this->expectStreamResourceType();
-        $this->expectStreamWrite([137, 0]);
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(base64_decode('iQA='), $params[0]);
+        });
         $server->ping();
 
-        $this->expectStreamResourceType();
-        $this->expectStreamWrite([138, 0]);
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(base64_decode('igA='), $params[0]);
+        });
         $server->pong();
 
-        $this->expectStreamResourceType();
-        $this->expectStreamLocalName('127.0.0.1:12345');
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamGetLocalName()->setReturn(function () {
+            return '127.0.0.1:12345';
+        });
         $this->assertEquals('127.0.0.1:12345', $server->getName());
-        $this->expectStreamResourceType();
-        $this->expectStreamRemoteName('127.0.0.1:8000');
-        $this->expectStreamResourceType();
-        $this->expectStreamLocalName('127.0.0.1:12345');
+
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
+            return '127.0.0.1:8000';
+        });
         $this->assertEquals('127.0.0.1:8000', $server->getRemoteName());
+
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamGetLocalName()->setReturn(function () {
+            return '127.0.0.1:12345';
+        });
         $this->assertEquals('WebSocket\Server(127.0.0.1:12345)', "{$server}");
 
-        $this->expectStreamDestruct();
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
+
         unset($server);
     }
 
@@ -751,7 +1148,7 @@ class ServerTest extends TestCase
     {
         $this->expectStreamFactory();
         $server = new Server();
-        $server->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+        $server->setStreamFactory(new StreamFactory());
 
         $this->assertFalse($server->isConnected());
         $server->setTimeout(30);
@@ -766,25 +1163,33 @@ class ServerTest extends TestCase
     {
         $this->expectStreamFactory();
         $server = new Server();
-        $server->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+        $server->setStreamFactory(new StreamFactory());
 
+        $this->assertNull($server->getName());
+        $this->assertNull($server->getRemoteName());
+        $this->assertEquals('WebSocket\Server(closed)', "{$server}");
+
+        $this->expectStreamFactoryCreateSockerServer();
         $this->expectSocketServer();
+        $this->expectSocketServerGetTransports();
+        $this->expectSocketServerGetMetadata();
         $server->accept();
 
-        $this->expectServerAccept();
-        $this->expectStreamConstruct();
-        $this->expectStreamMetadata();
-        $this->expectStreamRemoteName('localhost:8000');
-        $this->expectStreamReadLine(1024, new RuntimeException('Stream is not readable.'));
-        $this->expectStreamClose();
-        $this->expectStreamMetadata();
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamReadLine()->addAssert(function (string $method, array $params): void {
+            $this->assertEquals(1024, $params[0]);
+        })->setReturn(function () {
+            throw new StreamException(StreamException::NOT_READABLE);
+        });
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
         $this->expectException('WebSocket\ConnectionException');
-        $this->expectExceptionCode(0);
+        $this->expectExceptionCode(ConnectionException::SERVER_HANDSHAKE_ERR);
         $this->expectExceptionMessage('Client handshake error');
         $server->send('Connect');
-        $this->assertFalse($server->isConnected());
 
-        $this->expectStreamDestruct();
         unset($server);
     }
 
@@ -792,23 +1197,33 @@ class ServerTest extends TestCase
     {
         $this->expectStreamFactory();
         $server = new Server();
-        $server->setStreamFactory(new \Phrity\Net\Mock\StreamFactory());
+        $server->setStreamFactory(new StreamFactory());
 
+        $this->assertNull($server->getName());
+        $this->assertNull($server->getRemoteName());
+        $this->assertEquals('WebSocket\Server(closed)', "{$server}");
+
+        $this->expectStreamFactoryCreateSockerServer();
         $this->expectSocketServer();
+        $this->expectSocketServerGetTransports();
+        $this->expectSocketServerGetMetadata();
         $server->accept();
 
-        $this->expectServerHandshake();
-        $this->expectStreamWrite();
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectWsServerPerformHandshake();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(9, strlen($params[0]));
+        });
         $server->send('Connect');
 
-        $this->expectStreamResourceType();
+        $this->expectSocketStreamIsConnected();
         $this->assertTrue($server->isConnected());
 
-        $this->expectStreamResourceType();
-        $this->expectStreamClose();
-        $this->expectStreamMetadata();
-        $this->expectStreamClose();
-        $this->expectStreamMetadata();
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
         $server->disconnect();
         $this->assertFalse($server->isConnected());
 
@@ -818,7 +1233,8 @@ class ServerTest extends TestCase
     public function testDeprecated(): void
     {
         $server = new Server();
-        (new ErrorHandler())->withAll(function () use ($server) {
+        $handler = new ErrorHandler();
+        $handler->withAll(function () use ($server) {
             $this->assertNull($server->getPier());
         }, function ($exceptions, $result) {
             $this->assertEquals(

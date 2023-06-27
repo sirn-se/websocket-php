@@ -8,6 +8,8 @@
 
 ### `1.7.0`
 
+ * Client `getHandshakeResponse()` method (@sirn-se)
+ * `connect()` methos are now public (@sirn-se)
  * Dropped PHP `7.4` support (@sirn-se)
  * Using managed streams (@sirn-se)
  * Unit test rewrite (@sirn-se)

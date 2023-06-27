@@ -10,6 +10,7 @@
 namespace WebSocket\Message;
 
 use DateTime;
+use WebSocket\Frame\Frame;
 
 abstract class Message
 {
@@ -59,16 +60,18 @@ abstract class Message
     }
 
     // Split messages into frames
-    public function getFrames(bool $masked = true, int $framesize = 4096): array
+    public function getFrames(bool $masked, int $framesize = 4096): array
     {
-
         $frames = [];
         $split = str_split($this->getContent(), $framesize) ?: [''];
-        foreach ($split as $payload) {
-            $frames[] = [false, $payload, 'continuation', $masked];
+        foreach ($split as $i => $payload) {
+            $frames[] = new Frame(
+                $i === 0 ? $this->opcode : 'continuation',
+                $payload,
+                $i === array_key_last($split),
+                $masked
+            );
         }
-        $frames[0][2] = $this->opcode;
-        $frames[array_key_last($frames)][0] = true;
         return $frames;
     }
 }

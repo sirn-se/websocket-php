@@ -11,4 +11,8 @@ namespace WebSocket;
 
 class BadOpcodeException extends Exception
 {
+    public function __construct(string $message, int $code = 1026, Throwable $prev = null)
+    {
+        parent::__construct($message, $code, $prev);
+    }
 }

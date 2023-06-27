@@ -26,7 +26,7 @@ class Request extends Message implements RequestInterface
         $this->uri = $uri instanceof Uri ? $uri : new Uri((string)$uri);
         $this->method = $method;
         if ($this->uri->getHost()) {
-            $this->headers = ['host' => ['host' => [$this->uri->getHost()]]];
+            $this->headers = ['Host' => ['Host' => [$this->uri->getAuthority()]]];
         }
     }
 
@@ -102,7 +102,7 @@ class Request extends Message implements RequestInterface
                 unset($new->headers['host']);
             }
             if ($host = $uri->getHost()) {
-                $new->headers = array_merge(['host' => ['host' => [$host]]], $new->headers);
+                $new->headers = array_merge(['Host' => ['Host' => [$uri->getAuthority()]]], $new->headers);
             }
         }
         return $new;
@@ -120,7 +120,6 @@ class Request extends Message implements RequestInterface
             throw new RuntimeException('Invalid http request');
         }
 
-
         $path = $matches['path'];
 
         $request = $this
@@ -133,7 +132,7 @@ class Request extends Message implements RequestInterface
         }
         $host = new Uri("//{$request->getHeaderLine('host')}{$path}");
         $uri = $request->getUri()
-            ->withHost($host->getHost())
+            ->withHost($host->getAuthority())
             ->withPath($host->getPath())
             ->withQuery($host->getQuery());
         return $request->withUri($uri);

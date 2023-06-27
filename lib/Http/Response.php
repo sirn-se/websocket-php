@@ -79,14 +79,6 @@ class Response extends Message implements ResponseInterface
         508 => 'Loop Detected',
         510 => 'Not Extended',
         511 => 'Network Authentication Required',
-        100 => 'Continue',
-        100 => 'Continue',
-        100 => 'Continue',
-        100 => 'Continue',
-        100 => 'Continue',
-        100 => 'Continue',
-        100 => 'Continue',
-        100 => 'Continue',
     ];
 
     private $code;
@@ -128,7 +120,8 @@ class Response extends Message implements ResponseInterface
      */
     public function getReasonPhrase(): string
     {
-        return $this->reason ?: self::$codes[$this->code];
+        $d = self::$codes[$this->code];
+        return $this->reason ?: $d;
     }
 
     public function parse(string $data): self

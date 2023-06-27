@@ -120,7 +120,7 @@ class Server implements LoggerAwareInterface
         if (!$this->listening) {
             $error = "Could not open listening socket: {$exception->getMessage()}";
             $this->logger->error($error);
-            throw new ConnectionException($error, $exception->getCode());
+            throw new ConnectionException($error, ConnectionException::SERVER_SOCKET_ERR);
         }
 
         $this->logger->info("Server listening to port {$uri}");
@@ -252,7 +252,9 @@ class Server implements LoggerAwareInterface
     public function close(int $status = 1000, string $message = 'ttfn'): void
     {
         foreach ($this->connections as $connection) {
-            $connection->close($status, $message);
+            if ($connection->isConnected()) {
+                $connection->close($status, $message);
+            }
         }
     }
 
@@ -309,7 +311,7 @@ class Server implements LoggerAwareInterface
      */
     public function getPath(): string
     {
-        return $this->request_path;
+        return $this->request->getUri()->getPath();
     }
 
     /**
@@ -318,7 +320,7 @@ class Server implements LoggerAwareInterface
      */
     public function getRequest(): array
     {
-        return $this->request;
+        return array_filter(explode("\r\n", $this->request->render()));
     }
 
     /**
@@ -327,13 +329,7 @@ class Server implements LoggerAwareInterface
      */
     public function getHeader($header): ?string
     {
-        foreach ($this->request as $row) {
-            if (stripos($row, $header) !== false) {
-                list($headername, $headervalue) = explode(":", $row);
-                return trim($headervalue);
-            }
-        }
-        return null;
+        return $this->request->getHeaderLine($header) ?: null;
     }
 
     /**
@@ -416,7 +412,7 @@ class Server implements LoggerAwareInterface
         } catch (\RuntimeException $e) {
             $error = "Server failed to connect. {$e->getMessage()}";
             $this->logger->error($error);
-            throw new ConnectionException($error, 0, [], $e);
+            throw new ConnectionException($error, ConnectionException::SERVER_ACCEPT_ERR, [], $e);
         }
 
         $connection = new Connection($socket, $this->options);
@@ -428,7 +424,6 @@ class Server implements LoggerAwareInterface
 
         $this->logger->info("Client has connected to port {port}", [
             'port' => $this->port,
-            'peer' => $connection->getRemoteName(),
         ]);
         $this->performHandshake($connection);
         $this->connections = ['*' => $connection];
@@ -437,46 +432,38 @@ class Server implements LoggerAwareInterface
     // Perform upgrade handshake on new connections.
     private function performHandshake(Connection $connection): void
     {
-        $request = '';
+        $request = new \WebSocket\Http\ServerRequest();
+        $response = new \WebSocket\Http\Response(101);
+
         try {
-            do {
-                $buffer = $connection->readLine(1024);
-                $request .= $buffer;
-            } while (substr_count($request, "\r\n\r\n") == 0);
+            $request = $connection->pullHttp($request);
         } catch (\RuntimeException $e) {
-            throw new ConnectionException('Client handshake error', $e->getCode());
-        }
-
-        if (!preg_match('/GET (.*) HTTP\//mUi', $request, $matches)) {
-            $error = "No GET in request: {$request}";
+            $error = 'Client handshake error';
             $this->logger->error($error);
-            throw new ConnectionException($error);
+            throw new ConnectionException($error, ConnectionException::SERVER_HANDSHAKE_ERR);
         }
-        $get_uri = trim($matches[1]);
-        $uri_parts = parse_url($get_uri);
 
-        $this->request = array_filter(array_map('trim', explode("\n", $request)));
-        $this->request_path = $uri_parts['path'];
-        /// @todo Get query and fragment as well.
-
-        if (!preg_match('#Sec-WebSocket-Key:\s(.*)$#mUi', $request, $matches)) {
-            $error = "Client had no Key in upgrade request: {$request}";
+        $key = trim((string)$request->getHeaderLine('Sec-WebSocket-Key'));
+        if (empty($key)) {
+            $error = sprintf(
+                "Client had no Key in upgrade request: %s",
+                json_encode($request->getHeaders())
+            );
             $this->logger->error($error);
-            throw new ConnectionException($error);
+            throw new ConnectionException($error, ConnectionException::SERVER_HANDSHAKE_ERR);
         }
-
-        $key = trim($matches[1]);
 
         /// @todo Validate key length and base 64...
         $response_key = base64_encode(pack('H*', sha1($key . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')));
 
-        $header = "HTTP/1.1 101 Switching Protocols\r\n"
-                . "Upgrade: websocket\r\n"
-                . "Connection: Upgrade\r\n"
-                . "Sec-WebSocket-Accept: $response_key\r\n"
-                . "\r\n";
+        $response = $response
+            ->withHeader('Upgrade', 'websocket')
+            ->withHeader('Connection', 'Upgrade')
+            ->withHeader('Sec-WebSocket-Accept', $response_key);
+        $connection->pushHttp($response);
 
-        $connection->write($header);
-        $this->logger->debug("Handshake on {$get_uri}");
+        $this->logger->debug("Handshake on {$request->getUri()->getPath()}");
+
+        $this->request = $request;
     }
 }
