@@ -5,25 +5,28 @@ namespace WebSocket\Frame;
 use Closure;
 use Phrity\Net\SocketStream;
 use WebSocket\ConnectionException;
+use WebSocket\OpcodeTrait;
 
 /**
- * WebSocket\Frame\Factory class.
+ * WebSocket\Frame\FrameHandler class.
+ * Reads and writes Frames on stream.
  */
-class Factory
+class FrameHandler
 {
-    private static $opcodes = [
-        'continuation' => 0,
-        'text'         => 1,
-        'binary'       => 2,
-        'close'        => 8,
-        'ping'         => 9,
-        'pong'         => 10,
-    ];
+    use OpcodeTrait;
 
-    public function pull(SocketStream $stream): ?Frame
+    private $stream;
+
+    public function __construct(SocketStream $stream)
+    {
+        $this->stream = $stream;
+    }
+
+    // Pull frame from stream
+    public function pull(): ?Frame
     {
         // Read the frame "header" first, two bytes.
-        $data = $stream->read(2);
+        $data = $this->stream->read(2);
         if (empty($data)) {
             throw new ConnectionException('Empty read; connection dead?');
         }
@@ -51,17 +54,17 @@ class Factory
 
         if ($payload_length > 125) {
             if ($payload_length === 126) {
-                $data = $stream->read(2); // 126: Payload is a 16-bit unsigned int
+                $data = $this->stream->read(2); // 126: Payload is a 16-bit unsigned int
                 $payload_length = current(unpack('n', $data));
             } else {
-                $data = $stream->read(8); // 127: Payload is a 64-bit unsigned int
+                $data = $this->stream->read(8); // 127: Payload is a 64-bit unsigned int
                 $payload_length = current(unpack('J', $data));
             }
         }
 
         // Get masking key.
         if ($masked) {
-            $masking_key = $stream->read(4);
+            $masking_key = $this->stream->read(4);
         }
 
         // Get the actual payload, if any (might not be for e.g. close frames).
@@ -69,7 +72,7 @@ class Factory
             $data = '';
             $read = 0;
             while ($read < $payload_length) {
-                $data .= $stream->read($payload_length - $read);
+                $data .= $this->stream->read($payload_length - $read);
                 $read = strlen($data);
             }
             if ($masked) {
@@ -81,17 +84,16 @@ class Factory
                 $payload = $data;
             }
         }
-        return new Frame($opcode, $payload, $final, $masked);
+        return new Frame($opcode, $payload, $final);
     }
 
     // Push frame to stream
-    public function push(SocketStream $stream, Frame $frame): int
+    public function push(Frame $frame, bool $masked): int
     {
         $final = $frame->isFinal();
-        $masked = $frame->isMasked();
-        $payload = $frame->getContents();
+        $payload = $frame->getPayload();
         $opcode = $frame->getOpcode();
-        $payload_length = $frame->getContentLength();
+        $payload_length = $frame->getPayloadLength();
 
         $data = '';
         $byte_1 = $final ? 0b10000000 : 0b00000000; // Final fragment marker.
@@ -131,7 +133,7 @@ class Factory
 
         // Write to stream.
         $length = strlen($data);
-        $written = $stream->write($data);
+        $written = $this->stream->write($data);
         if ($written < $length) {
             throw new ConnectionException("Could only write {$written} out of {$length} bytes.");
         }

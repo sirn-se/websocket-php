@@ -32,6 +32,7 @@ class Connection implements LoggerAwareInterface
     private $stream;
     private $read_buffer;
     private $msg_factory;
+    private $frame_handler;
     private $options = [];
 
     protected $is_closing = false;
@@ -46,6 +47,7 @@ class Connection implements LoggerAwareInterface
         $this->setOptions($options);
         $this->setLogger(new NullLogger());
         $this->msg_factory = new Factory();
+        $this->frame_handler = new \WebSocket\Frame\FrameHandler($this->stream);
     }
 
     public function __destruct()
@@ -99,16 +101,14 @@ class Connection implements LoggerAwareInterface
     public function pushMessage(Message $message, ?bool $masked = null): void
     {
         try {
-            $factory = new \WebSocket\Frame\Factory();
             $masked = is_null($masked) ? $this->options['masked'] : $masked;
-            $frames = $message->getFrames($masked, $this->options['fragment_size']);
+            $frames = $message->getFrames($this->options['fragment_size']);
             foreach ($frames as $frame) {
-                $factory->push($this->stream, $frame);
+                $this->frame_handler->push($frame, $masked);
                 $this->logger->debug("[connection] Pushed '{opcode}' frame", [
                     'opcode' => $frame->getOpcode(),
                     'final' => $frame->isFinal(),
-                    'masked' => $frame->isMasked(),
-                    'content-length' => $frame->getContentLength(),
+                    'content-length' => $frame->getPayloadLength(),
                 ]);
             }
             $this->logger->info("[connection] Pushed {$message}", [
@@ -125,24 +125,21 @@ class Connection implements LoggerAwareInterface
     public function pullMessage(): ?Message
     {
         try {
-            $factory = new \WebSocket\Frame\Factory();
             do {
-                $frame = $factory->pull($this->stream);
+                $frame = $this->frame_handler->pull();
                 if (empty($frame)) {
                     return null;
                 }
 
                 $final = $frame->isFinal();
-                $masked = $frame->isMasked();
                 $continuation = $frame->isContinuation();
                 $opcode = $frame->getOpcode();
-                $payload = $frame->getContents();
+                $payload = $frame->getPayload();
 
                 $this->logger->debug("[connection] Pulled '{opcode}' frame", [
                     'opcode' => $opcode,
                     'final' => $final,
-                    'masked' => $masked,
-                    'content-length' => $frame->getContentLength(),
+                    'content-length' => $frame->getPayloadLength(),
                 ]);
 
                 // Continuation and factual opcode

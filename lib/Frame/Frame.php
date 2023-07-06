@@ -2,22 +2,31 @@
 
 namespace WebSocket\Frame;
 
+use WebSocket\{
+    BadOpcodeException,
+    OpcodeTrait
+};
+
 /**
  * WebSocket\Frame\Frame class.
+ * Represent a single frame sent or received as part of websocket message.
  */
 class Frame
 {
+    use OpcodeTrait;
+
     private $opcode;
     private $payload;
     private $final;
-    private $masked;
 
-    public function __construct(string $opcode, string $payload, bool $final, bool $masked)
+    public function __construct(string $opcode, string $payload, bool $final)
     {
+        if (!array_key_exists($opcode, self::$opcodes)) {
+            throw new BadOpcodeException("Invalid opcode '{$opcode}' provided");
+        }
         $this->opcode = $opcode;
         $this->payload = $payload;
         $this->final = $final;
-        $this->masked = $masked;
     }
 
     public function isFinal(): bool
@@ -30,22 +39,17 @@ class Frame
         return $this->opcode === 'continuation';
     }
 
-    public function isMasked(): bool
-    {
-        return $this->masked;
-    }
-
     public function getOpcode(): string
     {
         return $this->opcode;
     }
 
-    public function getContents(): string
+    public function getPayload(): string
     {
         return $this->payload;
     }
 
-    public function getContentLength(): int
+    public function getPayloadLength(): int
     {
         return strlen($this->payload);
     }
