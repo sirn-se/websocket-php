@@ -14,7 +14,7 @@ jobs:
       with:
         php-version: '7.4'
     - name: Composer
-      run: make deps-install
+      run: make install
     - name: Test
       run: make test
 
@@ -74,7 +74,7 @@ jobs:
       with:
         php-version: '8.3'
     - name: Composer
-      run: make deps-install
+      run: make install
     - name: Test
       run: make test
 
