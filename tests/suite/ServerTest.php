@@ -196,7 +196,7 @@ class ServerTest extends TestCase
         });
         $server->send('Connect');
 
-        $payload = file_get_contents(__DIR__ . '/mock/payload.128.txt');
+        $payload = file_get_contents(__DIR__ . '/../mock/payload.128.txt');
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
@@ -249,7 +249,7 @@ class ServerTest extends TestCase
         });
         $server->send('Connect');
 
-        $payload = file_get_contents(__DIR__ . '/mock/payload.65536.txt');
+        $payload = file_get_contents(__DIR__ . '/../mock/payload.65536.txt');
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {

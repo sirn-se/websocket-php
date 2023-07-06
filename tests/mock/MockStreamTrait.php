@@ -12,14 +12,14 @@ trait MockStreamTrait
     private $last_ws_key;
 
 
-    /* ---------- WebSocket Client combinder asserts --------------------------------------------------------------- */
+    /* ---------- WebSocket Client combinded asserts --------------------------------------------------------------- */
 
     private function expectWsClientPerformHandshake(
         string $host = 'localhost:8000',
         string $path = '/my/mock/path',
         string $headers = '',
         int $timeout = 5,
-        $tell = null,
+        $tell = null
     ): void {
         $this->expectSocketStreamWrite()->addAssert(
             function (string $method, array $params) use ($host, $path, $headers): void {
@@ -43,9 +43,8 @@ trait MockStreamTrait
         });
     }
 
-    private function expectWsServerPerformHandshake(?int $timeout = null)
+    private function expectWsServerPerformHandshake(?int $timeout = null): void
     {
-
         $this->expectSocketStreamReadLine()->addAssert(function (string $method, array $params): void {
             $this->assertEquals(1024, $params[0]);
         })->setReturn(function (array $params) {

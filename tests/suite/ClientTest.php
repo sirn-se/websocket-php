@@ -551,7 +551,7 @@ class ClientTest extends TestCase
         $this->expectWsClientPerformHandshake();
         $client->connect();
 
-        $payload = file_get_contents(__DIR__ . '/mock/payload.128.txt');
+        $payload = file_get_contents(__DIR__ . '/../mock/payload.128.txt');
 
         // Sending message
         $this->expectSocketStreamIsConnected();
@@ -620,7 +620,7 @@ class ClientTest extends TestCase
         $this->expectWsClientPerformHandshake();
         $client->connect();
 
-        $payload = file_get_contents(__DIR__ . '/mock/payload.65536.txt');
+        $payload = file_get_contents(__DIR__ . '/../mock/payload.65536.txt');
 
         // Sending message
         $this->expectSocketStreamIsConnected();
