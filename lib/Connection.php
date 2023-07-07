@@ -422,6 +422,8 @@ class Connection implements LoggerAwareInterface
         if ($e instanceof ConnectionException) {
             $message = $message ?: $e->getMessage();
             $code = $code ?: $e->getCode();
+        } elseif ($e instanceof BadOpcodeException) {
+            throw $e;
         }
         if ($this->isConnected()) {
             $meta = $this->getMeta();

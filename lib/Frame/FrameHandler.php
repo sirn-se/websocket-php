@@ -26,10 +26,7 @@ class FrameHandler
     public function pull(): ?Frame
     {
         // Read the frame "header" first, two bytes.
-        $data = $this->stream->read(2);
-        if (empty($data)) {
-            throw new ConnectionException('Empty read; connection dead?');
-        }
+        $data = $this->read(2);
 
         list ($byte_1, $byte_2) = array_values(unpack('C*', $data));
         $final = (bool)($byte_1 & 0b10000000); // Final fragment marker.
@@ -38,11 +35,7 @@ class FrameHandler
         // Parse opcode
         $opcode_int = $byte_1 & 0b00001111;
         $opcode_ints = array_flip(self::$opcodes);
-        if (!array_key_exists($opcode_int, $opcode_ints)) {
-            $warning = "Bad opcode in websocket frame: {$opcode_int}";
-            throw new ConnectionException($warning, ConnectionException::BAD_OPCODE);
-        }
-        $opcode = $opcode_ints[$opcode_int];
+        $opcode = array_key_exists($opcode_int, $opcode_ints) ? $opcode_ints[$opcode_int] : strval($opcode_int);
 
         // Masking bit
         $masked = (bool)($byte_2 & 0b10000000);
@@ -54,10 +47,10 @@ class FrameHandler
 
         if ($payload_length > 125) {
             if ($payload_length === 126) {
-                $data = $this->stream->read(2); // 126: Payload is a 16-bit unsigned int
+                $data = $this->read(2); // 126: Payload is a 16-bit unsigned int
                 $payload_length = current(unpack('n', $data));
             } else {
-                $data = $this->stream->read(8); // 127: Payload is a 64-bit unsigned int
+                $data = $this->read(8); // 127: Payload is a 64-bit unsigned int
                 $payload_length = current(unpack('J', $data));
             }
         }
@@ -69,12 +62,7 @@ class FrameHandler
 
         // Get the actual payload, if any (might not be for e.g. close frames).
         if ($payload_length > 0) {
-            $data = '';
-            $read = 0;
-            while ($read < $payload_length) {
-                $data .= $this->stream->read($payload_length - $read);
-                $read = strlen($data);
-            }
+            $data = $this->read($payload_length);
             if ($masked) {
                 // Unmask payload.
                 for ($i = 0; $i < $payload_length; $i++) {
@@ -132,6 +120,29 @@ class FrameHandler
         }
 
         // Write to stream.
+        $written = $this->write($data);
+        return $written;
+    }
+
+    // Secured read op
+    private function read(int $length): string
+    {
+        $data = '';
+        $read = 0;
+        while ($read < $length) {
+            $got = $this->stream->read($length - $read);
+            if (empty($got)) {
+                throw new ConnectionException('Empty read; connection dead?');
+            }
+            $data .= $got;
+            $read = strlen($data);
+        }
+        return $data;
+    }
+
+    // Secured write op
+    private function write(string $data): int
+    {
         $length = strlen($data);
         $written = $this->stream->write($data);
         if ($written < $length) {

@@ -9,5 +9,6 @@
     <testsuite name="Frame tests">
       <directory suffix=".php">tests/suites/frame</directory>
     </testsuite>
+
   </testsuites>
 </phpunit>

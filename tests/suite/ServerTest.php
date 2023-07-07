@@ -725,16 +725,19 @@ class ServerTest extends TestCase
         $server->send('Connect');
 
         $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('jww=');
+        });
         $this->expectSocketStreamRead()->setReturn(function () {
-            return base64_decode('jHM=');
+            return 'Test message';
         });
         $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamGetMetadata();
         $this->expectSocketStreamClose();
-        $this->expectSocketStreamIsConnected();
-        $this->expectException('WebSocket\ConnectionException');
-        $this->expectExceptionCode(1026);
-        $this->expectExceptionMessage('Bad opcode in websocket frame: 12');
+        $this->expectException(BadOpcodeException::class);
+        $this->expectExceptionCode(BadOpcodeException::BAD_OPCODE);
+        $this->expectExceptionMessage("Invalid opcode '15' provided");
         $message = $server->receive();
 
         unset($server);
