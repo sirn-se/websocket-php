@@ -398,7 +398,7 @@ class Connection implements LoggerAwareInterface
 
     private function deprecated(string $message): void
     {
-        $this->logger->debug("[connection] {$message}", $meta);
+        $this->logger->debug("[connection] {$message}");
         trigger_error($message, E_USER_DEPRECATED);
     }
 }
