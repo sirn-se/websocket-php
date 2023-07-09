@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * Copyright (C) 2014-2023 Textalk and contributors.
+ *
+ * This file is part of Websocket PHP and is free software under the ISC License.
+ * License text: https://raw.githubusercontent.com/sirn-se/websocket-php/master/COPYING.md
+ */
+
 namespace WebSocket\Http;
 
 use BadMethodCallException;
@@ -11,11 +18,6 @@ use Psr\Http\Message\UriInterface;
  */
 class ServerRequest extends Request implements ServerRequestInterface
 {
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
     /**
      * Retrieve server parameters.
      * @return array
@@ -50,7 +52,7 @@ class ServerRequest extends Request implements ServerRequestInterface
      */
     public function getQueryParams(): array
     {
-        parse_str($this->getQuery(), $result);
+        parse_str($this->getUri()->getQuery(), $result);
         return $result;
     }
 

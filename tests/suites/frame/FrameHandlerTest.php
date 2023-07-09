@@ -1,25 +1,29 @@
 <?php
 
 /**
- * Test case for FrameHandler.
+ * Copyright (C) 2014-2023 Textalk and contributors.
+ *
+ * This file is part of Websocket PHP and is free software under the ISC License.
+ * License text: https://raw.githubusercontent.com/sirn-se/websocket-php/master/COPYING.md
  */
 
 declare(strict_types=1);
 
-namespace WebSocket;
+namespace WebSocket\Test\Frame;
 
 use PHPUnit\Framework\TestCase;
-use WebSocket\BadOpcodeException;
-use WebSocket\Frame\Frame;
-use WebSocket\Frame\FrameHandler;
-use Phrity\Net\Mock\Mock;
 use Phrity\Net\Mock\SocketStream;
-use Phrity\Net\StreamException;
-use Phrity\Net\Mock\Stack\{
-    ExpectSocketStreamTrait,
-    StackItem
+use Phrity\Net\Mock\Stack\ExpectSocketStreamTrait;
+use RuntimeException;
+use WebSocket\ConnectionException;
+use WebSocket\Frame\{
+    Frame,
+    FrameHandler
 };
 
+/**
+ * Test case for WebSocket\Frame\FrameHandler.
+ */
 class FrameHandlerTest extends TestCase
 {
     use ExpectSocketStreamTrait;
@@ -248,6 +252,51 @@ class FrameHandlerTest extends TestCase
         $this->assertEquals($payload, $frame->getPayload());
         $this->assertEquals(65536, $frame->getPayloadLength());
         $this->assertEquals('text', $frame->getOpcode());
+
+        fclose($temp);
+    }
+
+    public function testWriteError(): void
+    {
+        $temp = tmpfile();
+
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $stream = new SocketStream($temp);
+        $handler = new FrameHandler($stream);
+        $this->assertInstanceOf(FrameHandler::class, $handler);
+
+        $frame = new Frame('text', 'Failed message', true);
+        $this->expectSocketStreamWrite()->setReturn(function () {
+            return 0;
+        });
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(0);
+        $this->expectExceptionMessage("Could only write 0 out of 16 bytes.");
+        $handler->push($frame, false);
+
+        fclose($temp);
+    }
+
+    public function testReadError(): void
+    {
+        $temp = tmpfile();
+
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $stream = new SocketStream($temp);
+        $handler = new FrameHandler($stream);
+        $this->assertInstanceOf(FrameHandler::class, $handler);
+
+        $this->expectSocketStreamRead()->addAssert(function ($method, $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return '';
+        });
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(0);
+        $this->expectExceptionMessage("Empty read; connection dead?");
+        $handler->pull();
 
         fclose($temp);
     }

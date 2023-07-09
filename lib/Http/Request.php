@@ -1,19 +1,24 @@
 <?php
 
 /**
- * File for Phrity\WebSocket\Http\Request class
- * @package Phrity > WebSocket > Http
+ * Copyright (C) 2014-2023 Textalk and contributors.
+ *
+ * This file is part of Websocket PHP and is free software under the ISC License.
+ * License text: https://raw.githubusercontent.com/sirn-se/websocket-php/master/COPYING.md
  */
 
 namespace WebSocket\Http;
 
 use Phrity\Net\Uri;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\UriInterface;
+use Psr\Http\Message\{
+    RequestInterface,
+    UriInterface
+};
 use RuntimeException;
 
 /**
- * Phrity\WebSocket\Http\Request class.
+ * WebSocket\Http\MessageHandler Request.
+ * Only used for handshake procedure.
  */
 class Request extends Message implements RequestInterface
 {
@@ -21,12 +26,12 @@ class Request extends Message implements RequestInterface
     private $method;
     private $uri;
 
-    public function __construct(string $method = '', $uri = null)
+    public function __construct(string $method = 'GET', $uri = null)
     {
         $this->uri = $uri instanceof Uri ? $uri : new Uri((string)$uri);
         $this->method = $method;
         if ($this->uri->getHost()) {
-            $this->headers = ['Host' => ['Host' => [$this->uri->getAuthority()]]];
+            $this->headers = ['host' => ['Host' => [$this->uri->getAuthority()]]];
         }
     }
 
@@ -102,46 +107,16 @@ class Request extends Message implements RequestInterface
                 unset($new->headers['host']);
             }
             if ($host = $uri->getHost()) {
-                $new->headers = array_merge(['Host' => ['Host' => [$uri->getAuthority()]]], $new->headers);
+                $new->headers = array_merge(['host' => ['Host' => [$uri->getAuthority()]]], $new->headers);
             }
         }
         return $new;
     }
 
-    public function parse(string $data): self
+    public function getAsArray(): array
     {
-        list ($head, $body) = explode("\r\n\r\n", $data);
-        $headers = array_filter(explode("\r\n", $head));
-        $status = array_shift($headers);
-
-        preg_match('!^(?P<method>[A-Z]+) (?P<path>[^ ]*) HTTP/(?P<protocol>[0-9/.]+)!', $status, $matches);
-        if (empty($matches)) {
-            // @todo: handle error
-            throw new RuntimeException('Invalid http request');
-        }
-
-        $path = $matches['path'];
-
-        $request = $this
-            ->withProtocolVersion($matches['protocol'])
-            ->withMethod($matches['method']);
-
-        foreach ($headers as $header) {
-            $parts = explode(':', $header, 2);
-            $request = $request->withHeader($parts[0], $parts[1]);
-        }
-        $host = new Uri("//{$request->getHeaderLine('host')}{$path}");
-        $uri = $request->getUri()
-            ->withHost($host->getAuthority())
-            ->withPath($host->getPath())
-            ->withQuery($host->getQuery());
-        return $request->withUri($uri);
-    }
-
-    public function render(): string
-    {
-        $data = "GET {$this->getRequestTarget()} HTTP/{$this->getProtocolVersion()}\r\n";
-        $data .= parent::render();
-        return $data;
+        return array_merge([
+            "GET {$this->getRequestTarget()} HTTP/{$this->getProtocolVersion()}",
+        ], parent::getAsArray());
     }
 }

@@ -390,7 +390,6 @@ class Client implements LoggerAwareInterface
         $key = $this->generateKey();
 
         $request = new \WebSocket\Http\Request('GET', $http_uri);
-        $response = new \WebSocket\Http\Response();
 
         $request = $request
             ->withHeader('Host', $host_uri->getAuthority())
@@ -417,7 +416,7 @@ class Client implements LoggerAwareInterface
 
         try {
             $this->connection->pushHttp($request);
-            $response = $this->connection->pullHttp($response);
+            $response = $this->connection->pullHttp();
         } catch (Throwable $e) {
             $error = 'Client handshake error';
             $this->logger->error("[client] {$error}");

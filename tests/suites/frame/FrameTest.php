@@ -1,17 +1,23 @@
 <?php
 
 /**
- * Test case for Frame.
+ * Copyright (C) 2014-2023 Textalk and contributors.
+ *
+ * This file is part of Websocket PHP and is free software under the ISC License.
+ * License text: https://raw.githubusercontent.com/sirn-se/websocket-php/master/COPYING.md
  */
 
 declare(strict_types=1);
 
-namespace WebSocket;
+namespace WebSocket\Test\Frame;
 
 use PHPUnit\Framework\TestCase;
 use WebSocket\BadOpcodeException;
 use WebSocket\Frame\Frame;
 
+/**
+ * Test case for WebSocket\Frame\Frame.
+ */
 class FrameTest extends TestCase
 {
     public function setUp(): void
@@ -41,7 +47,7 @@ class FrameTest extends TestCase
         $this->assertEquals(10, $frame->getPayloadLength());
     }
 
-    public function testBadOpcode(): void
+    public function testBadOpcodeError(): void
     {
         $this->expectException(BadOpcodeException::class);
         $this->expectExceptionCode(BadOpcodeException::BAD_OPCODE);

@@ -320,7 +320,7 @@ class Server implements LoggerAwareInterface
      */
     public function getRequest(): array
     {
-        return array_filter(explode("\r\n", $this->request->render()));
+        return $this->request->getAsArray();
     }
 
     /**
@@ -432,11 +432,10 @@ class Server implements LoggerAwareInterface
     // Perform upgrade handshake on new connections.
     private function performHandshake(Connection $connection): void
     {
-        $request = new \WebSocket\Http\ServerRequest();
         $response = new \WebSocket\Http\Response(101);
 
         try {
-            $request = $connection->pullHttp($request);
+            $request = $connection->pullHttp();
         } catch (\RuntimeException $e) {
             $error = 'Client handshake error';
             $this->logger->error($error);

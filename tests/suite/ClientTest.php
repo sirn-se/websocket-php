@@ -1471,8 +1471,8 @@ class ClientTest extends TestCase
         $this->expectSocketStreamRead()->setReturn(function () {
             return 'Test message';
         });
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
         $this->expectException(BadOpcodeException::class);
         $this->expectExceptionCode(BadOpcodeException::BAD_OPCODE);
         $this->expectExceptionMessage("Invalid opcode '15' provided");

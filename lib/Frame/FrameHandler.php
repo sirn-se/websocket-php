@@ -1,29 +1,47 @@
 <?php
 
+/**
+ * Copyright (C) 2014-2023 Textalk and contributors.
+ *
+ * This file is part of Websocket PHP and is free software under the ISC License.
+ * License text: https://raw.githubusercontent.com/sirn-se/websocket-php/master/COPYING.md
+ */
+
 namespace WebSocket\Frame;
 
-use Closure;
 use Phrity\Net\SocketStream;
-use WebSocket\ConnectionException;
+use Psr\Log\{
+    LoggerInterface,
+    LoggerAwareInterface,
+    NullLogger
+};
+use RuntimeException;
 use WebSocket\OpcodeTrait;
 
 /**
  * WebSocket\Frame\FrameHandler class.
  * Reads and writes Frames on stream.
  */
-class FrameHandler
+class FrameHandler implements LoggerAwareInterface
 {
     use OpcodeTrait;
 
     private $stream;
+    private $logger;
 
     public function __construct(SocketStream $stream)
     {
         $this->stream = $stream;
+        $this->setLogger(new NullLogger());
+    }
+
+    public function setLogger(LoggerInterface $logger): void
+    {
+        $this->logger = $logger;
     }
 
     // Pull frame from stream
-    public function pull(): ?Frame
+    public function pull(): Frame
     {
         // Read the frame "header" first, two bytes.
         $data = $this->read(2);
@@ -47,10 +65,10 @@ class FrameHandler
 
         if ($payload_length > 125) {
             if ($payload_length === 126) {
-                $data = $this->read(2); // 126: Payload is a 16-bit unsigned int
+                $data = $this->read(2); // 126: Payload length is a 16-bit unsigned int
                 $payload_length = current(unpack('n', $data));
             } else {
-                $data = $this->read(8); // 127: Payload is a 64-bit unsigned int
+                $data = $this->read(8); // 127: Payload length is a 64-bit unsigned int
                 $payload_length = current(unpack('J', $data));
             }
         }
@@ -72,7 +90,13 @@ class FrameHandler
                 $payload = $data;
             }
         }
-        return new Frame($opcode, $payload, $final);
+        $frame = new Frame($opcode, $payload, $final);
+        $this->logger->debug("[frame-handler] Pulled '{opcode}' frame", [
+            'opcode' => $frame->getOpcode(),
+            'final' => $frame->isFinal(),
+            'content-length' => $frame->getPayloadLength(),
+        ]);
+        return $frame;
     }
 
     // Push frame to stream
@@ -121,6 +145,12 @@ class FrameHandler
 
         // Write to stream.
         $written = $this->write($data);
+
+        $this->logger->debug("[frame-handler] Pushed '{opcode}' frame", [
+            'opcode' => $frame->getOpcode(),
+            'final' => $frame->isFinal(),
+            'content-length' => $frame->getPayloadLength(),
+        ]);
         return $written;
     }
 
@@ -132,7 +162,7 @@ class FrameHandler
         while ($read < $length) {
             $got = $this->stream->read($length - $read);
             if (empty($got)) {
-                throw new ConnectionException('Empty read; connection dead?');
+                throw new RuntimeException('Empty read; connection dead?');
             }
             $data .= $got;
             $read = strlen($data);
@@ -146,7 +176,7 @@ class FrameHandler
         $length = strlen($data);
         $written = $this->stream->write($data);
         if ($written < $length) {
-            throw new ConnectionException("Could only write {$written} out of {$length} bytes.");
+            throw new RuntimeException("Could only write {$written} out of {$length} bytes.");
         }
         return $written;
     }

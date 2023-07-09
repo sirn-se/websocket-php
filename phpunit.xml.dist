@@ -7,8 +7,10 @@
   </coverage>
   <testsuites>
     <testsuite name="Frame tests">
-      <directory suffix=".php">tests/suites/frame</directory>
+      <directory suffix=".php">tests/suites</directory>
     </testsuite>
-
+    <testsuite name="OLD tests">
+      <directory suffix=".php">tests/suite</directory>
+    </testsuite>
   </testsuites>
 </phpunit>

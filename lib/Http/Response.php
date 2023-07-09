@@ -1,8 +1,10 @@
 <?php
 
 /**
- * File for Phrity\WebSocket\Http\Response class
- * @package Phrity > WebSocket > Http
+ * Copyright (C) 2014-2023 Textalk and contributors.
+ *
+ * This file is part of Websocket PHP and is free software under the ISC License.
+ * License text: https://raw.githubusercontent.com/sirn-se/websocket-php/master/COPYING.md
  */
 
 namespace WebSocket\Http;
@@ -124,33 +126,10 @@ class Response extends Message implements ResponseInterface
         return $this->reason ?: $d;
     }
 
-    public function parse(string $data): self
+    public function getAsArray(): array
     {
-        list ($head, $body) = explode("\r\n\r\n", $data);
-        $headers = array_filter(explode("\r\n", $head));
-        $status = array_shift($headers);
-
-        preg_match('!^HTTP/(?P<version>[0-9/.]+) (?P<code>[0-9]*) (?P<reason>.*)!', $status, $matches);
-        if (empty($matches)) {
-            // @todo: handle error
-            throw new RuntimeException('Invalid http request');
-        }
-        $response = $this
-            ->withProtocolVersion($matches['version'])
-            ->withStatus($matches['code'], $matches['reason']);
-        foreach ($headers as $header) {
-            $parts = explode(':', $header, 2);
-            if (count($parts) == 2) {
-                $response = $response->withHeader($parts[0], $parts[1]);
-            }
-        }
-        return $response;
-    }
-
-    public function render(): string
-    {
-        $data = "HTTP/{$this->getProtocolVersion()} {$this->getStatusCode()} {$this->getReasonPhrase()}\r\n";
-        $data .= parent::render();
-        return $data;
+        return array_merge([
+            "HTTP/{$this->getProtocolVersion()} {$this->getStatusCode()} {$this->getReasonPhrase()}",
+        ], parent::getAsArray());
     }
 }

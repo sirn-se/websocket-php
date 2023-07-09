@@ -1,21 +1,25 @@
 <?php
 
 /**
- * File for Phrity\WebSocket\Http\Message class
- * @package Phrity > WebSocket > Http
+ * Copyright (C) 2014-2023 Textalk and contributors.
+ *
+ * This file is part of Websocket PHP and is free software under the ISC License.
+ * License text: https://raw.githubusercontent.com/sirn-se/websocket-php/master/COPYING.md
  */
 
 namespace WebSocket\Http;
 
 use BadMethodCallException;
 use InvalidArgumentException;
-use Psr\Http\Message\MessageInterface;
-use Psr\Http\Message\StreamInterface;
+use Psr\Http\Message\{
+    MessageInterface,
+    StreamInterface
+};
 
 /**
  * Phrity\WebSocket\Http\Message class.
  */
-class Message implements MessageInterface
+abstract class Message implements MessageInterface
 {
     protected $version = '1.1';
     protected $headers = [];
@@ -145,16 +149,15 @@ class Message implements MessageInterface
         throw new BadMethodCallException("Not implemented.");
     }
 
-    public function render(): string
+    public function getAsArray(): array
     {
-        $data = '';
+        $lines = [];
         foreach ($this->getHeaders() as $name => $values) {
             foreach ($values as $value) {
-                $data .= "{$name}: {$value}\r\n";
+                $lines[] = "{$name}: {$value}";
             }
         }
-        $data .= "\r\n";
-        return $data;
+        return $lines;
     }
 
     private function handleHeader($name, $value): void
