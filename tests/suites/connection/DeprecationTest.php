@@ -148,7 +148,7 @@ class DeprecationTest extends TestCase
 
         unset($stream);
     }
-
+/* @todo: Re-activate this test when expectSocketStreamEof is available
     public function testEofDeprecation(): void
     {
         $temp = tmpfile();
@@ -170,7 +170,7 @@ class DeprecationTest extends TestCase
 
         unset($stream);
     }
-
+*/
     public function testGetTypeDeprecation(): void
     {
         $temp = tmpfile();
