@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace WebSocket;
+namespace WebSocket\Test\Server;
 
 use ErrorException;
 use Phrity\Net\Mock\Mock;
@@ -23,6 +23,13 @@ use Phrity\Net\Mock\Stack\{
     StackItem
 };
 use Phrity\Net\Mock\StreamFactory;
+use WebSocket\Test\MockStreamTrait;
+use WebSocket\{
+    Server,
+    BadOpcodeException,
+    ConnectionException,
+    TimeoutException
+};
 
 class ServerTest extends TestCase
 {
@@ -145,7 +152,7 @@ class ServerTest extends TestCase
         $server->close(); // Already closed
     }
 
-    public function xxxtestServerWithTimeout(): void
+    public function testServerWithTimeout(): void
     {
         $this->expectStreamFactory();
         $server = new Server(['timeout' => 300]);
@@ -174,7 +181,7 @@ class ServerTest extends TestCase
         unset($server);
     }
 
-    public function xxxtestPayload128(): void
+    public function testPayload128(): void
     {
         $this->expectStreamFactory();
         $server = new Server();
@@ -196,7 +203,7 @@ class ServerTest extends TestCase
         });
         $server->send('Connect');
 
-        $payload = file_get_contents(__DIR__ . '/../mock/payload.128.txt');
+        $payload = file_get_contents(__DIR__ . '/../../mock/payload.128.txt');
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
@@ -227,7 +234,7 @@ class ServerTest extends TestCase
         unset($server);
     }
 
-    public function xxxtestPayload65536(): void
+    public function testPayload65536(): void
     {
         $this->expectStreamFactory();
         $server = new Server();
@@ -249,7 +256,7 @@ class ServerTest extends TestCase
         });
         $server->send('Connect');
 
-        $payload = file_get_contents(__DIR__ . '/../mock/payload.65536.txt');
+        $payload = file_get_contents(__DIR__ . '/../../mock/payload.65536.txt');
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
@@ -317,7 +324,7 @@ class ServerTest extends TestCase
         unset($server);
     }
 
-    public function xxxtestMultiFragment(): void
+    public function testMultiFragment(): void
     {
         $this->expectStreamFactory();
         $server = new Server();
@@ -406,7 +413,7 @@ class ServerTest extends TestCase
         unset($server);
     }
 
-    public function xxxtestPingPong(): void
+    public function testPingPong(): void
     {
         $this->expectStreamFactory();
         $server = new Server();
@@ -508,7 +515,7 @@ class ServerTest extends TestCase
         unset($server);
     }
 
-    public function xxxtestRemoteClose(): void
+    public function testRemoteClose(): void
     {
         $this->expectStreamFactory();
         $server = new Server();
@@ -556,7 +563,7 @@ class ServerTest extends TestCase
         unset($server);
     }
 
-    public function xxxtestSetTimeout(): void
+    public function testSetTimeout(): void
     {
         $this->expectStreamFactory();
         $server = new Server();
@@ -586,7 +593,7 @@ class ServerTest extends TestCase
         unset($server);
     }
 
-    public function xxxtestFailedSocketServer(): void
+    public function testFailedSocketServer(): void
     {
         $this->expectStreamFactory();
         $server = new Server(['port' => 9999]);
@@ -616,7 +623,7 @@ class ServerTest extends TestCase
         unset($server);
     }
 
-    public function xxxtestFailedConnect(): void
+    public function testFailedConnect(): void
     {
         $this->expectStreamFactory();
         $server = new Server();
@@ -639,7 +646,7 @@ class ServerTest extends TestCase
         unset($server);
     }
 
-    public function xxxtestFailedWsKey(): void
+    public function testFailedWsKey(): void
     {
         $this->expectStreamFactory();
         $server = new Server();
@@ -673,7 +680,7 @@ class ServerTest extends TestCase
         unset($server);
     }
 
-    public function xxxtestSendBadOpcode(): void
+    public function testSendBadOpcode(): void
     {
         $this->expectStreamFactory();
         $server = new Server();
@@ -703,7 +710,7 @@ class ServerTest extends TestCase
         $server->send('Bad Opcode', 'bad');
     }
 
-    public function xxxtestRecieveBadOpcode(): void
+    public function testRecieveBadOpcode(): void
     {
         $this->expectStreamFactory();
         $server = new Server();
@@ -733,8 +740,8 @@ class ServerTest extends TestCase
         $this->expectSocketStreamRead()->setReturn(function () {
             return 'Test message';
         });
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
         $this->expectException(BadOpcodeException::class);
         $this->expectExceptionCode(BadOpcodeException::BAD_OPCODE);
         $this->expectExceptionMessage("Invalid opcode '15' provided");
@@ -743,7 +750,7 @@ class ServerTest extends TestCase
         unset($server);
     }
 
-    public function xxxtestBrokenWrite(): void
+    public function testBrokenWrite(): void
     {
         $this->expectStreamFactory();
         $server = new Server();
@@ -782,7 +789,7 @@ class ServerTest extends TestCase
         unset($server);
     }
 
-    public function xxxtestFailedWrite(): void
+    public function testFailedWrite(): void
     {
         $this->expectStreamFactory();
         $server = new Server();
@@ -815,7 +822,7 @@ class ServerTest extends TestCase
         unset($server);
     }
 
-    public function xxxtestBrokenRead(): void
+    public function testBrokenRead(): void
     {
         $this->expectStreamFactory();
         $server = new Server();
@@ -848,7 +855,7 @@ class ServerTest extends TestCase
         unset($server);
     }
 
-    public function xxxtestEmptyRead(): void
+    public function testEmptyRead(): void
     {
         $this->expectStreamFactory();
         $server = new Server();
@@ -881,7 +888,7 @@ class ServerTest extends TestCase
         unset($server);
     }
 
-    public function xxxtestFrameFragmentation(): void
+    public function testFrameFragmentation(): void
     {
         $this->expectStreamFactory();
         $server = new Server(['filter' => ['text', 'binary', 'pong', 'close']]);
@@ -998,7 +1005,7 @@ class ServerTest extends TestCase
         unset($server);
     }
 
-    public function xxxtestMessageFragmentation(): void
+    public function testMessageFragmentation(): void
     {
         $this->expectStreamFactory();
         $server = new Server(['filter' => ['text', 'binary', 'pong', 'close'], 'return_obj' => true]);
@@ -1080,7 +1087,7 @@ class ServerTest extends TestCase
         unset($server);
     }
 
-    public function xxxtestConvenicanceMethods(): void
+    public function testConvenicanceMethods(): void
     {
         $this->expectStreamFactory();
         $server = new Server();
@@ -1147,7 +1154,7 @@ class ServerTest extends TestCase
         unset($server);
     }
 
-    public function xxxtestUnconnectedServer(): void
+    public function testUnconnectedServer(): void
     {
         $this->expectStreamFactory();
         $server = new Server();
@@ -1162,7 +1169,7 @@ class ServerTest extends TestCase
         $this->assertNull($server->getCloseStatus());
     }
 
-    public function xxxtestFailedHandshake(): void
+    public function testFailedHandshake(): void
     {
         $this->expectStreamFactory();
         $server = new Server();
@@ -1196,7 +1203,7 @@ class ServerTest extends TestCase
         unset($server);
     }
 
-    public function xxxtestServerDisconnect(): void
+    public function testServerDisconnect(): void
     {
         $this->expectStreamFactory();
         $server = new Server();
@@ -1230,10 +1237,12 @@ class ServerTest extends TestCase
         $server->disconnect();
         $this->assertFalse($server->isConnected());
 
+        $this->expectSocketStreamIsConnected();
+
         unset($server);
     }
 
-    public function xxxtestDeprecated(): void
+    public function testDeprecated(): void
     {
         $server = new Server();
         $handler = new ErrorHandler();

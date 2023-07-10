@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace WebSocket;
+namespace WebSocket\Test\Client;
 
 use ErrorException;
 use Phrity\Net\Mock\Mock;
@@ -23,6 +23,11 @@ use Phrity\Net\Mock\Stack\{
     ExpectStreamFactoryTrait,
     StackItem
 };
+use WebSocket\{
+    Client,
+    BadOpcodeException
+};
+use WebSocket\Test\MockStreamTrait;
 
 class ClientTest extends TestCase
 {
@@ -75,11 +80,11 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectWsClientPerformHandshake();
         $client->connect();
 
@@ -176,11 +181,11 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectWsClientPerformHandshake('localhost:8000', '/my/mock/path?my_query=yes');
         $client->connect();
 
@@ -214,11 +219,11 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectWsClientPerformHandshake('localhost:8000', '/');
         $client->connect();
 
@@ -255,11 +260,11 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectWsClientPerformHandshake('localhost:8000', '/my/mock/path');
         $client->connect();
 
@@ -296,11 +301,11 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectWsClientPerformHandshake('localhost:80', '/my/mock/path');
         $client->connect();
 
@@ -337,11 +342,11 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectWsClientPerformHandshake('localhost:443', '/my/mock/path');
         $client->connect();
 
@@ -375,11 +380,11 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(300, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectWsClientPerformHandshake('localhost:8000', '/my/mock/path');
         $client->connect();
 
@@ -417,11 +422,11 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectWsClientPerformHandshake('localhost:8000', '/my/mock/path');
         $client->connect();
 
@@ -455,11 +460,11 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectWsClientPerformHandshake(
             'localhost:8000',
             '/my/mock/path',
@@ -500,11 +505,11 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectWsClientPerformHandshake(
             'localhost:8000',
             '/my/mock/path',
@@ -543,15 +548,15 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectWsClientPerformHandshake();
         $client->connect();
 
-        $payload = file_get_contents(__DIR__ . '/../mock/payload.128.txt');
+        $payload = file_get_contents(__DIR__ . '/../../mock/payload.128.txt');
 
         // Sending message
         $this->expectSocketStreamIsConnected();
@@ -612,15 +617,15 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectWsClientPerformHandshake();
         $client->connect();
 
-        $payload = file_get_contents(__DIR__ . '/../mock/payload.65536.txt');
+        $payload = file_get_contents(__DIR__ . '/../../mock/payload.65536.txt');
 
         // Sending message
         $this->expectSocketStreamIsConnected();
@@ -716,11 +721,11 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectWsClientPerformHandshake();
         $client->connect();
 
@@ -827,11 +832,11 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectWsClientPerformHandshake();
         $client->connect();
 
@@ -946,11 +951,11 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectWsClientPerformHandshake();
         $client->connect();
 
@@ -1005,11 +1010,11 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectWsClientPerformHandshake();
         $client->connect();
 
@@ -1050,11 +1055,11 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectWsClientPerformHandshake();
         $this->expectSocketStreamWrite();
         $this->expectSocketStreamIsConnected();
@@ -1111,12 +1116,12 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamIsConnected();
         $this->expectWsClientPerformHandshake();
 
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
@@ -1168,12 +1173,12 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamTell();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamTell();
         $this->expectWsClientPerformHandshake();
         $client->connect();
 
@@ -1277,11 +1282,11 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamWrite();
         $this->expectSocketStreamReadLine()->setReturn(function () {
             throw new StreamException(StreamException::FAIL_READ);
@@ -1321,11 +1326,11 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamWrite();
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nInvalid upgrade\r\n\r\n";
@@ -1365,11 +1370,11 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamWrite();
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
@@ -1410,11 +1415,11 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectWsClientPerformHandshake();
         $client->connect();
 
@@ -1454,11 +1459,11 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectWsClientPerformHandshake();
         $client->connect();
 
@@ -1506,11 +1511,11 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectWsClientPerformHandshake();
         $client->connect();
 
@@ -1557,11 +1562,11 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectWsClientPerformHandshake();
         $client->connect();
 
@@ -1608,11 +1613,11 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectWsClientPerformHandshake();
         $client->connect();
 
@@ -1663,11 +1668,11 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectWsClientPerformHandshake();
         $client->connect();
 
@@ -1802,11 +1807,11 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectWsClientPerformHandshake();
         $client->connect();
 
@@ -1944,11 +1949,11 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(5, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
+        $this->expectSocketStreamIsConnected();
         $this->expectWsClientPerformHandshake();
         $client->connect();
 

@@ -15,7 +15,10 @@ use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\SocketStream;
 use Phrity\Net\Mock\Stack\ExpectSocketStreamTrait;
 use Psr\Log\NullLogger;
-use WebSocket\Connection;
+use WebSocket\{
+    Connection,
+    ConnectionException
+};
 use WebSocket\Http\{
     Request,
     Response
@@ -248,6 +251,51 @@ class ConnectionTest extends TestCase
         $this->expectSocketStreamClose();
         $this->expectSocketStreamIsConnected();
         $this->assertTrue($connection->disconnect());
+
+        unset($stream);
+    }
+
+    public function testPushMessageError(): void
+    {
+        $temp = tmpfile();
+
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $stream = new SocketStream($temp);
+
+        $connection = new Connection($stream);
+
+        $this->expectSocketStreamWrite()->setReturn(function () {
+            throw new ConnectionException('Connection error');
+        });
+        $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
+        $this->expectException(ConnectionException::class);
+        $this->expectExceptionMessage('Connection error');
+        $connection->pushMessage(new Text('Connection error'));
+
+        unset($stream);
+    }
+
+    public function testPullMessageError(): void
+    {
+        $temp = tmpfile();
+
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $stream = new SocketStream($temp);
+
+        $connection = new Connection($stream);
+        $message = new Text('Test message');
+
+        $this->expectSocketStreamRead()->setReturn(function () {
+            throw new ConnectionException('Connection error');
+        });
+        $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
+        $this->expectException(ConnectionException::class);
+        $this->expectExceptionMessage('Connection error');
+        $connection->pullMessage();
 
         unset($stream);
     }

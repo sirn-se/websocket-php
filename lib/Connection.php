@@ -10,7 +10,6 @@
 namespace WebSocket;
 
 use Phrity\Net\SocketStream;
-use Phrity\Net\StreamException;
 use Psr\Log\{
     LoggerAwareInterface,
     LoggerInterface,
@@ -85,10 +84,10 @@ class Connection implements LoggerAwareInterface
     public function setOptions(array $options = []): void
     {
         $this->options = array_merge($this->options, $options);
-        if (isset($options['logger'])) {
+        if (!empty($options['logger'])) {
             $this->setLogger($options['logger']);
         }
-        if (isset($options['timeout'])) {
+        if (!empty($options['timeout'])) {
             $this->setTimeout($options['timeout']);
         }
     }
@@ -232,7 +231,7 @@ class Connection implements LoggerAwareInterface
     {
         $this->deprecated('getLine() on Connection is deprecated.');
         $line = $this->stream->readLine($length);
-        if ($line === false) {
+        if (is_null($line)) {
             $this->throwException(new RuntimeException('Could not read from stream'));
         }
         $read = strlen($line);
@@ -278,7 +277,7 @@ class Connection implements LoggerAwareInterface
             $length = strlen($data);
             $written = $this->stream->write($data);
             if ($written < strlen($data)) {
-                $this->throwException(new RuntimeException('Could only write {$written} out of {$length} bytes.'));
+                $this->throwException(new RuntimeException("Could only write {$written} out of {$length} bytes."));
             }
             $this->logger->debug("[connection] Wrote {$written} of {$length} bytes.");
         } catch (RuntimeException $e) {
@@ -328,9 +327,9 @@ class Connection implements LoggerAwareInterface
     }
 
 
-    /* ---------- Internal helper methods -------------------------------------------- */
+    /* ---------- Internal helper methods -------------------------------------------------------------------------- */
 
-    private function throwException(Throwable $e): void
+    protected function throwException(Throwable $e): void
     {
         // Internal exceptions are handled and re-thrown
         if ($e instanceof Exception) {
@@ -361,14 +360,14 @@ class Connection implements LoggerAwareInterface
         throw new ConnectionException($message, 0);
     }
 
-    private function deprecated(string $message): void
+    protected function deprecated(string $message): void
     {
         $this->logger->debug("[connection] {$message}");
         trigger_error($message, E_USER_DEPRECATED);
     }
 
     // Trigger auto response for frame
-    private function autoRespond(Message $message): void
+    protected function autoRespond(Message $message): void
     {
         switch ($message->getOpcode()) {
             case 'ping':

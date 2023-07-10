@@ -4,7 +4,7 @@
  * This class is used by phpunit tests to mock and track various socket/stream calls.
  */
 
-namespace WebSocket;
+namespace WebSocket\Test;
 
 trait MockStreamTrait
 {

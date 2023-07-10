@@ -207,4 +207,11 @@ class ExceptionTest extends TestCase
 
         unset($stream);
     }
+
+    public function testConnectionExceptionMethods(): void
+    {
+        $previous = new RuntimeException('Original error');
+        $exception = new ConnectionException('Error', 0, ['test' => 'Test value'], $previous);
+        $this->assertEquals(['test' => 'Test value'], $exception->getData());
+    }
 }

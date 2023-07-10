@@ -10,16 +10,24 @@
 namespace WebSocket;
 
 use InvalidArgumentException;
-use Phrity\Net\Uri;
-use Phrity\Net\StreamFactory;
+use Phrity\Net\{
+    StreamFactory,
+    Uri
+};
 use Psr\Http\Message\UriInterface;
 use Psr\Log\{
     LoggerAwareInterface,
     LoggerAwareTrait,
     NullLogger
 };
-use WebSocket\Message\Factory;
-use WebSocket\Message\Message;
+use WebSocket\Http\{
+    Request,
+    Response
+};
+use WebSocket\Message\{
+    Factory,
+    Message
+};
 use Throwable;
 
 class Client implements LoggerAwareInterface
@@ -46,16 +54,16 @@ class Client implements LoggerAwareInterface
     private $options = [];
     private $listen = false;
     private $last_opcode = null;
-    private $stream_factory;
-    private $message_factory;
+    private $streamFactory;
+    private $messageFactory;
     private $handshake_response;
 
 
-    /* ---------- Magic methods ------------------------------------------------------ */
+    /* ---------- Magic methods ------------------------------------------------------------------------------------ */
 
     /**
-     * @param UriInterface|string $uri     A ws/wss-URI
-     * @param array               $options
+     * @param UriInterface|string $uri A ws/wss-URI
+     * @param array $options
      *   Associative array containing:
      *   - context:       Set the stream context. Default: empty context
      *   - timeout:       Set the socket timeout in seconds.  Default: 5
@@ -68,7 +76,7 @@ class Client implements LoggerAwareInterface
         $this->options = array_merge(self::$default_options, $options);
         $this->setLogger($this->options['logger'] ?: new NullLogger());
         $this->setStreamFactory(new StreamFactory());
-        $this->message_factory = new Factory();
+        $this->messageFactory = new Factory();
     }
 
     /**
@@ -85,7 +93,16 @@ class Client implements LoggerAwareInterface
     }
 
 
-    /* ---------- Client option functions -------------------------------------------- */
+    /* ---------- Configuration ------------------------------------------------------------------------------------ */
+
+    /**
+     * Set stream factory to use.
+     * @param StreamFactory $streamFactory.
+     */
+    public function setStreamFactory(StreamFactory $streamFactory): void
+    {
+        $this->streamFactory = $streamFactory;
+    }
 
     /**
      * Set timeout.
@@ -98,7 +115,6 @@ class Client implements LoggerAwareInterface
             return;
         }
         $this->connection->setTimeout($timeout);
-        $this->connection->setOptions($this->options);
     }
 
     /**
@@ -112,7 +128,7 @@ class Client implements LoggerAwareInterface
         if (!$this->connection) {
             return $this;
         }
-        $this->connection->setOptions($this->options);
+        $this->connection->setOptions(['fragment_size' => $fragment_size]);
         return $this;
     }
 
@@ -125,13 +141,8 @@ class Client implements LoggerAwareInterface
         return $this->options['fragment_size'];
     }
 
-    public function setStreamFactory(StreamFactory $stream_factory)
-    {
-        $this->stream_factory = $stream_factory;
-    }
 
-
-    /* ---------- Messaging operations ---------------------------------------------- */
+    /* ---------- Messaging operations ----------------------------------------------------------------------------- */
 
     /**
      * Send text message.
@@ -190,7 +201,7 @@ class Client implements LoggerAwareInterface
             throw new BadOpcodeException($warning);
         }
 
-        $message = $this->message_factory->create($opcode, $payload);
+        $message = $this->messageFactory->create($opcode, $payload);
         $this->connection->pushMessage($message, $masked);
     }
 
@@ -206,80 +217,6 @@ class Client implements LoggerAwareInterface
         }
         $this->connection->close($status, $message);
     }
-
-
-    /* ---------- Connection operations ---------------------------------------------- */
-
-    /**
-     * If Client has active connection.
-     * @return bool True if active connection.
-     */
-    public function isConnected(): bool
-    {
-        return $this->connection && $this->connection->isConnected();
-    }
-
-    /**
-     * Connect to server and perform upgrade.
-     * @throws ConnectionException On failed connection
-     */
-    public function connect(): void
-    {
-        $this->disconnect();
-
-        $host_uri = (new Uri())
-            ->withScheme($this->socket_uri->getScheme() == 'wss' ? 'ssl' : 'tcp')
-            ->withHost($this->socket_uri->getHost(Uri::IDNA))
-            ->withPort($this->socket_uri->getPort(Uri::REQUIRE_PORT));
-
-        $context = $this->parseContext();
-        $persistent = $this->options['persistent'] === true;
-        $stream = null;
-
-        try {
-            $client = $this->stream_factory->createSocketClient($host_uri);
-            $client->setPersistent($persistent);
-            $client->setTimeout($this->options['timeout']);
-            $client->setContext($context);
-            $stream = $client->connect();
-        } catch (Throwable $e) {
-            $error = "Could not open socket to \"{$host_uri}\": Server is closed.";
-            $this->logger->error("[client] {$error}", []);
-            throw new ConnectionException($error, ConnectionException::CLIENT_CONNECT_ERR, [], $e);
-        }
-        $this->connection = new Connection($stream, $this->options);
-        $this->connection->setLogger($this->logger);
-
-        if (!$this->isConnected()) {
-            $error = "Invalid stream on \"{$host_uri}\".";
-            $this->logger->error("[client] {$error}");
-            throw new ConnectionException($error, ConnectionException::CLIENT_CONNECT_ERR);
-        }
-
-        if (!$persistent || $this->connection->tell() == 0) {
-            // Set timeout on the stream as well.
-            $this->connection->setTimeout($this->options['timeout']);
-
-            $this->handshake_response = $this->performHandshake($host_uri);
-        }
-
-        $this->logger->info("[client] Client connected to {$this->socket_uri}");
-    }
-
-    /**
-     * Disconnect from server.
-     */
-    public function disconnect(): void
-    {
-        if ($this->isConnected()) {
-            $this->connection->disconnect();
-            $this->logger->info('[client] Client disconnected');
-        }
-    }
-
-
-
-
 
     /**
      * Receive message.
@@ -312,7 +249,74 @@ class Client implements LoggerAwareInterface
     }
 
 
-    /* ---------- Connection functions ----------------------------------------------- */
+    /* ---------- Connection management ---------------------------------------------------------------------------- */
+
+    /**
+     * If Client has active connection.
+     * @return bool True if active connection.
+     */
+    public function isConnected(): bool
+    {
+        return $this->connection && $this->connection->isConnected();
+    }
+
+    /**
+     * Connect to server and perform upgrade.
+     * @throws ConnectionException On failed connection
+     */
+    public function connect(): void
+    {
+        $this->disconnect();
+
+        $host_uri = (new Uri())
+            ->withScheme($this->socket_uri->getScheme() == 'wss' ? 'ssl' : 'tcp')
+            ->withHost($this->socket_uri->getHost(Uri::IDNA))
+            ->withPort($this->socket_uri->getPort(Uri::REQUIRE_PORT));
+
+        $context = $this->parseContext();
+        $persistent = $this->options['persistent'] === true;
+        $stream = null;
+
+        try {
+            $client = $this->streamFactory->createSocketClient($host_uri);
+            $client->setPersistent($persistent);
+            $client->setTimeout($this->options['timeout']);
+            $client->setContext($context);
+            $stream = $client->connect();
+        } catch (Throwable $e) {
+            $error = "Could not open socket to \"{$host_uri}\": Server is closed.";
+            $this->logger->error("[client] {$error}", []);
+            throw new ConnectionException($error, ConnectionException::CLIENT_CONNECT_ERR, [], $e);
+        }
+        $this->connection = new Connection($stream, $this->options);
+        $this->connection->setLogger($this->logger);
+
+        if (!$this->isConnected()) {
+            $error = "Invalid stream on \"{$host_uri}\".";
+            $this->logger->error("[client] {$error}");
+            throw new ConnectionException($error, ConnectionException::CLIENT_CONNECT_ERR);
+        }
+
+        if (!$persistent || $stream->tell() == 0) {
+            $this->handshake_response = $this->performHandshake($host_uri);
+        }
+
+        $this->logger->info("[client] Client connected to {$this->socket_uri}");
+    }
+
+    /**
+     * Disconnect from server.
+     */
+    public function disconnect(): void
+    {
+        if ($this->isConnected()) {
+            $this->connection->disconnect();
+            $this->logger->info('[client] Client disconnected');
+        }
+    }
+
+
+    /* ---------- Connection state --------------------------------------------------------------------------------- */
 
     /**
      * Get last received opcode.
@@ -327,7 +331,7 @@ class Client implements LoggerAwareInterface
      * Get last received opcode.
      * @return string|null Opcode.
      */
-    public function getHandshakeResponse(): ?\WebSocket\Http\Response
+    public function getHandshakeResponse(): ?Response
     {
         return $this->connection ? $this->handshake_response : null;
     }
@@ -374,13 +378,13 @@ class Client implements LoggerAwareInterface
     }
 
 
-    /* ---------- Helper functions --------------------------------------------------- */
+    /* ---------- Internal helper methods -------------------------------------------------------------------------- */
 
     /**
      * Perform upgrade handshake on new connections.
      * @throws ConnectionException On failed handshake
      */
-    protected function performHandshake($host_uri): \WebSocket\Http\Response
+    protected function performHandshake($host_uri): Response
     {
         $http_uri = (new Uri())
             ->withPath($this->socket_uri->getPath(), Uri::ABSOLUTE_PATH)
@@ -389,7 +393,7 @@ class Client implements LoggerAwareInterface
         // Generate the WebSocket key.
         $key = $this->generateKey();
 
-        $request = new \WebSocket\Http\Request('GET', $http_uri);
+        $request = new Request('GET', $http_uri);
 
         $request = $request
             ->withHeader('Host', $host_uri->getAuthority())
@@ -515,6 +519,6 @@ class Client implements LoggerAwareInterface
         }
         $error = "Stream context in \$options['context'] isn't a valid context.";
         $this->logger->error("[client] {$error}");
-        throw new \InvalidArgumentException($error);
+        throw new InvalidArgumentException($error);
     }
 }

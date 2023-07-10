@@ -9,51 +9,56 @@
 
 namespace WebSocket;
 
-use Closure;
-use ErrorException;
-use Phrity\Util\ErrorHandler;
-use Phrity\Net\StreamFactory;
-use Phrity\Net\Uri;
+use Phrity\Net\{
+    StreamFactory,
+    Uri
+};
 use Psr\Log\{
     LoggerAwareInterface,
     LoggerAwareTrait,
-    LoggerInterface,
     NullLogger
 };
+use RuntimeException;
 use Throwable;
-use WebSocket\Message\Factory;
+use WebSocket\Http\{
+    Request,
+    Response
+};
+use WebSocket\Message\{
+    Factory,
+    Message
+};
 
 class Server implements LoggerAwareInterface
 {
     use LoggerAwareTrait; // Provides setLogger(LoggerInterface $logger)
     use OpcodeTrait;
 
-    private $stream_factory;
-
-
     // Default options
     protected static $default_options = [
-        'filter'        => ['text', 'binary'],
+        'filter'        => ['text', 'binary'], // @deprecated
         'fragment_size' => 4096,
         'logger'        => null,
         'masked'        => false,
         'port'          => 8000,
-        'return_obj'    => false,
+        'return_obj'    => false, // @deprecated
         'schema'        => 'tcp',
         'timeout'       => null,
     ];
 
-    protected $port;
-    protected $listening;
-    protected $request;
-    protected $request_path;
-    private $connections = [];
+    private $streamFactory;
+    private $messageFactory;
+    private $port;
+    private $listening;
+    private $request;
+    private $request_path;
+    private $connection;
     private $options = [];
     private $listen = false;
     private $last_opcode;
 
 
-    /* ---------- Magic methods ------------------------------------------------------ */
+    /* ---------- Magic methods ------------------------------------------------------------------------------------ */
 
     /**
      * @param array $options
@@ -68,17 +73,11 @@ class Server implements LoggerAwareInterface
      */
     public function __construct(array $options = [])
     {
-        $this->options = array_merge(self::$default_options, [
-            'logger' => new NullLogger(),
-        ], $options);
+        $this->options = array_merge(self::$default_options, $options);
         $this->port = $this->options['port'];
-        $this->setLogger($this->options['logger']);
+        $this->setLogger($this->options['logger'] ?: new NullLogger());
         $this->setStreamFactory(new StreamFactory());
-    }
-
-    public function setStreamFactory(StreamFactory $stream_factory)
-    {
-        $this->stream_factory = $stream_factory;
+        $this->messageFactory = new Factory();
     }
 
     /**
@@ -95,7 +94,211 @@ class Server implements LoggerAwareInterface
     }
 
 
-    /* ---------- Server operations -------------------------------------------------- */
+    /* ---------- Configuration ------------------------------------------------------------------------------------ */
+
+    /**
+     * Set stream factory to use.
+     * @param StreamFactory $streamFactory.
+     */
+    public function setStreamFactory(StreamFactory $streamFactory)
+    {
+        $this->streamFactory = $streamFactory;
+    }
+
+    /**
+     * Set timeout.
+     * @param int $timeout Timeout in seconds.
+     */
+    public function setTimeout(int $timeout): void
+    {
+        $this->options['timeout'] = $timeout;
+        if (!$this->isConnected()) {
+            return;
+        }
+        $this->connection->setTimeout($timeout);
+    }
+
+    /**
+     * Set fragmentation size.
+     * @param int $fragment_size Fragment size in bytes.
+     * @return self.
+     */
+    public function setFragmentSize(int $fragment_size): self
+    {
+        $this->options['fragment_size'] = $fragment_size;
+        if (!$this->connection) {
+            return $this;
+        }
+        $this->connection->setOptions(['fragment_size' => $fragment_size]);
+        return $this;
+    }
+
+    /**
+     * Get fragmentation size.
+     * @return int $fragment_size Fragment size in bytes.
+     */
+    public function getFragmentSize(): int
+    {
+        return $this->options['fragment_size'];
+    }
+
+
+    /* ---------- Messaging operations ----------------------------------------------------------------------------- */
+
+    /**
+     * Send text message.
+     * @param string $payload Content as string.
+     */
+    public function text(string $payload): void
+    {
+        $this->send($payload);
+    }
+
+    /**
+     * Send binary message.
+     * @param string $payload Content as binary string.
+     */
+    public function binary(string $payload): void
+    {
+        $this->send($payload, 'binary');
+    }
+
+    /**
+     * Send ping.
+     * @param string $payload Optional text as string.
+     */
+    public function ping(string $payload = ''): void
+    {
+        $this->send($payload, 'ping');
+    }
+
+    /**
+     * Send unsolicited pong.
+     * @param string $payload Optional text as string.
+     */
+    public function pong(string $payload = ''): void
+    {
+        $this->send($payload, 'pong');
+    }
+
+    /**
+     * Send message.
+     * @param Message|string $payload Message to send, as Meessage instance or string.
+     * @param string $opcode Opcode to use, default: 'text'.
+     * @param bool $masked If message should be masked default: true.
+     */
+    public function send($payload, string $opcode = 'text', ?bool $masked = null): void
+    {
+        if (!$this->isConnected()) {
+            $this->connect();
+        }
+        if ($payload instanceof Message) {
+            $this->connection->pushMessage($payload, $masked);
+            return;
+        }
+        if (!in_array($opcode, array_keys(self::$opcodes))) {
+            $warning = "Bad opcode '{$opcode}'.  Try 'text' or 'binary'.";
+            $this->logger->warning("[client] {warning}");
+            throw new BadOpcodeException($warning);
+        }
+
+        $message = $this->messageFactory->create($opcode, $payload);
+        $this->connection->pushMessage($message, $masked);
+    }
+
+    /**
+     * Tell the socket to close.
+     * @param integer $status  http://tools.ietf.org/html/rfc6455#section-7.4
+     * @param string  $message A closing message, max 125 bytes.
+     */
+    public function close(int $status = 1000, string $message = 'ttfn'): void
+    {
+        if (!$this->isConnected()) {
+            return;
+        }
+        $this->connection->close($status, $message);
+    }
+
+    /**
+     * Receive message.
+     * Note that this operation will block reading.
+     * @return mixed Message, text or null depending on settings.
+     */
+    public function receive()
+    {
+        $filter = $this->options['filter'];
+        $return_obj = $this->options['return_obj'];
+
+        if (!$this->isConnected()) {
+            $this->connect();
+        }
+
+        while (true) {
+            $message = $this->connection->pullMessage();
+            $opcode = $message->getOpcode();
+            if (in_array($opcode, $filter)) {
+                $this->last_opcode = $opcode;
+                $return = $return_obj ? $message : $message->getContent();
+                break;
+            } elseif ($opcode == 'close') {
+                $this->last_opcode = null;
+                $return = $return_obj ? $message : null;
+                break;
+            }
+        }
+        return $return;
+    }
+
+
+
+    /* ---------- Connection management ---------------------------------------------------------------------------- */
+
+    /**
+     * If Server has active connections.
+     * @return bool True if active connection.
+     */
+    public function isConnected(): bool
+    {
+        return $this->connection && $this->connection->isConnected();
+    }
+
+    // Connect when read/write operation is performed.
+    public function connect(): void
+    {
+        try {
+            if (isset($this->options['timeout'])) {
+                $socket = $this->listening->accept($this->options['timeout']);
+            } else {
+                $socket = $this->listening->accept();
+            }
+            if (!$socket) {
+                throw new RuntimeException('No socket');
+            }
+        } catch (RuntimeException $e) {
+            $error = "Server failed to connect. {$e->getMessage()}";
+            $this->logger->error($error);
+            throw new ConnectionException($error, ConnectionException::SERVER_ACCEPT_ERR, [], $e);
+        }
+
+        $this->connection = new Connection($socket, $this->options);
+        $this->connection->setLogger($this->logger);
+
+        $this->logger->info("Client has connected to port {port}", [
+            'port' => $this->port,
+        ]);
+        $this->performHandshake($this->connection);
+    }
+
+    /**
+     * Disconnect client.
+     */
+    public function disconnect(): void
+    {
+        if ($this->isConnected()) {
+            $this->connection->disconnect();
+            $this->logger->info('[server] Server disconnected');
+        }
+    }
 
     /**
      * Accept a single incoming request.
@@ -110,8 +313,8 @@ class Server implements LoggerAwareInterface
         do {
             try {
                 $uri = new Uri("{$this->options['schema']}://0.0.0.0:{$this->port}");
-                $this->listening = $this->stream_factory->createSocketServer($uri);
-            } catch (\RuntimeException $e) {
+                $this->listening = $this->streamFactory->createSocketServer($uri);
+            } catch (RuntimeException $e) {
                 $this->logger->error("Could not connect on port {$this->port}: {$e->getMessage()}");
                 $exception = $e;
             }
@@ -129,7 +332,7 @@ class Server implements LoggerAwareInterface
     }
 
 
-    /* ---------- Server option functions -------------------------------------------- */
+    /* ---------- Connection state --------------------------------------------------------------------------------- */
 
     /**
      * Get current port.
@@ -139,171 +342,6 @@ class Server implements LoggerAwareInterface
     {
         return $this->port;
     }
-
-    /**
-     * Set timeout.
-     * @param int $timeout Timeout in seconds.
-     */
-    public function setTimeout(int $timeout): void
-    {
-        $this->options['timeout'] = $timeout;
-        if (!$this->isConnected()) {
-            return;
-        }
-        foreach ($this->connections as $connection) {
-            $connection->setTimeout($timeout);
-            $connection->setOptions($this->options);
-        }
-    }
-
-    /**
-     * Set fragmentation size.
-     * @param int $fragment_size Fragment size in bytes.
-     * @return self.
-     */
-    public function setFragmentSize(int $fragment_size): self
-    {
-        $this->options['fragment_size'] = $fragment_size;
-        foreach ($this->connections as $connection) {
-            $connection->setOptions($this->options);
-        }
-        return $this;
-    }
-
-    /**
-     * Get fragmentation size.
-     * @return int $fragment_size Fragment size in bytes.
-     */
-    public function getFragmentSize(): int
-    {
-        return $this->options['fragment_size'];
-    }
-
-
-    /* ---------- Connection broadcast operations ------------------------------------ */
-
-    /**
-     * Broadcast text message to all conenctions.
-     * @param string $payload Content as string.
-     */
-    public function text(string $payload): void
-    {
-        $this->send($payload);
-    }
-
-    /**
-     * Broadcast binary message to all conenctions.
-     * @param string $payload Content as binary string.
-     */
-    public function binary(string $payload): void
-    {
-        $this->send($payload, 'binary');
-    }
-
-    /**
-     * Broadcast ping message to all conenctions.
-     * @param string $payload Optional text as string.
-     */
-    public function ping(string $payload = ''): void
-    {
-        $this->send($payload, 'ping');
-    }
-
-    /**
-     * Broadcast pong message to all conenctions.
-     * @param string $payload Optional text as string.
-     */
-    public function pong(string $payload = ''): void
-    {
-        $this->send($payload, 'pong');
-    }
-
-    /**
-     * Send message on all connections.
-     * @param string $payload Message to send.
-     * @param string $opcode Opcode to use, default: 'text'.
-     * @param bool $masked If message should be masked default: false.
-     */
-    public function send(string $payload, string $opcode = 'text', ?bool $masked = null): void
-    {
-        $masked = is_null($masked) ? false : $masked;
-        if (!$this->isConnected()) {
-            $this->connect();
-        }
-        if (!in_array($opcode, array_keys(self::$opcodes))) {
-            $warning = "Bad opcode '{$opcode}'.  Try 'text' or 'binary'.";
-            $this->logger->warning($warning);
-            throw new BadOpcodeException($warning);
-        }
-
-        $factory = new Factory();
-        $message = $factory->create($opcode, $payload);
-
-        foreach ($this->connections as $connection) {
-            $connection->pushMessage($message, $masked);
-        }
-    }
-
-    /**
-     * Close all connections.
-     * @param int $status Close status, default: 1000.
-     * @param string $message Close message, default: 'ttfn'.
-     */
-    public function close(int $status = 1000, string $message = 'ttfn'): void
-    {
-        foreach ($this->connections as $connection) {
-            if ($connection->isConnected()) {
-                $connection->close($status, $message);
-            }
-        }
-    }
-
-    /**
-     * Disconnect all connections.
-     */
-    public function disconnect(): void
-    {
-        foreach ($this->connections as $connection) {
-            if ($connection->isConnected()) {
-                $connection->disconnect();
-            }
-        }
-        $this->connections = [];
-    }
-
-    /**
-     * Receive message from single connection.
-     * Note that this operation will block reading and only read from first available connection.
-     * @return mixed Message, text or null depending on settings.
-     */
-    public function receive()
-    {
-        $filter = $this->options['filter'];
-        $return_obj = $this->options['return_obj'];
-
-        if (!$this->isConnected()) {
-            $this->connect();
-        }
-        $connection = current($this->connections);
-
-        while (true) {
-            $message = $connection->pullMessage();
-            $opcode = $message->getOpcode();
-            if (in_array($opcode, $filter)) {
-                $this->last_opcode = $opcode;
-                $return = $return_obj ? $message : $message->getContent();
-                break;
-            } elseif ($opcode == 'close') {
-                $this->last_opcode = null;
-                $return = $return_obj ? $message : null;
-                break;
-            }
-        }
-        return $return;
-    }
-
-
-    /* ---------- Connection functions ----------------------------------------------- */
 
     /**
      * Get requested path from last connection.
@@ -347,21 +385,7 @@ class Server implements LoggerAwareInterface
      */
     public function getCloseStatus(): ?int
     {
-        return $this->connections ? current($this->connections)->getCloseStatus() : null;
-    }
-
-    /**
-     * If Server has active connections.
-     * @return bool True if active connection.
-     */
-    public function isConnected(): bool
-    {
-        foreach ($this->connections as $connection) {
-            if ($connection->isConnected()) {
-                return true;
-            }
-        }
-        return false;
+        return $this->connection ? $this->connection->getCloseStatus() : null;
     }
 
     /**
@@ -370,7 +394,7 @@ class Server implements LoggerAwareInterface
      */
     public function getName(): ?string
     {
-        return $this->isConnected() ? current($this->connections)->getName() : null;
+        return $this->isConnected() ? $this->connection->getName() : null;
     }
 
     /**
@@ -379,7 +403,7 @@ class Server implements LoggerAwareInterface
      */
     public function getRemoteName(): ?string
     {
-        return $this->isConnected() ? current($this->connections)->getRemoteName() : null;
+        return $this->isConnected() ? $this->connection->getRemoteName() : null;
     }
 
     /**
@@ -395,48 +419,16 @@ class Server implements LoggerAwareInterface
     }
 
 
-    /* ---------- Helper functions --------------------------------------------------- */
-
-    // Connect when read/write operation is performed.
-    private function connect(): void
-    {
-        try {
-            if (isset($this->options['timeout'])) {
-                $socket = $this->listening->accept($this->options['timeout']);
-            } else {
-                $socket = $this->listening->accept();
-            }
-            if (!$socket) {
-                throw new \RuntimeException('No socket');
-            }
-        } catch (\RuntimeException $e) {
-            $error = "Server failed to connect. {$e->getMessage()}";
-            $this->logger->error($error);
-            throw new ConnectionException($error, ConnectionException::SERVER_ACCEPT_ERR, [], $e);
-        }
-
-        $connection = new Connection($socket, $this->options);
-        $connection->setLogger($this->logger);
-
-        if (isset($this->options['timeout'])) {
-            $connection->setTimeout($this->options['timeout']);
-        }
-
-        $this->logger->info("Client has connected to port {port}", [
-            'port' => $this->port,
-        ]);
-        $this->performHandshake($connection);
-        $this->connections = ['*' => $connection];
-    }
+    /* ---------- Internal helper methods -------------------------------------------------------------------------- */
 
     // Perform upgrade handshake on new connections.
     private function performHandshake(Connection $connection): void
     {
-        $response = new \WebSocket\Http\Response(101);
+        $response = new Response(101);
 
         try {
             $request = $connection->pullHttp();
-        } catch (\RuntimeException $e) {
+        } catch (RuntimeException $e) {
             $error = 'Client handshake error';
             $this->logger->error($error);
             throw new ConnectionException($error, ConnectionException::SERVER_HANDSHAKE_ERR);
