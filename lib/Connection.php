@@ -38,7 +38,7 @@ class Connection implements LoggerAwareInterface
     private $httpHandler;
     private $messageFactory;
     private $messageHandler;
-    private $options = [];
+    private $options = ['masked' => false, 'fragment_size' => 4096];
     private $logger;
 
     protected $is_closing = false;
@@ -53,7 +53,7 @@ class Connection implements LoggerAwareInterface
         $this->messageFactory = new Factory();
         $this->httpHandler = new HttpHandler($this->stream);
         $this->messageHandler = new MessageHandler(new FrameHandler($this->stream));
-        $this->setLogger($options['logger'] ?: new NullLogger());
+        $this->setLogger(new NullLogger());
         $this->setOptions($options);
     }
 
@@ -85,6 +85,12 @@ class Connection implements LoggerAwareInterface
     public function setOptions(array $options = []): void
     {
         $this->options = array_merge($this->options, $options);
+        if (isset($options['logger'])) {
+            $this->setLogger($options['logger']);
+        }
+        if (isset($options['timeout'])) {
+            $this->setTimeout($options['timeout']);
+        }
     }
 
     /**
@@ -99,9 +105,12 @@ class Connection implements LoggerAwareInterface
     }
 
 
+    /* ---------- Connection management ---------------------------------------------------------------------------- */
 
-
-
+    /**
+     * Get connection close status.
+     * @return int|null Current close status
+     */
     public function getCloseStatus(): ?int
     {
         return $this->close_status;
@@ -109,7 +118,6 @@ class Connection implements LoggerAwareInterface
 
     /**
      * Tell the socket to close.
-     *
      * @param integer $status  http://tools.ietf.org/html/rfc6455#section-7.4
      * @param string  $message A closing message, max 125 bytes.
      */
@@ -129,9 +137,47 @@ class Connection implements LoggerAwareInterface
         while (true) {
             $message = $this->pullMessage();
             if ($message->getOpcode() == 'close') {
-                break;
+                return;
             }
         }
+    }
+
+    /**
+     * Close connection stream.
+     * @return bool
+     */
+    public function disconnect(): bool
+    {
+        $this->logger->info('[connection] Closing connection');
+        $this->stream->close();
+        return true;
+    }
+
+    /**
+     * If connected to stream.
+     * @return bool
+     */
+    public function isConnected(): bool
+    {
+        return $this->stream->isConnected();
+    }
+
+    /**
+     * Get name of local socket, or null if not connected.
+     * @return string|null
+     */
+    public function getName(): ?string
+    {
+        return $this->stream->getLocalName();
+    }
+
+    /**
+     * Get name of remote socket, or null if not connected.
+     * @return string|null
+     */
+    public function getRemoteName(): ?string
+    {
+        return $this->stream->getRemoteName();
     }
 
 
@@ -174,131 +220,7 @@ class Connection implements LoggerAwareInterface
     }
 
 
-    /* ---------- Frame I/O methods -------------------------------------------------- */
-
-    // Trigger auto response for frame
-    private function autoRespond(Message $message)
-    {
-        switch ($message->getOpcode()) {
-            case 'ping':
-                // If we received a ping, respond with a pong
-                $this->logger->debug("[connection] Received 'ping', sending 'pong'.");
-                $pong = $this->messageFactory->create('pong', $message->getContent());
-                $this->pushMessage($pong);
-                return;
-            case 'close':
-                // If we received close, possibly acknowledge and close connection
-                $status_bin = '';
-                $status = '';
-                $payload = $message->getContent();
-                if ($message->getLength() > 0) {
-                    $status_bin = $payload[0] . $payload[1];
-                    $status = current(unpack('n', $payload));
-                    $this->close_status = $status;
-                }
-                // Get additional close message
-                $message->setContent($message->getLength() >= 2 ? substr($payload, 2) : '');
-
-                $this->logger->debug("[connection] Received 'close', status: {$status}.");
-                if (!$this->is_closing) {
-                    $ack =  "{$status_bin}Close acknowledged: {$status}";
-                    $message = $this->messageFactory->create('close', $ack);
-                    $this->pushMessage($message);
-                } else {
-                    $this->is_closing = false; // A close response, all done.
-                }
-                $this->disconnect();
-                return;
-        }
-    }
-
-
-    /* ---------- Stream I/O methods ------------------------------------------------- */
-
-    /**
-     * Close connection stream.
-     * @return bool
-     */
-    public function disconnect(): bool
-    {
-        $this->logger->info('[connection] Closing connection');
-        $this->stream->close();
-        return true;
-    }
-
-    /**
-     * If connected to stream.
-     * @return bool
-     */
-    public function isConnected(): bool
-    {
-        return $this->stream->isConnected();
-    }
-
-    /**
-     * Return type of connection.
-     * @return string|null Type of connection or null if invalid type.
-     */
-    public function getType(): ?string
-    {
-        $this->deprecated('getType() on Connection is deprecated.');
-        return $this->stream->getResourceType();
-    }
-
-    /**
-     * Get name of local socket, or null if not connected.
-     * @return string|null
-     */
-    public function getName(): ?string
-    {
-        return $this->stream->getLocalName();
-    }
-
-    /**
-     * Get name of remote socket, or null if not connected.
-     * @return string|null
-     */
-    public function getRemoteName(): ?string
-    {
-        return $this->stream->getRemoteName();
-    }
-
-    /**
-     * Get meta data for connection.
-     * @return array
-     */
-    public function getMeta(): array
-    {
-        $this->deprecated('tell() on Connection is deprecated.');
-        return $this->stream->getMetadata() ?: [];
-    }
-
-    /**
-     * Returns current position of stream pointer.
-     * @return int
-     * @throws ConnectionException
-     */
-    public function tell(): int
-    {
-        $this->deprecated('tell() on Connection is deprecated.');
-        return $this->stream->tell();
-    }
-
-    /**
-     * If stream pointer is at end of file.
-     * @return bool
-     */
-    public function eof(): int
-    {
-        $this->deprecated('eof() on Connection is deprecated.');
-        return $this->stream->eof();
-    }
-
-
-
-
-
-    /* ---------- Stream read/write methods ------------------------------------------ */
+    /* ---------- Deprecated stream methods ------------------------------------------------------------------------ */
 
     /**
      * Read line from stream.
@@ -324,7 +246,7 @@ class Connection implements LoggerAwareInterface
      * @return string Read data
      * @deprecated Will be removed in 2.0
      */
-    public function read(string $length): string
+    public function read(int $length): string
     {
         $this->deprecated('read() on Connection is deprecated.');
         try {
@@ -364,41 +286,120 @@ class Connection implements LoggerAwareInterface
         }
     }
 
+    /**
+     * Get meta data for connection.
+     * @return array
+     */
+    public function getMeta(): array
+    {
+        $this->deprecated('getMeta() on Connection is deprecated.');
+        return $this->stream->getMetadata() ?: [];
+    }
+
+    /**
+     * Returns current position of stream pointer.
+     * @return int
+     * @throws ConnectionException
+     */
+    public function tell(): int
+    {
+        $this->deprecated('tell() on Connection is deprecated.');
+        return $this->stream->tell();
+    }
+
+    /**
+     * If stream pointer is at end of file.
+     * @return bool
+     */
+    public function eof(): int
+    {
+        $this->deprecated('eof() on Connection is deprecated.');
+        return $this->stream->eof();
+    }
+
+    /**
+     * Return type of connection.
+     * @return string|null Type of connection or null if invalid type.
+     */
+    public function getType(): ?string
+    {
+        $this->deprecated('getType() on Connection is deprecated.');
+        return $this->stream->getResourceType();
+    }
+
 
     /* ---------- Internal helper methods -------------------------------------------- */
 
     private function throwException(Throwable $e): void
     {
+        // Internal exceptions are handled and re-thrown
         if ($e instanceof Exception) {
             $this->logger->error("[connection] {$e->getMessage()} ({$e->getCode()})");
             $this->disconnect();
             throw $e;
         }
+        // External exceptions are converted to internal
         $exception = get_class($e);
         if ($this->isConnected()) {
-            $meta = $this->getMeta();
-            $this->disconnect();
+            $meta = $this->stream->getMetadata();
             if (!empty($meta['timed_out'])) {
                 $message = "Connection timeout: {$e->getMessage()}";
                 $this->logger->error("[connection] {$e->getMessage()} ({$e->getCode()}) original: {$exception}");
+                $this->disconnect();
                 throw new TimeoutException($message, Exception::TIMED_OUT, $meta);
             }
             if (!empty($meta['eof'])) {
                 $message = "Connection closed: {$e->getMessage()}";
                 $this->logger->error("[connection] {$e->getMessage()} ({$e->getCode()}) original: {$exception}");
+                $this->disconnect();
                 throw new ConnectionException($message, Exception::EOF, $meta);
             }
         }
-
         $this->disconnect();
         $message = "Connection error: {$e->getMessage()}";
-        $this->logger->error("[connection] {$message}  original: {$exception}", $meta);
-        throw new ConnectionException($message, 0, $meta);
+        $this->logger->error("[connection] {$message}  original: {$exception}");
+        throw new ConnectionException($message, 0);
     }
 
     private function deprecated(string $message): void
     {
         $this->logger->debug("[connection] {$message}");
         trigger_error($message, E_USER_DEPRECATED);
+    }
+
+    // Trigger auto response for frame
+    private function autoRespond(Message $message): void
+    {
+        switch ($message->getOpcode()) {
+            case 'ping':
+                // If we received a ping, respond with a pong
+                $this->logger->debug("[connection] Received 'ping', sending 'pong'.");
+                $pong = $this->messageFactory->create('pong', $message->getContent());
+                $this->pushMessage($pong);
+                return;
+            case 'close':
+                // If we received close, possibly acknowledge and close connection
+                $status_bin = '';
+                $status = '';
+                $payload = $message->getContent();
+                if ($message->getLength() > 0) {
+                    $status_bin = $payload[0] . $payload[1];
+                    $status = current(unpack('n', $payload));
+                    $this->close_status = $status;
+                }
+                // Get additional close message
+                $message->setContent($message->getLength() >= 2 ? substr($payload, 2) : '');
+
+                $this->logger->debug("[connection] Received 'close', status: {$status}.");
+                if (!$this->is_closing) {
+                    $ack =  "{$status_bin}Close acknowledged: {$status}";
+                    $message = $this->messageFactory->create('close', $ack);
+                    $this->pushMessage($message);
+                } else {
+                    $this->is_closing = false; // A close response, all done.
+                }
+                $this->disconnect();
+                return;
+        }
     }
 }

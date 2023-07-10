@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace WebSocket\Test\Http;
 
 use BadMethodCallException;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\StreamFactory;
 use Phrity\Net\Uri;
@@ -111,5 +112,23 @@ class ResponseTest extends TestCase
         $this->expectExceptionCode(0);
         $this->expectExceptionMessage('Not implemented.');
         $response->withBody($factory->createStream());
+    }
+
+    public function testHaederNameError(): void
+    {
+        $response = new Response();
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionCode(0);
+        $this->expectExceptionMessage("'.' is not a valid header field name.");
+        $response->withHeader('.', 'invaid name');
+    }
+
+    public function testHaederValueError(): void
+    {
+        $response = new Response();
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionCode(0);
+        $this->expectExceptionMessage("Invalid header value(s) provided.");
+        $response->withHeader('name', '');
     }
 }
