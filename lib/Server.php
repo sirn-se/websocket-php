@@ -50,11 +50,9 @@ class Server implements LoggerAwareInterface
     private $messageFactory;
     private $port;
     private $listening;
-    private $request;
-    private $request_path;
+    private $handshakeRequest;
     private $connection;
     private $options = [];
-    private $listen = false;
     private $last_opcode;
 
 
@@ -335,51 +333,6 @@ class Server implements LoggerAwareInterface
     /* ---------- Connection state --------------------------------------------------------------------------------- */
 
     /**
-     * Get current port.
-     * @return int port.
-     */
-    public function getPort(): int
-    {
-        return $this->port;
-    }
-
-    /**
-     * Get requested path from last connection.
-     * @return string Path.
-     */
-    public function getPath(): string
-    {
-        return $this->request->getUri()->getPath();
-    }
-
-    /**
-     * Get request from last connection.
-     * @return array Request.
-     */
-    public function getRequest(): array
-    {
-        return $this->request->getAsArray();
-    }
-
-    /**
-     * Get headers from last connection.
-     * @return string|null Headers.
-     */
-    public function getHeader($header): ?string
-    {
-        return $this->request->getHeaderLine($header) ?: null;
-    }
-
-    /**
-     * Get last received opcode.
-     * @return string|null Opcode.
-     */
-    public function getLastOpcode(): ?string
-    {
-        return $this->last_opcode;
-    }
-
-    /**
      * Get close status from single connection.
      * @return int|null Close status.
      */
@@ -407,22 +360,86 @@ class Server implements LoggerAwareInterface
     }
 
     /**
+     * Get current port.
+     * @return int port.
+     */
+    public function getPort(): int
+    {
+        return $this->port;
+    }
+
+    /**
+     * Get Request for handshake procedure.
+     * @return Request|null Handshake.
+     */
+    public function getHandshakeRequest(): ?Request
+    {
+        return $this->connection ? $this->handshakeRequest : null;
+    }
+
+
+    /* ---------- Deprecated methods ------------------------------------------------------------------------------- */
+
+    /**
+     * Get last received opcode.
+     * @return string|null Opcode.
+     * @deprecated Will be removed in future version.
+     */
+    public function getLastOpcode(): ?string
+    {
+        $this->deprecated('getLastOpcode() is deprecated and will be removed. Check Message instead..');
+        return $this->last_opcode;
+    }
+
+    /**
      * @deprecated Will be removed in future version.
      */
     public function getPier(): ?string
     {
-        trigger_error(
-            'getPier() is deprecated and will be removed in future version. Use getRemoteName() instead.',
-            E_USER_DEPRECATED
-        );
+        $this->deprecated('getPier() is deprecated and will be removed. Use getRemoteName() instead.');
         return $this->getRemoteName();
+    }
+
+    /**
+     * Get requested path from last connection.
+     * @return string Path.
+     * @deprecated Will be removed in future version.
+     */
+    public function getPath(): string
+    {
+        $this->deprecated('getPath() is deprecated and will be removed. Use getHandshakeRequest()->getPath() instead.');
+        return $this->handshakeRequest->getUri()->getPath();
+    }
+
+    /**
+     * Get request from last connection.
+     * @return array Request.
+     * @deprecated Will be removed in future version.
+     */
+    public function getRequest(): array
+    {
+        $this->deprecated('getPath() is deprecated and will be removed. Use getHandshakeRequest() instead.');
+        return $this->handshakeRequest->getAsArray();
+    }
+
+    /**
+     * Get headers from last connection.
+     * @deprecated Will be removed in future version.
+     * @return string|null Headers.
+     */
+    public function getHeader($header): ?string
+    {
+        $this->deprecated(
+            'getPath() is deprecated and will be removed. Use getHandshakeRequest()->getHeaderLine() instead.'
+        );
+        return $this->handshakeRequest->getHeaderLine($header) ?: null;
     }
 
 
     /* ---------- Internal helper methods -------------------------------------------------------------------------- */
 
     // Perform upgrade handshake on new connections.
-    private function performHandshake(Connection $connection): void
+    protected function performHandshake(Connection $connection): void
     {
         $response = new Response(101);
 
@@ -455,6 +472,12 @@ class Server implements LoggerAwareInterface
 
         $this->logger->debug("Handshake on {$request->getUri()->getPath()}");
 
-        $this->request = $request;
+        $this->handshakeRequest = $request;
+    }
+
+    protected function deprecated(string $message): void
+    {
+        $this->logger->debug("[server] {$message}");
+        trigger_error($message, E_USER_DEPRECATED);
     }
 }

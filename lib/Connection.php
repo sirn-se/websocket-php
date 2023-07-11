@@ -16,6 +16,7 @@ use Psr\Log\{
     NullLogger
 };
 use RuntimeException;
+use Throwable;
 use WebSocket\Exception;
 use WebSocket\Frame\FrameHandler;
 use WebSocket\Http\{
@@ -27,7 +28,6 @@ use WebSocket\Message\{
     Message,
     MessageHandler
 };
-use Throwable;
 
 class Connection implements LoggerAwareInterface
 {
@@ -226,6 +226,7 @@ class Connection implements LoggerAwareInterface
      * @param int $length Maximum number of bytes to read
      * @param string $ending Line delimiter
      * @return string Read data
+     * @deprecated Will be removed in future version.
      */
     public function getLine(int $length, string $ending): string
     {
@@ -243,7 +244,7 @@ class Connection implements LoggerAwareInterface
      * Read characters from stream.
      * @param int $length Maximum number of bytes to read
      * @return string Read data
-     * @deprecated Will be removed in 2.0
+     * @deprecated Will be removed in future version.
      */
     public function read(int $length): string
     {
@@ -268,7 +269,7 @@ class Connection implements LoggerAwareInterface
     /**
      * Write characters to stream.
      * @param string $data Data to read
-     * @deprecated Will be removed in 2.0
+     * @deprecated Will be removed in future version.
      */
     public function write(string $data): void
     {
@@ -288,6 +289,7 @@ class Connection implements LoggerAwareInterface
     /**
      * Get meta data for connection.
      * @return array
+     * @deprecated Will be removed in future version.
      */
     public function getMeta(): array
     {
@@ -299,6 +301,7 @@ class Connection implements LoggerAwareInterface
      * Returns current position of stream pointer.
      * @return int
      * @throws ConnectionException
+     * @deprecated Will be removed in future version.
      */
     public function tell(): int
     {
@@ -309,6 +312,7 @@ class Connection implements LoggerAwareInterface
     /**
      * If stream pointer is at end of file.
      * @return bool
+     * @deprecated Will be removed in future version.
      */
     public function eof(): int
     {
@@ -319,6 +323,7 @@ class Connection implements LoggerAwareInterface
     /**
      * Return type of connection.
      * @return string|null Type of connection or null if invalid type.
+     * @deprecated Will be removed in future version.
      */
     public function getType(): ?string
     {

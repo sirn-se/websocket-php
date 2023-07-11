@@ -56,7 +56,7 @@ class Client implements LoggerAwareInterface
     private $last_opcode = null;
     private $streamFactory;
     private $messageFactory;
-    private $handshake_response;
+    private $handshakeResponse;
 
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
@@ -298,7 +298,7 @@ class Client implements LoggerAwareInterface
         }
 
         if (!$persistent || $stream->tell() == 0) {
-            $this->handshake_response = $this->performHandshake($host_uri);
+            $this->handshakeResponse = $this->performHandshake($host_uri);
         }
 
         $this->logger->info("[client] Client connected to {$this->socket_uri}");
@@ -317,24 +317,6 @@ class Client implements LoggerAwareInterface
 
 
     /* ---------- Connection state --------------------------------------------------------------------------------- */
-
-    /**
-     * Get last received opcode.
-     * @return string|null Opcode.
-     */
-    public function getLastOpcode(): ?string
-    {
-        return $this->last_opcode;
-    }
-
-    /**
-     * Get last received opcode.
-     * @return string|null Opcode.
-     */
-    public function getHandshakeResponse(): ?Response
-    {
-        return $this->connection ? $this->handshake_response : null;
-    }
 
     /**
      * Get close status on connection.
@@ -364,16 +346,36 @@ class Client implements LoggerAwareInterface
     }
 
     /**
+     * Get Response for handshake procedure.
+     * @return Response|null Handshake.
+     */
+    public function getHandshakeResponse(): ?Response
+    {
+        return $this->connection ? $this->handshakeResponse : null;
+    }
+
+
+    /* ---------- Deprecated methods ------------------------------------------------------------------------------- */
+
+    /**
+     * Get last received opcode.
+     * @return string|null Opcode.
+     * @deprecated Will be removed in future version.
+     */
+    public function getLastOpcode(): ?string
+    {
+        $this->deprecated('getLastOpcode() is deprecated and will be removed. Check Message instead..');
+        return $this->last_opcode;
+    }
+
+    /**
      * Get name of remote socket, or null if not connected.
      * @return string|null
      * @deprecated Will be removed in future version, use getPeer() instead.
      */
     public function getPier(): ?string
     {
-        trigger_error(
-            'getPier() is deprecated and will be removed in future version. Use getRemoteName() instead.',
-            E_USER_DEPRECATED
-        );
+        $this->deprecated('getPier() is deprecated and will be removed. Use getRemoteName() instead.');
         return $this->getRemoteName();
     }
 
@@ -520,5 +522,11 @@ class Client implements LoggerAwareInterface
         $error = "Stream context in \$options['context'] isn't a valid context.";
         $this->logger->error("[client] {$error}");
         throw new InvalidArgumentException($error);
+    }
+
+    protected function deprecated(string $message): void
+    {
+        $this->logger->debug("[client] {$message}");
+        trigger_error($message, E_USER_DEPRECATED);
     }
 }

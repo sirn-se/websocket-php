@@ -9,25 +9,33 @@ declare(strict_types=1);
 
 namespace WebSocket\Test\Client;
 
-use ErrorException;
-use Phrity\Net\Mock\Mock;
-use Phrity\Net\Mock\StreamFactory;
-use Phrity\Net\StreamException;
-use Phrity\Net\Uri;
-use Phrity\Util\ErrorHandler;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
-use RuntimeException;
+use Phrity\Net\Mock\StreamFactory;
 use Phrity\Net\Mock\Stack\{
     ExpectSocketClientTrait,
     ExpectSocketStreamTrait,
     ExpectStreamFactoryTrait,
     StackItem
 };
+use Phrity\Net\{
+    StreamException,
+    Uri
+};
+use Phrity\Util\ErrorHandler;
 use WebSocket\{
     Client,
-    BadOpcodeException
+    BadOpcodeException,
+    BadUriException,
+    ConnectionException,
+    TimeoutException
 };
-use WebSocket\Test\MockStreamTrait;
+use WebSocket\Http\Response;
+use WebSocket\Test\{
+    MockStreamTrait,
+    MockUri
+};
+use WebSocket\Message\Text;
 
 class ClientTest extends TestCase
 {
@@ -99,6 +107,9 @@ class ClientTest extends TestCase
         $client->send('Sending a message');
 
         $this->assertEquals(null, $client->getLastOpcode());
+
+        $response = $client->getHandshakeResponse();
+        $this->assertInstanceOf(Response::class, $response);
 
         // Receiving message
         $this->expectSocketStreamIsConnected();
@@ -355,6 +366,53 @@ class ClientTest extends TestCase
         unset($client);
     }
 
+    public function testClientUriInterface(): void
+    {
+        $uri = new MockUri();
+
+        $this->expectStreamFactory();
+        $client = new Client($uri);
+        $client->setStreamFactory(new StreamFactory());
+
+        unset($client);
+    }
+
+    public function testSendMessages(): void
+    {
+        // Creating client
+        $this->expectStreamFactory();
+        $client = new Client('ws://localhost:8000/my/mock/path');
+        $client->setStreamFactory(new StreamFactory());
+
+        // Explicit connect and handshake
+        $this->expectStreamFactoryCreateSockerClient();
+        $this->expectSocketClient();
+        $this->expectSocketClientSetPersistent();
+        $this->expectSocketClientSetTimeout();
+        $this->expectSocketClientSetContext();
+        $this->expectSocketClientConnect();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamSetTimeout();
+        $this->expectSocketStreamIsConnected();
+        $this->expectWsClientPerformHandshake();
+        $client->connect();
+
+        $this->expectSocketStreamIsConnected();
+        $this->assertTrue($client->isConnected());
+
+        // Sending message
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(23, strlen($params[0]));
+        });
+        $client->send(new Text('Sending a message'));
+
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
+        unset($client);
+    }
+
     public function testClientWithTimeout(): void
     {
         $this->expectStreamFactory();
@@ -399,6 +457,46 @@ class ClientTest extends TestCase
 
         $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path', ['context' => $context]);
+        $client->setStreamFactory(new StreamFactory());
+
+        // Explicit connect and handshake
+        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+            $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
+            $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
+        });
+        $this->expectSocketClient()->addAssert(function ($method, $params) {
+            $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
+            $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
+        });
+        $this->expectSocketClientSetPersistent()->addAssert(function ($method, $params) {
+            $this->assertFalse($params[0]);
+        });
+        $this->expectSocketClientSetTimeout()->addAssert(function ($method, $params) {
+            $this->assertEquals(5, $params[0]);
+        });
+        $this->expectSocketClientSetContext()->addAssert(function ($method, $params) {
+            $this->assertEquals(['ssl' => ['verify_peer' => false]], $params[0]);
+        });
+        $this->expectSocketClientConnect();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
+            $this->assertEquals(5, $params[0]);
+            $this->assertEquals(0, $params[1]);
+        });
+        $this->expectSocketStreamIsConnected();
+        $this->expectWsClientPerformHandshake('localhost:8000', '/my/mock/path');
+        $client->connect();
+
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
+        unset($client);
+    }
+
+    public function testClientWithArrayContext(): void
+    {
+        $this->expectStreamFactory();
+        $client = new Client('ws://localhost:8000/my/mock/path', ['context' => ['ssl' => ['verify_peer' => false]]]);
         $client->setStreamFactory(new StreamFactory());
 
         // Explicit connect and handshake
@@ -1192,23 +1290,30 @@ class ClientTest extends TestCase
 
     public function testBadScheme(): void
     {
-        $this->expectException('WebSocket\BadUriException');
+        $this->expectException(BadUriException::class);
         $this->expectExceptionMessage("Invalid URI scheme, must be 'ws' or 'wss'.");
         $client = new Client('bad://localhost:8000/my/mock/path');
     }
 
     public function testBadUri(): void
     {
-        $this->expectException('WebSocket\BadUriException');
+        $this->expectException(BadUriException::class);
         $this->expectExceptionMessage("Invalid URI '--:this is not an uri:--' provided.");
         $client = new Client('--:this is not an uri:--');
     }
 
     public function testInvalidUriType(): void
     {
-        $this->expectException('WebSocket\BadUriException');
+        $this->expectException(BadUriException::class);
         $this->expectExceptionMessage("Provided URI must be a UriInterface or string.");
         $client = new Client([]);
+    }
+
+    public function testBadHost(): void
+    {
+        $this->expectException(BadUriException::class);
+        $this->expectExceptionMessage("Invalid URI host.");
+        $client = new Client('ws:///my/mock/path');
     }
 
     public function testBadStreamContext(): void
@@ -1217,7 +1322,7 @@ class ClientTest extends TestCase
         $client = new Client('ws://localhost:8000/my/mock/path', ['context' => 'BAD']);
         $client->setStreamFactory(new StreamFactory());
 
-        $this->expectException('InvalidArgumentException');
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Stream context in $options[\'context\'] isn\'t a valid context');
         $client->connect();
 
@@ -1225,7 +1330,7 @@ class ClientTest extends TestCase
         unset($client);
     }
 
-    public function testFailedConnection(): void
+    public function testFailedSocket(): void
     {
         $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');
@@ -1249,9 +1354,38 @@ class ClientTest extends TestCase
         $this->expectSocketClientConnect()->setReturn(function () {
             throw new StreamException(StreamException::CLIENT_CONNECT_ERR, ['uri' => 'tcp://localhost:8000']);
         });
-        $this->expectException('WebSocket\ConnectionException');
-        $this->expectExceptionCode(1100);
+        $this->expectException(ConnectionException::class);
+        $this->expectExceptionCode(ConnectionException::CLIENT_CONNECT_ERR);
         $this->expectExceptionMessage('Could not open socket to "tcp://localhost:8000": Server is closed.');
+        $client->connect();
+
+        unset($client);
+    }
+
+    public function testFailedConnection(): void
+    {
+        $this->expectStreamFactory();
+        $client = new Client('ws://localhost:8000/my/mock/path');
+        $client->setStreamFactory(new StreamFactory());
+
+        $this->expectStreamFactoryCreateSockerClient();
+        $this->expectSocketClient();
+        $this->expectSocketClientSetPersistent();
+        $this->expectSocketClientSetTimeout();
+        $this->expectSocketClientSetContext();
+        $this->expectSocketClientConnect();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamSetTimeout();
+        $this->expectSocketStreamIsConnected()->setReturn(function () {
+            return false;
+        });
+        $this->expectSocketStreamIsConnected()->setReturn(function () {
+            return false;
+        });
+        $this->expectException(ConnectionException::class);
+        $this->expectExceptionCode(ConnectionException::CLIENT_CONNECT_ERR);
+        $this->expectExceptionMessage('Invalid stream on "tcp://localhost:8000".');
         $client->connect();
 
         unset($client);
@@ -1291,9 +1425,40 @@ class ClientTest extends TestCase
         $this->expectSocketStreamReadLine()->setReturn(function () {
             throw new StreamException(StreamException::FAIL_READ);
         });
-        $this->expectException('WebSocket\ConnectionException');
-        $this->expectExceptionCode(1101);
+        $this->expectException(ConnectionException::class);
+        $this->expectExceptionCode(ConnectionException::CLIENT_HANDSHAKE_ERR);
         $this->expectExceptionMessage('Client handshake error');
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
+        $client->connect();
+
+        unset($client);
+    }
+
+    public function testInvalidUpgradeStatus(): void
+    {
+        $this->expectStreamFactory();
+        $client = new Client('ws://localhost:8000/my/mock/path');
+        $client->setStreamFactory(new StreamFactory());
+
+        // Explicit connect and handshake
+        $this->expectStreamFactoryCreateSockerClient();
+        $this->expectSocketClient();
+        $this->expectSocketClientSetPersistent();
+        $this->expectSocketClientSetTimeout();
+        $this->expectSocketClientSetContext();
+        $this->expectSocketClientConnect();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamSetTimeout();
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamWrite();
+        $this->expectSocketStreamReadLine()->setReturn(function () {
+            return "HTTP/1.1 200 OK\r\n\r\n";
+        });
+        $this->expectException(ConnectionException::class);
+        $this->expectExceptionCode(ConnectionException::CLIENT_HANDSHAKE_ERR);
+        $this->expectExceptionMessage('Invalid status code 200.');
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
         $client->connect();
@@ -1335,8 +1500,8 @@ class ClientTest extends TestCase
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nInvalid upgrade\r\n\r\n";
         });
-        $this->expectException('WebSocket\ConnectionException');
-        $this->expectExceptionCode(1101);
+        $this->expectException(ConnectionException::class);
+        $this->expectExceptionCode(ConnectionException::CLIENT_HANDSHAKE_ERR);
         $this->expectExceptionMessage('Connection to \'ws://localhost:8000/my/mock/path\' failed');
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
@@ -1380,8 +1545,8 @@ class ClientTest extends TestCase
             return "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
                 . "Sec-WebSocket-Accept: BAD_KEY\r\n\r\n";
         });
-        $this->expectException('WebSocket\ConnectionException');
-        $this->expectExceptionCode(1101);
+        $this->expectException(ConnectionException::class);
+        $this->expectExceptionCode(ConnectionException::CLIENT_HANDSHAKE_ERR);
         $this->expectExceptionMessage('Server sent bad upgrade response');
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
@@ -1424,9 +1589,9 @@ class ClientTest extends TestCase
         $client->connect();
 
         $this->expectSocketStreamIsConnected();
-        $this->expectException('WebSocket\BadOpcodeException');
+        $this->expectException(BadOpcodeException::class);
         $this->expectExceptionMessage('Bad opcode \'bad\'.  Try \'text\' or \'binary\'.');
-        $this->expectExceptionCode(1026);
+        $this->expectExceptionCode(BadOpcodeException::BAD_OPCODE);
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
         $client->send('Bad Opcode', 'bad');
@@ -1527,8 +1692,8 @@ class ClientTest extends TestCase
         $this->expectSocketStreamGetMetadata()->setReturn(function () {
             return ['eof' => true, 'mode' => 'rw', 'seekable' => false];
         });
-        $this->expectException('WebSocket\ConnectionException');
-        $this->expectExceptionCode(1025);
+        $this->expectException(ConnectionException::class);
+        $this->expectExceptionCode(ConnectionException::EOF);
         $this->expectExceptionMessage('Could only write 18 out of 22 bytes.');
         $this->expectSocketStreamClose();
         $this->expectSocketStreamIsConnected();
@@ -1578,8 +1743,8 @@ class ClientTest extends TestCase
         $this->expectSocketStreamGetMetadata()->setReturn(function () {
             return ['timed_out' => true, 'mode' => 'rw', 'seekable' => false];
         });
-        $this->expectException('WebSocket\TimeoutException');
-        $this->expectExceptionCode(1024);
+        $this->expectException(TimeoutException::class);
+        $this->expectExceptionCode(ConnectionException::TIMED_OUT);
         $this->expectExceptionMessage('Connection timeout');
         $this->expectSocketStreamClose();
         $this->expectSocketStreamIsConnected();
@@ -1629,8 +1794,8 @@ class ClientTest extends TestCase
         $this->expectSocketStreamGetMetadata()->setReturn(function () {
             return ['timed_out' => true, 'mode' => 'rw', 'seekable' => false];
         });
-        $this->expectException('WebSocket\TimeoutException');
-        $this->expectExceptionCode(1024);
+        $this->expectException(TimeoutException::class);
+        $this->expectExceptionCode(TimeoutException::TIMED_OUT);
         $this->expectExceptionMessage('Empty read; connection dead?');
         $this->expectSocketStreamClose();
         $this->expectSocketStreamIsConnected();
@@ -2031,7 +2196,7 @@ class ClientTest extends TestCase
             $this->assertNull($client->getPier());
         }, function ($exceptions, $result) {
             $this->assertEquals(
-                'getPier() is deprecated and will be removed in future version. Use getRemoteName() instead.',
+                'getPier() is deprecated and will be removed. Use getRemoteName() instead.',
                 $exceptions[0]->getMessage()
             );
         }, E_USER_DEPRECATED);
