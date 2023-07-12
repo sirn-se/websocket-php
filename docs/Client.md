@@ -1,38 +1,9 @@
-Client • [Server](Server.md) • [Message](Message.md) • [Examples](Examples.md) • [Changelog](Changelog.md) • [Contributing](Contributing.md)
+Client • [Server](Server.md) • [Message](Message.md) • [Classes](Classes.md) • [Examples](Examples.md) • [Changelog](Changelog.md) • [Contributing](Contributing.md)
 
 # Websocket: Client
 
 The client can read and write on a WebSocket stream.
 It internally supports Upgrade handshake and implicit close and ping/pong operations.
-
-##  Class synopsis
-
-```php
-WebSocket\Client {
-
-    public __construct(UriInterface|string $uri, array $options = []);
-    public __destruct();
-    public __toString() : string;
-
-    public text(string $payload) : void;
-    public binary(string $payload) : void;
-    public ping(string $payload = '') : void;
-    public pong(string $payload = '') : void;
-    public send(Message|string $payload, string $opcode = 'text') : void;
-    public close(int $status = 1000, mixed $message = 'ttfn') : void;
-    public receive() : Message|string|null;
-
-    public getName() : string|null;
-    public getRemoteName() : string|null;
-    public getLastOpcode() : string;
-    public getCloseStatus() : int;
-    public isConnected() : bool;
-    public setTimeout(int $seconds) : void;
-    public setFragmentSize(int $fragment_size) : self;
-    public getFragmentSize() : int;
-    public setLogger(Psr\Log\LoggerInterface $logger = null) : void;
-}
-```
 
 ## Examples
 
@@ -67,7 +38,7 @@ while (true) {
 $client->close();
 ```
 
-### Filtering received messages
+### Receiving messages
 
 By default the `receive()` method return messages of 'text' and 'binary' opcode.
 The filter option allows you to specify which message types to return.
@@ -78,6 +49,15 @@ $client->receive(); // Only return 'text' messages
 
 $client = new WebSocket\Client("ws://echo.websocket.org/", ['filter' => ['text', 'binary', 'ping', 'pong', 'close']]);
 $client->receive(); // Return all messages
+```
+
+By setting an option, `receive()` will instead return a [Message](Message.md) instance.
+
+```php
+$server = new WebSocket\Server(['return_obj' => true]);
+$message = $server->receive();
+$message->getOpcode();
+$message->getContent();
 ```
 
 ### Sending messages
@@ -95,6 +75,10 @@ $client->pong(); // Send an unsolicited opcode=pong frame
 // Generic send method
 $client->send($payload); // Sent as opcode=text
 $client->send($payload, 'binary'); // Sent as opcode=binary
+
+// Message send method
+$server->send(new WebSocket\Message\Text($payload)); // Sent as opcode=text
+$server->send(new WebSocket\Message\Binary($payload)); // Sent as opcode=text
 ```
 
 ## Constructor options

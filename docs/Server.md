@@ -1,4 +1,4 @@
-[Client](Client.md) • Server • [Message](Message.md) • [Examples](Examples.md) • [Changelog](Changelog.md) • [Contributing](Contributing.md)
+[Client](Client.md) • Server • [Message](Message.md) • [Classes](Classes.md) • [Examples](Examples.md) • [Changelog](Changelog.md) • [Contributing](Contributing.md)
 
 # Websocket: Server
 
@@ -7,41 +7,6 @@ It internally supports Upgrade handshake and implicit close and ping/pong operat
 
 Note that it does **not** support threading or automatic association ot continuous client requests.
 If you require this kind of server behavior, you need to build it on top of provided server implementation.
-
-##  Class synopsis
-
-```php
-WebSocket\Server {
-
-    public __construct(array $options = []);
-    public __destruct();
-    public __toString() : string;
-
-    public accept() : bool;
-    public text(string $payload) : void;
-    public binary(string $payload) : void;
-    public ping(string $payload = '') : void;
-    public pong(string $payload = '') : void;
-    public send(Message|string $payload, string $opcode = 'text') : void;
-    public close(int $status = 1000, mixed $message = 'ttfn') : void;
-    public receive() : Message|string|null;
-
-    public getPort() : int;
-    public getPath() : string;
-    public getRequest() : array;
-    public getHeader(string $header_name) : string|null;
-
-    public getName() : string|null;
-    public getRemoteName() : string|null;
-    public getLastOpcode() : string;
-    public getCloseStatus() : int;
-    public isConnected() : bool;
-    public setTimeout(int $seconds) : void;
-    public setFragmentSize(int $fragment_size) : self;
-    public getFragmentSize() : int;
-    public setLogger(Psr\Log\LoggerInterface $logger = null) : void;
-}
-```
 
 ## Examples
 
@@ -77,7 +42,7 @@ while ($server->accept()) {
 $server->close();
 ```
 
-### Filtering received messages
+### Receiving messages
 
 By default the `receive()` method return messages of 'text' and 'binary' opcode.
 The filter option allows you to specify which message types to return.
@@ -88,6 +53,15 @@ $server->receive(); // only return 'text' messages
 
 $server = new WebSocket\Server(['filter' => ['text', 'binary', 'ping', 'pong', 'close']]);
 $server->receive(); // return all messages
+```
+
+By setting an option, `receive()` will instead return a [Message](Message.md) instance.
+
+```php
+$server = new WebSocket\Server(['return_obj' => true]);
+$message = $server->receive();
+$message->getOpcode();
+$message->getContent();
 ```
 
 ### Sending messages
@@ -105,6 +79,11 @@ $server->pong(); // Send an unsolicited opcode=pong frame
 // Generic send method
 $server->send($payload); // Sent as opcode=text
 $server->send($payload, 'binary'); // Sent as opcode=binary
+
+// Message send method
+$server->send(new WebSocket\Message\Text($payload)); // Sent as opcode=text
+$server->send(new WebSocket\Message\Binary($payload)); // Sent as opcode=text
+
 ```
 
 ## Constructor options

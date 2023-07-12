@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2023 Textalk/Abicart and contributors.
+ * Copyright (C) 2014-2023 Textalk and contributors.
  *
  * This file is part of Websocket PHP and is free software under the ISC License.
  * License text: https://raw.githubusercontent.com/sirn-se/websocket-php/master/COPYING.md
@@ -20,6 +20,7 @@ use Psr\Log\{
     LoggerAwareTrait,
     NullLogger
 };
+use Throwable;
 use WebSocket\Http\{
     Request,
     Response
@@ -28,8 +29,11 @@ use WebSocket\Message\{
     Factory,
     Message
 };
-use Throwable;
 
+/**
+ * WebSocket\Client class.
+ * Entry class for WebSocket client.
+ */
 class Client implements LoggerAwareInterface
 {
     use LoggerAwareTrait; // provides setLogger(LoggerInterface $logger)
@@ -181,6 +185,19 @@ class Client implements LoggerAwareInterface
     }
 
     /**
+     * Tell the socket to close.
+     * @param integer $status  http://tools.ietf.org/html/rfc6455#section-7.4
+     * @param string  $message A closing message, max 125 bytes.
+     */
+    public function close(int $status = 1000, string $message = 'ttfn'): void
+    {
+        if (!$this->isConnected()) {
+            return;
+        }
+        $this->connection->close($status, $message);
+    }
+
+    /**
      * Send message.
      * @param Message|string $payload Message to send, as Meessage instance or string.
      * @param string $opcode Opcode to use, default: 'text'.
@@ -203,19 +220,6 @@ class Client implements LoggerAwareInterface
 
         $message = $this->messageFactory->create($opcode, $payload);
         $this->connection->pushMessage($message, $masked);
-    }
-
-    /**
-     * Tell the socket to close.
-     * @param integer $status  http://tools.ietf.org/html/rfc6455#section-7.4
-     * @param string  $message A closing message, max 125 bytes.
-     */
-    public function close(int $status = 1000, string $message = 'ttfn'): void
-    {
-        if (!$this->isConnected()) {
-            return;
-        }
-        $this->connection->close($status, $message);
     }
 
     /**

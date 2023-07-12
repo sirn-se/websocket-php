@@ -1,17 +1,21 @@
-[Client](Client.md) • [Server](Server.md) • [Message](Message.md) • [Examples](Examples.md) • Changelog • [Contributing](Contributing.md)
+[Client](Client.md) • [Server](Server.md) • [Message](Message.md) • [Classes](Classes.md) • [Examples](Examples.md) • Changelog • [Contributing](Contributing.md)
 
 # Websocket: Changelog
 
 ## `v1.7`
 
- > PHP version `^8.0`
+ > PHP version `^7.4|^8.0`
 
 ### `1.7.0`
 
  * Client `getHandshakeResponse()` method (@sirn-se)
+ * Server `getHandshakeRequest()` method (@sirn-se)
  * `connect()` methods are now public (@sirn-se)
+ * Modularized design (@sirn-se)
  * Using managed streams (@sirn-se)
+ * Various code improvements (@sirn-se)
  * Unit test rewrite (@sirn-se)
+ * Deprecations for v2.0 (@sirn-se)
 
 ## `v1.6`
 

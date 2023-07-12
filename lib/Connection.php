@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Copyright (C) 2014-2023 Textalk/Abicart and contributors.
+ * Copyright (C) 2014-2023 Textalk and contributors.
  *
  * This file is part of Websocket PHP and is free software under the ISC License.
- * License text: https://github.com/sirn-se/websocket-php/blob/master/COPYING.md
+ * License text: https://raw.githubusercontent.com/sirn-se/websocket-php/master/COPYING.md
  */
 
 namespace WebSocket;
@@ -29,6 +29,10 @@ use WebSocket\Message\{
     MessageHandler
 };
 
+/**
+ * WebSocket\Connection class.
+ * A client/server connection.
+ */
 class Connection implements LoggerAwareInterface
 {
     use OpcodeTrait;
@@ -107,12 +111,23 @@ class Connection implements LoggerAwareInterface
     /* ---------- Connection management ---------------------------------------------------------------------------- */
 
     /**
-     * Get connection close status.
-     * @return int|null Current close status
+     * If connected to stream.
+     * @return bool
      */
-    public function getCloseStatus(): ?int
+    public function isConnected(): bool
     {
-        return $this->close_status;
+        return $this->stream->isConnected();
+    }
+
+    /**
+     * Close connection stream.
+     * @return bool
+     */
+    public function disconnect(): bool
+    {
+        $this->logger->info('[connection] Closing connection');
+        $this->stream->close();
+        return true;
     }
 
     /**
@@ -141,24 +156,16 @@ class Connection implements LoggerAwareInterface
         }
     }
 
-    /**
-     * Close connection stream.
-     * @return bool
-     */
-    public function disconnect(): bool
-    {
-        $this->logger->info('[connection] Closing connection');
-        $this->stream->close();
-        return true;
-    }
+
+    /* ---------- Connection state --------------------------------------------------------------------------------- */
 
     /**
-     * If connected to stream.
-     * @return bool
+     * Get connection close status.
+     * @return int|null Current close status
      */
-    public function isConnected(): bool
+    public function getCloseStatus(): ?int
     {
-        return $this->stream->isConnected();
+        return $this->close_status;
     }
 
     /**

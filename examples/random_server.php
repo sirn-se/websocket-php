@@ -33,11 +33,12 @@ $options = array_merge([
     'port'          => 8000,
     'timeout'       => rand(1, 60),
     'fragment_size' => rand(1, 4096) * 8,
+    'return_obj'    => true,
 ], getopt('', ['port:', 'timeout:', 'fragment_size:', 'debug']));
 
 // If debug mode and logger is available
-if (isset($options['debug']) && class_exists('WebSocket\EchoLog')) {
-    $logger = new EchoLog();
+if (isset($options['debug']) && class_exists('WebSocket\Test\EchoLog')) {
+    $logger = new \WebSocket\Test\EchoLog();
     $options['logger'] = $logger;
     echo "> Using logger\n";
 }
@@ -81,13 +82,13 @@ while (true) {
                     default:
                         echo "> Receiving\n";
                         $received = $server->receive();
-                        echo "> Received {$server->getLastOpcode()}: {$received}\n";
+                        echo "> Received {$received->getOpcode()}: {$received->getContent()}\n";
                 }
                 sleep(rand(1, 5));
             }
         }
     } catch (\Throwable $e) {
-        echo "ERROR: {$e->getMessage()} [{$e->getCode()}]\n";
+        echo "> ERROR: {$e->getMessage()} [{$e->getCode()}]\n";
     }
     sleep(rand(1, 5));
 }

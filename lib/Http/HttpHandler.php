@@ -9,8 +9,10 @@
 
 namespace WebSocket\Http;
 
-use Phrity\Net\SocketStream;
-use Phrity\Net\Uri;
+use Phrity\Net\{
+    SocketStream,
+    Uri
+};
 use Psr\Http\Message\{
     MessageInterface,
     RequestInterface,

@@ -17,7 +17,7 @@ use Psr\Http\Message\{
 use RuntimeException;
 
 /**
- * WebSocket\Http\MessageHandler Request.
+ * WebSocket\Http\Request class.
  * Only used for handshake procedure.
  */
 class Request extends Message implements RequestInterface
@@ -75,7 +75,7 @@ class Request extends Message implements RequestInterface
      * @return static
      * @throws \InvalidArgumentException for invalid HTTP methods.
      */
-    public function withMethod($method): self
+    public function withMethod(string $method): self
     {
         $new = clone $this;
         $new->method = $method;
@@ -98,7 +98,7 @@ class Request extends Message implements RequestInterface
      * @param bool $preserveHost Preserve the original state of the Host header.
      * @return static
      */
-    public function withUri(UriInterface $uri, $preserveHost = false): self
+    public function withUri(UriInterface $uri, bool $preserveHost = false): self
     {
         $new = clone $this;
         $new->uri = $uri instanceof Uri ? $uri : new Uri((string)$uri);

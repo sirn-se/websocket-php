@@ -18,6 +18,7 @@ use Psr\Http\Message\{
 
 /**
  * Phrity\WebSocket\Http\Message class.
+ * Only used for handshake procedure.
  */
 abstract class Message implements MessageInterface
 {
@@ -38,7 +39,7 @@ abstract class Message implements MessageInterface
      * @param string $version HTTP protocol version
      * @return static
      */
-    public function withProtocolVersion($version): self
+    public function withProtocolVersion(string $version): self
     {
         $new = clone $this;
         $new->version = $version;
@@ -59,7 +60,7 @@ abstract class Message implements MessageInterface
      * @param string $name Case-insensitive header field name.
      * @return bool Returns true if any header names match the given header.
      */
-    public function hasHeader($name): bool
+    public function hasHeader(string $name): bool
     {
         return array_key_exists(strtolower($name), $this->headers);
     }
@@ -69,7 +70,7 @@ abstract class Message implements MessageInterface
      * @param string $name Case-insensitive header field name.
      * @return string[] An array of string values as provided for the given header.
      */
-    public function getHeader($name): array
+    public function getHeader(string $name): array
     {
         return $this->hasHeader($name)
             ? array_merge(...array_values($this->headers[strtolower($name)] ?: []))
@@ -81,7 +82,7 @@ abstract class Message implements MessageInterface
      * @param string $name Case-insensitive header field name.
      * @return string A string of values as provided for the given header.
      */
-    public function getHeaderLine($name): string
+    public function getHeaderLine(string $name): string
     {
         return implode(',', $this->getHeader($name));
     }
@@ -93,7 +94,7 @@ abstract class Message implements MessageInterface
      * @return static
      * @throws \InvalidArgumentException for invalid header names or values.
      */
-    public function withHeader($name, $value): self
+    public function withHeader(string $name, $value): self
     {
         $new = clone $this;
         if ($this->hasHeader($name)) {
@@ -103,7 +104,6 @@ abstract class Message implements MessageInterface
         return $new;
     }
 
-
     /**
      * Return an instance with the specified header appended with the given value.
      * @param string $name Case-insensitive header field name to add.
@@ -112,7 +112,7 @@ abstract class Message implements MessageInterface
      * @throws \InvalidArgumentException for invalid header names.
      * @throws \InvalidArgumentException for invalid header values.
      */
-    public function withAddedHeader($name, $value): self
+    public function withAddedHeader(string $name, $value): self
     {
         $new = clone $this;
         $new->handleHeader($name, $value);
@@ -124,7 +124,7 @@ abstract class Message implements MessageInterface
      * @param string $name Case-insensitive header field name to remove.
      * @return static
      */
-    public function withoutHeader($name): self
+    public function withoutHeader(string $name): self
     {
         $new = clone $this;
         if ($this->hasHeader($name)) {
@@ -160,7 +160,7 @@ abstract class Message implements MessageInterface
         return $lines;
     }
 
-    private function handleHeader($name, $value): void
+    private function handleHeader(string $name, $value): void
     {
         // @todo: Add all available characters, these are just some of them.
         if (!preg_match('|^[0-9a-zA-Z#_-]+$|', $name)) {

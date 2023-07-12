@@ -10,11 +10,14 @@
 namespace WebSocket\Http;
 
 use BadMethodCallException;
-use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Message\UriInterface;
+use Psr\Http\Message\{
+    ServerRequestInterface,
+    UriInterface
+};
 
 /**
  * WebSocket\Http\ServerRequest class.
+ * Only used for handshake procedure.
  */
 class ServerRequest extends Request implements ServerRequestInterface
 {

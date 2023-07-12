@@ -10,12 +10,15 @@
 namespace WebSocket\Http;
 
 use Phrity\Net\Uri;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\UriInterface;
+use Psr\Http\Message\{
+    ResponseInterface,
+    UriInterface
+};
 use RuntimeException;
 
 /**
  * Phrity\WebSocket\Http\Response class.
+ * Only used for handshake procedure.
  */
 class Response extends Message implements ResponseInterface
 {
@@ -108,7 +111,7 @@ class Response extends Message implements ResponseInterface
      * @return static
      * @throws \InvalidArgumentException For invalid status code arguments.
      */
-    public function withStatus($code, $reasonPhrase = ''): self
+    public function withStatus(int $code, string $reasonPhrase = ''): self
     {
         $new = clone $this;
         $new->code = $code;

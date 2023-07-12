@@ -79,7 +79,7 @@ class MockUri implements UriInterface
          return clone $this;
     }
 
-    public function withPath($path,): UriInterface
+    public function withPath($path): UriInterface
     {
         return clone $this;
     }

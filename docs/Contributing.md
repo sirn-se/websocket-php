@@ -1,4 +1,4 @@
-[Client](Client.md) • [Server](Server.md) • [Message](Message.md) • [Examples](Examples.md) • [Changelog](Changelog.md) • Contributing
+[Client](Client.md) • [Server](Server.md) • [Message](Message.md) • [Classes](Classes.md) • [Examples](Examples.md) • [Changelog](Changelog.md) • Contributing
 
 # Websocket: Contributing
 
@@ -14,9 +14,8 @@ Requirements on pull requests;
 
 Base your patch on corresponding version branch, and target that version branch in your pull request.
 
-* `v1.6-master` current version
-* `v1.5-master` previous version, bug fixes only
-* `v1.7-master` under development
+* `v1.6-master` previous version, bug fixes only
+* `v1.7-master` current version
 * `v2.0-main` under development
 * Older versions should not be target of pull requests
 

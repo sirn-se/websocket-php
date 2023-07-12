@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Copyright (C) 2014-2022 Textalk/Abicart and contributors.
+ * Copyright (C) 2014-2023 Textalk and contributors.
  *
  * This file is part of Websocket PHP and is free software under the ISC License.
- * License text: https://raw.githubusercontent.com/Textalk/websocket-php/master/COPYING
+ * License text: https://raw.githubusercontent.com/sirn-se/websocket-php/master/COPYING.md
  */
 
 namespace WebSocket;
@@ -29,6 +29,10 @@ use WebSocket\Message\{
     Message
 };
 
+/**
+ * WebSocket\Server class.
+ * Entry class for WebSocket server.
+ */
 class Server implements LoggerAwareInterface
 {
     use LoggerAwareTrait; // Provides setLogger(LoggerInterface $logger)
@@ -180,6 +184,19 @@ class Server implements LoggerAwareInterface
     }
 
     /**
+     * Tell the socket to close.
+     * @param integer $status  http://tools.ietf.org/html/rfc6455#section-7.4
+     * @param string  $message A closing message, max 125 bytes.
+     */
+    public function close(int $status = 1000, string $message = 'ttfn'): void
+    {
+        if (!$this->isConnected()) {
+            return;
+        }
+        $this->connection->close($status, $message);
+    }
+
+    /**
      * Send message.
      * @param Message|string $payload Message to send, as Meessage instance or string.
      * @param string $opcode Opcode to use, default: 'text'.
@@ -202,19 +219,6 @@ class Server implements LoggerAwareInterface
 
         $message = $this->messageFactory->create($opcode, $payload);
         $this->connection->pushMessage($message, $masked);
-    }
-
-    /**
-     * Tell the socket to close.
-     * @param integer $status  http://tools.ietf.org/html/rfc6455#section-7.4
-     * @param string  $message A closing message, max 125 bytes.
-     */
-    public function close(int $status = 1000, string $message = 'ttfn'): void
-    {
-        if (!$this->isConnected()) {
-            return;
-        }
-        $this->connection->close($status, $message);
     }
 
     /**
@@ -246,7 +250,6 @@ class Server implements LoggerAwareInterface
         }
         return $return;
     }
-
 
 
     /* ---------- Connection management ---------------------------------------------------------------------------- */

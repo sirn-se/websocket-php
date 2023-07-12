@@ -1,4 +1,4 @@
-[Client](Client.md) • [Server](Server.md) • [Message](Message.md) • Examples • [Changelog](Changelog.md) • [Contributing](Contributing.md)
+[Client](Client.md) • [Server](Server.md) • [Message](Message.md) • [Classes](Classes.md) • Examples • [Changelog](Changelog.md) • [Contributing](Contributing.md)
 
 # Websocket: Examples
 
@@ -12,14 +12,12 @@ access to a simple echo logger that print out information synchronously.
 This is usable for debugging. For production, use a proper logger.
 
 ```php
-namespace WebSocket;
+$logger = new WebSocket\Test\EchoLog();
 
-$logger = new EchoLogger();
-
-$client = new Client('ws://echo.websocket.org/');
+$client = new WebSocket\Client('ws://echo.websocket.org/');
 $client->setLogger($logger);
 
-$server = new Server();
+$server = new WebSocket\Server();
 $server->setLogger($logger);
 ```
 
@@ -71,7 +69,6 @@ These strings can be sent as message to trigger server to perform actions;
 * `headers` - Server will respond with all headers provided by client
 * `ping` - Server will send a ping message
 * `pong` - Server will send a pong message
-* `stop` - Server will stop listening
 * For other sent strings, server will respond with the same strings
 
 ## The `random` client
