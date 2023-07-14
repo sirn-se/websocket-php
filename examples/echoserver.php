@@ -23,11 +23,12 @@ $options = array_merge([
     'port'          => 8000,
     'timeout'       => 200,
     'filter'        => ['text', 'binary', 'ping', 'pong', 'close'],
+    'return_obj'    => true,
 ], getopt('', ['port:', 'timeout:', 'debug']));
 
 // If debug mode and logger is available
-if (isset($options['debug']) && class_exists('WebSocket\EchoLog')) {
-    $logger = new EchoLog();
+if (isset($options['debug']) && class_exists('WebSocket\Test\EchoLog')) {
+    $logger = new \WebSocket\Test\EchoLog();
     $options['logger'] = $logger;
     echo "> Using logger\n";
 }
@@ -49,39 +50,44 @@ while (true) {
             echo "> Accepted on port {$server->getPort()}\n";
             while (true) {
                 $message = $server->receive();
-                $opcode = $server->getLastOpcode();
                 if (is_null($message)) {
                     echo "> Closing connection\n";
                     continue 2;
                 }
-                echo "> Got '{$message}' [opcode: {$opcode}]\n";
-                if (in_array($opcode, ['ping', 'pong'])) {
-                    $server->send($message);
+                $opcode = $message->getOpcode();
+                echo "> Got '{$message->getContent()}' [opcode: {$opcode}]\n";
+                if (!in_array($opcode, ['text', 'binary'])) {
                     continue;
                 }
                 // Allow certain string to trigger server action
-                switch ($message) {
+                switch ($message->getContent()) {
                     case 'exit':
                         echo "> Client told me to quit.  Bye bye.\n";
                         $server->close();
                         echo "> Close status: {$server->getCloseStatus()}\n";
                         exit;
                     case 'headers':
-                        $server->text(implode("\r\n", $server->getRequest()));
+                        $headers = '';
+                        foreach ($server->getHandshakeRequest()->getHeaders() as $key => $lines) {
+                            foreach ($lines as $line) {
+                                $headers .= "{$key}: {$line}\r\n";
+                            }
+                        }
+                        $server->text($headers);
                         break;
                     case 'ping':
-                        $server->ping($message);
+                        $server->ping($message->getContent());
                         break;
                     case 'auth':
-                        $auth = $server->getHeader('Authorization');
-                        $server->text("{$auth} - {$message}");
+                        $auth = $server->getHandshakeRequest()->getHeaderLine('Authorization');
+                        $server->text("{$auth} - {$message->getContent()}");
                         break;
                     default:
-                        $server->text($message);
+                        $server->text($message->getContent());
                 }
             }
         }
-    } catch (ConnectionException $e) {
-        echo "> ERROR: {$e->getMessage()}\n";
+    } catch (\Throwable $e) {
+        echo "> ERROR: {$e->getMessage()} [{$e->getCode()}]\n";
     }
 }

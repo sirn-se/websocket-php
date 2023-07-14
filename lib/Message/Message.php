@@ -1,16 +1,21 @@
 <?php
 
 /**
- * Copyright (C) 2014-2022 Textalk/Abicart and contributors.
+ * Copyright (C) 2014-2023 Textalk and contributors.
  *
  * This file is part of Websocket PHP and is free software under the ISC License.
- * License text: https://raw.githubusercontent.com/Textalk/websocket-php/master/COPYING
+ * License text: https://raw.githubusercontent.com/sirn-se/websocket-php/master/COPYING.md
  */
 
 namespace WebSocket\Message;
 
 use DateTime;
+use WebSocket\Frame\Frame;
 
+/**
+ * WebSocket\Message\Message class.
+ * Abstract superclass for WebSocket messages.
+ */
 abstract class Message
 {
     protected $opcode;
@@ -59,16 +64,17 @@ abstract class Message
     }
 
     // Split messages into frames
-    public function getFrames(bool $masked = true, int $framesize = 4096): array
+    public function getFrames(int $framesize = 4096): array
     {
-
         $frames = [];
         $split = str_split($this->getContent(), $framesize) ?: [''];
-        foreach ($split as $payload) {
-            $frames[] = [false, $payload, 'continuation', $masked];
+        foreach ($split as $i => $payload) {
+            $frames[] = new Frame(
+                $i === 0 ? $this->opcode : 'continuation',
+                $payload,
+                $i === array_key_last($split)
+            );
         }
-        $frames[0][2] = $this->opcode;
-        $frames[array_key_last($frames)][0] = true;
         return $frames;
     }
 }

@@ -4,7 +4,7 @@
  * Simple echo logger (only available when running in dev environment)
  */
 
-namespace WebSocket;
+namespace WebSocket\Test;
 
 class EchoLog implements \Psr\Log\LoggerInterface
 {

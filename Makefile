@@ -15,6 +15,9 @@ coverage: composer.lock build
 	XDEBUG_MODE=coverage ./vendor/bin/phpunit --coverage-clover build/logs/clover.xml
 	./vendor/bin/php-coveralls -v
 
+coverage-summary: composer.lock build
+	XDEBUG_MODE=coverage ./vendor/bin/phpunit --coverage-text
+
 composer.phar:
 	curl -s http://getcomposer.org/installer | php
 

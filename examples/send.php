@@ -20,14 +20,16 @@ echo "> Send client\n";
 
 // Server options specified or random
 $options = array_merge([
+    'filter'        => ['text'],
     'uri'           => 'ws://localhost:8000',
     'opcode'        => 'text',
+    'return_obj'    => true,
 ], getopt('', ['uri:', 'opcode:', 'debug']));
 $message = array_pop($argv);
 
 // If debug mode and logger is available
-if (isset($options['debug']) && class_exists('WebSocket\EchoLog')) {
-    $logger = new EchoLog();
+if (isset($options['debug']) && class_exists('WebSocket\Test\EchoLog')) {
+    $logger = new \WebSocket\Test\EchoLog();
     $options['logger'] = $logger;
     echo "> Using logger\n";
 }
@@ -39,13 +41,13 @@ try {
     echo "> Sent '{$message}' [opcode: {$options['opcode']}]\n";
     if (in_array($options['opcode'], ['text', 'binary'])) {
         $message = $client->receive();
-        $opcode = $client->getLastOpcode();
+        $opcode = $message->getOpcode();
         if (!is_null($message)) {
-            echo "> Got '{$message}' [opcode: {$opcode}]\n";
+            echo "> Got '{$message->getContent()}' [opcode: {$opcode}]\n";
         }
     }
     $client->close();
     echo "> Closing client\n";
 } catch (\Throwable $e) {
-    echo "ERROR: {$e->getMessage()} [{$e->getCode()}]\n";
+    echo "> ERROR: {$e->getMessage()} [{$e->getCode()}]\n";
 }

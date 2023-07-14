@@ -1,36 +1,42 @@
 {
     "name": "phrity/websocket",
-    "description": "WebSocket client and server",
-    "license": "ISC",
     "type": "library",
+    "description": "WebSocket client and server",
+    "homepage": "https://phrity.sirn.se/websocket",
+    "keywords": ["websocket", "client", "server"],
+    "license": "ISC",
     "authors": [
         {
             "name": "Fredrik Liljegren"
         },
         {
-            "name": "Sören Jensen"
+            "name": "Sören Jensen",
+            "email": "sirn@sirn.se",
+            "homepage": "https://phrity.sirn.se"
         }
     ],
     "autoload": {
         "psr-4": {
-            "WebSocket\\": "lib"
+            "WebSocket\\": "lib/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "WebSocket\\": "tests/mock"
+            "WebSocket\\Test\\": "tests/mock/"
         }
     },
     "require": {
         "php": "^7.4 | ^8.0",
-        "phrity/net-uri": "^1.0",
+        "phrity/net-uri": "^1.2",
+        "phrity/net-stream": "^1.2",
         "phrity/util-errorhandler": "^1.0",
-        "psr/log": "^1.0 | ^2.0 | ^3.0",
-        "psr/http-message": "^1.0"
+        "psr/http-message": "^1.0 | ^2.0",
+        "psr/log": "^1.0 | ^2.0 | ^3.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "^9.0",
         "php-coveralls/php-coveralls": "^2.0",
+        "phpunit/phpunit": "^9.0 | ^10.0",
+        "phrity/net-mock": "^1.2",
         "squizlabs/php_codesniffer": "^3.5"
     }
 }

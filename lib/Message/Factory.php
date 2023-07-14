@@ -1,16 +1,20 @@
 <?php
 
 /**
- * Copyright (C) 2014-2022 Textalk/Abicart and contributors.
+ * Copyright (C) 2014-2023 Textalk and contributors.
  *
  * This file is part of Websocket PHP and is free software under the ISC License.
- * License text: https://raw.githubusercontent.com/Textalk/websocket-php/master/COPYING
+ * License text: https://raw.githubusercontent.com/sirn-se/websocket-php/master/COPYING.md
  */
 
 namespace WebSocket\Message;
 
 use WebSocket\BadOpcodeException;
 
+/**
+ * WebSocket\Message\Factory class.
+ * Helper class to create Message instances.
+ */
 class Factory
 {
     public function create(string $opcode, string $payload = ''): Message

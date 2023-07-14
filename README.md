@@ -17,6 +17,7 @@ repo since `v1.3`.
 - [Client](docs/Client.md)
 - [Server](docs/Server.md)
 - [Examples](docs/Examples.md)
+- [Classes](docs/Classes.md)
 - [Changelog](docs/Changelog.md)
 - [Contributing](docs/Contributing.md)
 
