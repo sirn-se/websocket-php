@@ -17,7 +17,7 @@
     ],
     "autoload": {
         "psr-4": {
-            "WebSocket\\": "lib/"
+            "WebSocket\\": "src/"
         }
     },
     "autoload-dev": {
@@ -26,7 +26,7 @@
         }
     },
     "require": {
-        "php": "^7.4 | ^8.0",
+        "php": "^8.0",
         "phrity/net-uri": "^1.2",
         "phrity/net-stream": "^1.2",
         "phrity/util-errorhandler": "^1.0",

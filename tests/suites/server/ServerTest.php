@@ -61,7 +61,6 @@ class ServerTest extends TestCase
         $server->setStreamFactory(new StreamFactory());
 
         $this->assertFalse($server->isConnected());
-        $this->assertEquals(null, $server->getLastOpcode());
         $this->assertEquals(4096, $server->getFragmentSize());
 
         $this->expectStreamFactoryCreateSockerServer();
@@ -80,23 +79,11 @@ class ServerTest extends TestCase
         $server->send('Connect');
 
         $this->assertEquals(8000, $server->getPort());
-        $this->assertEquals('/my/mock/path', $server->getPath());
 
         $this->expectSocketStreamIsConnected();
         $this->assertTrue($server->isConnected());
         $this->assertEquals(4096, $server->getFragmentSize());
         $this->assertNull($server->getCloseStatus());
-        $this->assertEquals([
-            'GET /my/mock/path HTTP/1.1',
-            'Host: localhost:8000',
-            'User-Agent: websocket-client-php',
-            'Connection: Upgrade',
-            'Upgrade: websocket',
-            'Sec-WebSocket-Key: cktLWXhUdDQ2OXF0ZCFqOQ==',
-            'Sec-WebSocket-Version: 13',
-        ], $server->getRequest());
-        $this->assertEquals('websocket-client-php', $server->getHeader('USER-AGENT'));
-        $this->assertNull($server->getHeader('no such header'));
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
@@ -127,7 +114,6 @@ class ServerTest extends TestCase
 
         $this->assertEquals('Receiving a message', $message);
         $this->assertNull($server->getCloseStatus());
-        $this->assertEquals('text', $server->getLastOpcode());
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
@@ -548,7 +534,6 @@ class ServerTest extends TestCase
         $message = $server->receive();
 
         $this->assertEquals('Receiving a message', $message);
-        $this->assertEquals('text', $server->getLastOpcode());
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
@@ -977,7 +962,6 @@ class ServerTest extends TestCase
         });
         $message = $server->receive();
         $this->assertEquals('Server ping', $message);
-        $this->assertEquals('pong', $server->getLastOpcode());
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
@@ -1012,7 +996,6 @@ class ServerTest extends TestCase
         });
         $message = $server->receive();
         $this->assertEquals('Multi fragment test', $message);
-        $this->assertEquals('text', $server->getLastOpcode());
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
@@ -1040,7 +1023,6 @@ class ServerTest extends TestCase
         $this->expectSocketStreamIsConnected();
         $this->assertFalse($server->isConnected());
         $this->assertEquals(17260, $server->getCloseStatus());
-        $this->assertEquals('close', $server->getLastOpcode());
 
         unset($server);
     }
@@ -1280,19 +1262,5 @@ class ServerTest extends TestCase
         $this->expectSocketStreamIsConnected();
 
         unset($server);
-    }
-
-    public function testDeprecated(): void
-    {
-        $server = new Server();
-        $handler = new ErrorHandler();
-        $handler->withAll(function () use ($server) {
-            $this->assertNull($server->getPier());
-        }, function ($exceptions, $result) {
-            $this->assertEquals(
-                'getPier() is deprecated and will be removed. Use getRemoteName() instead.',
-                $exceptions[0]->getMessage()
-            );
-        }, E_USER_DEPRECATED);
     }
 }

@@ -66,7 +66,6 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         $this->assertFalse($client->isConnected());
-        $this->assertEquals(null, $client->getLastOpcode());
         $this->assertEquals(4096, $client->getFragmentSize());
 
         // Explicit connect and handshake
@@ -106,8 +105,6 @@ class ClientTest extends TestCase
         });
         $client->send('Sending a message');
 
-        $this->assertEquals(null, $client->getLastOpcode());
-
         $response = $client->getHandshakeResponse();
         $this->assertInstanceOf(Response::class, $response);
 
@@ -130,7 +127,6 @@ class ClientTest extends TestCase
         });
         $message = $client->receive();
 
-        $this->assertEquals('text', $client->getLastOpcode());
         $this->expectSocketStreamIsConnected();
         $this->assertTrue($client->isConnected());
         $this->assertNull($client->getCloseStatus());
@@ -579,7 +575,6 @@ class ClientTest extends TestCase
     {
         $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path', [
-            'origin' => 'Origin header',
             'headers' => ['Generic-header' => 'Generic content'],
         ]);
         $client->setStreamFactory(new StreamFactory());
@@ -611,7 +606,7 @@ class ClientTest extends TestCase
         $this->expectWsClientPerformHandshake(
             'localhost:8000',
             '/my/mock/path',
-            "origin: Origin header\r\nGeneric-header: Generic content\r\n"
+            "Generic-header: Generic content\r\n"
         );
         $client->connect();
 
@@ -1017,7 +1012,6 @@ class ClientTest extends TestCase
         $message = $client->receive();
 
         $this->assertEquals('Receiving a message', $message);
-        $this->assertEquals('text', $client->getLastOpcode());
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
@@ -1191,7 +1185,6 @@ class ClientTest extends TestCase
         $this->expectSocketStreamIsConnected();
         $this->assertFalse($client->isConnected());
         $this->assertEquals(1000, $client->getCloseStatus());
-        $this->assertNull($client->getLastOpcode());
 
         // Implicit reconnect and handshake, receive message
         $this->expectSocketStreamIsConnected();
@@ -1875,7 +1868,6 @@ class ClientTest extends TestCase
         });
         $message = $client->receive();
         $this->assertEquals('Server ping', $message);
-        $this->assertEquals('pong', $client->getLastOpcode());
 
         // Receiving 2 frames for text message
         $this->expectSocketStreamIsConnected();
@@ -1911,7 +1903,6 @@ class ClientTest extends TestCase
         });
         $message = $client->receive();
         $this->assertEquals('Multi fragment test', $message);
-        $this->assertEquals('text', $client->getLastOpcode());
 
         // Receive close message
         $this->expectSocketStreamIsConnected();
@@ -1938,7 +1929,6 @@ class ClientTest extends TestCase
         $this->expectSocketStreamIsConnected();
         $this->assertFalse($client->isConnected());
         $this->assertEquals(17260, $client->getCloseStatus());
-        $this->assertEquals('close', $client->getLastOpcode());
 
         $this->expectSocketStreamIsConnected();
         unset($client);
@@ -2187,18 +2177,5 @@ class ClientTest extends TestCase
         $this->assertNull($client->getName());
         $this->assertNull($client->getRemoteName());
         $this->assertNull($client->getCloseStatus());
-    }
-
-    public function testDeprecated(): void
-    {
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        (new ErrorHandler())->withAll(function () use ($client) {
-            $this->assertNull($client->getPier());
-        }, function ($exceptions, $result) {
-            $this->assertEquals(
-                'getPier() is deprecated and will be removed. Use getRemoteName() instead.',
-                $exceptions[0]->getMessage()
-            );
-        }, E_USER_DEPRECATED);
     }
 }

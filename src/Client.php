@@ -47,7 +47,6 @@ class Client implements LoggerAwareInterface
         'headers'       => [],
         'logger'        => null,
         'masked'        => true,
-        'origin'        => null, // @deprecated
         'persistent'    => false,
         'return_obj'    => false, // @deprecated
         'timeout'       => 5,
@@ -359,31 +358,6 @@ class Client implements LoggerAwareInterface
     }
 
 
-    /* ---------- Deprecated methods ------------------------------------------------------------------------------- */
-
-    /**
-     * Get last received opcode.
-     * @return string|null Opcode.
-     * @deprecated Will be removed in future version.
-     */
-    public function getLastOpcode(): ?string
-    {
-        $this->deprecated('getLastOpcode() is deprecated and will be removed. Check Message instead..');
-        return $this->last_opcode;
-    }
-
-    /**
-     * Get name of remote socket, or null if not connected.
-     * @return string|null
-     * @deprecated Will be removed in future version, use getPeer() instead.
-     */
-    public function getPier(): ?string
-    {
-        $this->deprecated('getPier() is deprecated and will be removed. Use getRemoteName() instead.');
-        return $this->getRemoteName();
-    }
-
-
     /* ---------- Internal helper methods -------------------------------------------------------------------------- */
 
     /**
@@ -412,11 +386,6 @@ class Client implements LoggerAwareInterface
         // Handle basic authentication.
         if ($userinfo = $this->socket_uri->getUserInfo()) {
             $request = $request->withHeader('authorization', 'Basic ' . base64_encode($userinfo));
-        }
-
-        // Deprecated way of adding origin (use headers instead).
-        if (isset($this->options['origin'])) {
-            $request = $request->withHeader('origin', $this->options['origin']);
         }
 
         // Add and override with headers from options.
@@ -526,11 +495,5 @@ class Client implements LoggerAwareInterface
         $error = "Stream context in \$options['context'] isn't a valid context.";
         $this->logger->error("[client] {$error}");
         throw new InvalidArgumentException($error);
-    }
-
-    protected function deprecated(string $message): void
-    {
-        $this->logger->debug("[client] {$message}");
-        trigger_error($message, E_USER_DEPRECATED);
     }
 }

@@ -226,119 +226,6 @@ class Connection implements LoggerAwareInterface
     }
 
 
-    /* ---------- Deprecated stream methods ------------------------------------------------------------------------ */
-
-    /**
-     * Read line from stream.
-     * @param int $length Maximum number of bytes to read
-     * @param string $ending Line delimiter
-     * @return string Read data
-     * @deprecated Will be removed in future version.
-     */
-    public function getLine(int $length, string $ending): string
-    {
-        $this->deprecated('getLine() on Connection is deprecated.');
-        $line = $this->stream->readLine($length);
-        if (is_null($line)) {
-            $this->throwException(new RuntimeException('Could not read from stream'));
-        }
-        $read = strlen($line);
-        $this->logger->debug("[connection] Read {$read} bytes of line.");
-        return $line;
-    }
-
-    /**
-     * Read characters from stream.
-     * @param int $length Maximum number of bytes to read
-     * @return string Read data
-     * @deprecated Will be removed in future version.
-     */
-    public function read(int $length): string
-    {
-        $this->deprecated('read() on Connection is deprecated.');
-        try {
-            $data = '';
-            while (strlen($data) < $length) {
-                $buffer = $this->stream->read($length - strlen($data));
-                if ($buffer === '') {
-                    $this->throwException(new RuntimeException('Empty read; connection dead?'));
-                }
-                $data .= $buffer;
-                $read = strlen($data);
-                $this->logger->debug("[connection] Read {$read} of {$length} bytes.");
-            }
-            return $data;
-        } catch (RuntimeException $e) {
-            $this->throwException($e);
-        }
-    }
-
-    /**
-     * Write characters to stream.
-     * @param string $data Data to read
-     * @deprecated Will be removed in future version.
-     */
-    public function write(string $data): void
-    {
-        $this->deprecated('write() on Connection is deprecated.');
-        try {
-            $length = strlen($data);
-            $written = $this->stream->write($data);
-            if ($written < strlen($data)) {
-                $this->throwException(new RuntimeException("Could only write {$written} out of {$length} bytes."));
-            }
-            $this->logger->debug("[connection] Wrote {$written} of {$length} bytes.");
-        } catch (RuntimeException $e) {
-            $this->throwException($e);
-        }
-    }
-
-    /**
-     * Get meta data for connection.
-     * @return array
-     * @deprecated Will be removed in future version.
-     */
-    public function getMeta(): array
-    {
-        $this->deprecated('getMeta() on Connection is deprecated.');
-        return $this->stream->getMetadata() ?: [];
-    }
-
-    /**
-     * Returns current position of stream pointer.
-     * @return int
-     * @throws ConnectionException
-     * @deprecated Will be removed in future version.
-     */
-    public function tell(): int
-    {
-        $this->deprecated('tell() on Connection is deprecated.');
-        return $this->stream->tell();
-    }
-
-    /**
-     * If stream pointer is at end of file.
-     * @return bool
-     * @deprecated Will be removed in future version.
-     */
-    public function eof(): int
-    {
-        $this->deprecated('eof() on Connection is deprecated.');
-        return $this->stream->eof();
-    }
-
-    /**
-     * Return type of connection.
-     * @return string|null Type of connection or null if invalid type.
-     * @deprecated Will be removed in future version.
-     */
-    public function getType(): ?string
-    {
-        $this->deprecated('getType() on Connection is deprecated.');
-        return $this->stream->getResourceType();
-    }
-
-
     /* ---------- Internal helper methods -------------------------------------------------------------------------- */
 
     protected function throwException(Throwable $e): void
@@ -370,12 +257,6 @@ class Connection implements LoggerAwareInterface
         $message = "Connection error: {$e->getMessage()}";
         $this->logger->error("[connection] {$message}  original: {$exception}");
         throw new ConnectionException($message, 0);
-    }
-
-    protected function deprecated(string $message): void
-    {
-        $this->logger->debug("[connection] {$message}");
-        trigger_error($message, E_USER_DEPRECATED);
     }
 
     // Trigger auto response for frame

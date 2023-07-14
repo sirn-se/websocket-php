@@ -381,64 +381,6 @@ class Server implements LoggerAwareInterface
     }
 
 
-    /* ---------- Deprecated methods ------------------------------------------------------------------------------- */
-
-    /**
-     * Get last received opcode.
-     * @return string|null Opcode.
-     * @deprecated Will be removed in future version.
-     */
-    public function getLastOpcode(): ?string
-    {
-        $this->deprecated('getLastOpcode() is deprecated and will be removed. Check Message instead..');
-        return $this->last_opcode;
-    }
-
-    /**
-     * @deprecated Will be removed in future version.
-     */
-    public function getPier(): ?string
-    {
-        $this->deprecated('getPier() is deprecated and will be removed. Use getRemoteName() instead.');
-        return $this->getRemoteName();
-    }
-
-    /**
-     * Get requested path from last connection.
-     * @return string Path.
-     * @deprecated Will be removed in future version.
-     */
-    public function getPath(): string
-    {
-        $this->deprecated('getPath() is deprecated and will be removed. Use getHandshakeRequest()->getPath() instead.');
-        return $this->handshakeRequest->getUri()->getPath();
-    }
-
-    /**
-     * Get request from last connection.
-     * @return array Request.
-     * @deprecated Will be removed in future version.
-     */
-    public function getRequest(): array
-    {
-        $this->deprecated('getPath() is deprecated and will be removed. Use getHandshakeRequest() instead.');
-        return $this->handshakeRequest->getAsArray();
-    }
-
-    /**
-     * Get headers from last connection.
-     * @deprecated Will be removed in future version.
-     * @return string|null Headers.
-     */
-    public function getHeader($header): ?string
-    {
-        $this->deprecated(
-            'getPath() is deprecated and will be removed. Use getHandshakeRequest()->getHeaderLine() instead.'
-        );
-        return $this->handshakeRequest->getHeaderLine($header) ?: null;
-    }
-
-
     /* ---------- Internal helper methods -------------------------------------------------------------------------- */
 
     // Perform upgrade handshake on new connections.
@@ -476,11 +418,5 @@ class Server implements LoggerAwareInterface
         $this->logger->debug("Handshake on {$request->getUri()->getPath()}");
 
         $this->handshakeRequest = $request;
-    }
-
-    protected function deprecated(string $message): void
-    {
-        $this->logger->debug("[server] {$message}");
-        trigger_error($message, E_USER_DEPRECATED);
     }
 }
