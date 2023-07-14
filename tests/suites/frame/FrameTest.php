@@ -46,12 +46,4 @@ class FrameTest extends TestCase
         $this->assertEquals('0123456789', $frame->getPayload());
         $this->assertEquals(10, $frame->getPayloadLength());
     }
-
-    public function testBadOpcodeError(): void
-    {
-        $this->expectException(BadOpcodeException::class);
-        $this->expectExceptionCode(BadOpcodeException::BAD_OPCODE);
-        $this->expectExceptionMessage("Invalid opcode 'invalid' provided");
-        $frame = new Frame('invalid', '0123456789', true);
-    }
 }

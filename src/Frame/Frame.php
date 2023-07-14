@@ -28,9 +28,6 @@ class Frame
 
     public function __construct(string $opcode, string $payload, bool $final)
     {
-        if (!array_key_exists($opcode, self::$opcodes)) {
-            throw new BadOpcodeException("Invalid opcode '{$opcode}' provided");
-        }
         $this->opcode = $opcode;
         $this->payload = $payload;
         $this->final = $final;

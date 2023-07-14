@@ -16,29 +16,26 @@ namespace WebSocket\Message;
 class Close extends Message
 {
     protected $opcode = 'close';
-    protected $status = 0;
+    protected $status = null;
 
-    public function __construct(int $status = 0, string $content = '')
+    public function __construct(?int $status = null, string $content = '')
     {
         $this->status = $status;
         parent::__construct($content);
     }
 
-    public function getCloseStatus(): int
+    public function getCloseStatus(): ?int
     {
         return $this->status;
     }
 
-    public function setCloseStatus(int $status): void
+    public function setCloseStatus(?int $status): void
     {
         $this->status = $status;
     }
 
     public function getPayload(): string
     {
-        if (!$this->status) {
-            return $this->content;
-        }
         $status_binstr = sprintf('%016b', $this->status);
         $status_str = '';
         foreach (str_split($status_binstr, 8) as $binstr) {
