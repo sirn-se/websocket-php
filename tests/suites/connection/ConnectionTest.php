@@ -57,7 +57,6 @@ class ConnectionTest extends TestCase
 
         $connection = new Connection($stream);
         $this->assertInstanceOf(Connection::class, $connection);
-        $this->assertNull($connection->getCloseStatus());
 
         $this->expectSocketStreamIsConnected();
         $this->assertTrue($connection->isConnected());
@@ -178,7 +177,6 @@ class ConnectionTest extends TestCase
         $stream = new SocketStream($temp);
 
         $connection = new Connection($stream);
-        $this->assertNull($connection->getCloseStatus());
 
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(base64_decode('iAYD6HR0Zm4'), $params[0]);
@@ -191,8 +189,6 @@ class ConnectionTest extends TestCase
         });
         $this->expectSocketStreamClose();
         $connection->close();
-
-        $this->assertEquals(1000, $connection->getCloseStatus());
 
         $this->expectSocketStreamIsConnected();
         unset($stream);
@@ -207,7 +203,6 @@ class ConnectionTest extends TestCase
         $stream = new SocketStream($temp);
 
         $connection = new Connection($stream);
-        $this->assertNull($connection->getCloseStatus());
 
         $this->expectSocketStreamRead()->setReturn(function () {
             return base64_decode('iAY==');
@@ -222,7 +217,6 @@ class ConnectionTest extends TestCase
         $message = $connection->pullMessage();
 
         $this->assertInstanceOf(Close::class, $message);
-        $this->assertEquals(1000, $connection->getCloseStatus());
 
         $this->expectSocketStreamIsConnected();
         unset($stream);

@@ -26,8 +26,12 @@ use WebSocket\Http\{
     Response
 };
 use WebSocket\Message\{
-    Factory,
-    Message
+    Message,
+    Binary,
+    Close,
+    Ping,
+    Pong,
+    Text
 };
 
 /**
@@ -42,13 +46,11 @@ class Client implements LoggerAwareInterface
     // Default options
     protected static $default_options = [
         'context'       => null,
-        'filter'        => ['text', 'binary'], // @deprecated
         'fragment_size' => 4096,
         'headers'       => [],
         'logger'        => null,
         'masked'        => true,
         'persistent'    => false,
-        'return_obj'    => false, // @deprecated
         'timeout'       => 5,
     ];
 
@@ -58,7 +60,6 @@ class Client implements LoggerAwareInterface
     private $listen = false;
     private $last_opcode = null;
     private $streamFactory;
-    private $messageFactory;
     private $handshakeResponse;
 
 
@@ -79,7 +80,6 @@ class Client implements LoggerAwareInterface
         $this->options = array_merge(self::$default_options, $options);
         $this->setLogger($this->options['logger'] ?: new NullLogger());
         $this->setStreamFactory(new StreamFactory());
-        $this->messageFactory = new Factory();
     }
 
     /**
@@ -149,46 +149,51 @@ class Client implements LoggerAwareInterface
 
     /**
      * Send text message.
-     * @param string $payload Content as string.
+     * @param string $message Content as string.
+     * @param bool $masked If message should be masked
      */
-    public function text(string $payload): void
+    public function text(string $message, ?bool $masked = null): void
     {
-        $this->send($payload);
+        $this->send(new Text($message), $masked);
     }
 
     /**
      * Send binary message.
-     * @param string $payload Content as binary string.
+     * @param string $message Content as binary string.
+     * @param bool $masked If message should be masked
      */
-    public function binary(string $payload): void
+    public function binary(string $message, ?bool $masked = null): void
     {
-        $this->send($payload, 'binary');
+        $this->send(new Binary($message), $masked);
     }
 
     /**
      * Send ping.
-     * @param string $payload Optional text as string.
+     * @param string $message Optional text as string.
+     * @param bool $masked If message should be masked
      */
-    public function ping(string $payload = ''): void
+    public function ping(string $message = '', ?bool $masked = null): void
     {
-        $this->send($payload, 'ping');
+        $this->send(new Ping($message), $masked);
     }
 
     /**
      * Send unsolicited pong.
-     * @param string $payload Optional text as string.
+     * @param string $message Optional text as string.
+     * @param bool $masked If message should be masked
      */
-    public function pong(string $payload = ''): void
+    public function pong(string $message = '', ?bool $masked = null): void
     {
-        $this->send($payload, 'pong');
+        $this->send(new Pong($message), $masked);
     }
 
     /**
      * Tell the socket to close.
      * @param integer $status  http://tools.ietf.org/html/rfc6455#section-7.4
      * @param string  $message A closing message, max 125 bytes.
+     * @param bool $masked If message should be masked
      */
-    public function close(int $status = 1000, string $message = 'ttfn'): void
+    public function close(int $status = 1000, string $message = 'ttfn', ?bool $masked = null): void
     {
         if (!$this->isConnected()) {
             return;
@@ -198,57 +203,28 @@ class Client implements LoggerAwareInterface
 
     /**
      * Send message.
-     * @param Message|string $payload Message to send, as Meessage instance or string.
-     * @param string $opcode Opcode to use, default: 'text'.
-     * @param bool $masked If message should be masked default: true.
+     * @param Message $message Message to send.
+     * @param bool $masked If message should be masked
      */
-    public function send($payload, string $opcode = 'text', ?bool $masked = null): void
+    public function send(Message $message, ?bool $masked = null): void
     {
         if (!$this->isConnected()) {
             $this->connect();
         }
-        if ($payload instanceof Message) {
-            $this->connection->pushMessage($payload, $masked);
-            return;
-        }
-        if (!in_array($opcode, array_keys(self::$opcodes))) {
-            $warning = "Bad opcode '{$opcode}'.  Try 'text' or 'binary'.";
-            $this->logger->warning("[client] {warning}");
-            throw new BadOpcodeException($warning);
-        }
-
-        $message = $this->messageFactory->create($opcode, $payload);
         $this->connection->pushMessage($message, $masked);
     }
 
     /**
      * Receive message.
      * Note that this operation will block reading.
-     * @return mixed Message, text or null depending on settings.
+     * @return Message|null
      */
-    public function receive()
+    public function receive(): ?Message
     {
-        $filter = $this->options['filter'];
-        $return_obj = $this->options['return_obj'];
-
         if (!$this->isConnected()) {
             $this->connect();
         }
-
-        while (true) {
-            $message = $this->connection->pullMessage();
-            $opcode = $message->getOpcode();
-            if (in_array($opcode, $filter)) {
-                $this->last_opcode = $opcode;
-                $return = $return_obj ? $message : $message->getContent();
-                break;
-            } elseif ($opcode == 'close') {
-                $this->last_opcode = null;
-                $return = $return_obj ? $message : null;
-                break;
-            }
-        }
-        return $return;
+        return $this->connection->pullMessage();
     }
 
 
@@ -320,15 +296,6 @@ class Client implements LoggerAwareInterface
 
 
     /* ---------- Connection state --------------------------------------------------------------------------------- */
-
-    /**
-     * Get close status on connection.
-     * @return int|null Close status.
-     */
-    public function getCloseStatus(): ?int
-    {
-        return $this->connection ? $this->connection->getCloseStatus() : null;
-    }
 
     /**
      * Get name of local socket, or null if not connected.

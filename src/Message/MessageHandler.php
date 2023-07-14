@@ -14,6 +14,7 @@ use Psr\Log\{
     LoggerAwareInterface,
     NullLogger
 };
+use WebSocket\BadOpcodeException;
 use WebSocket\Frame\FrameHandler;
 
 /**
@@ -25,14 +26,12 @@ class MessageHandler implements LoggerAwareInterface
     private const DEFAULT_SIZE = 4096;
 
     private $frameHandler;
-    private $factory;
     private $logger;
     private $readBuffer;
 
     public function __construct(FrameHandler $frameHandler)
     {
         $this->frameHandler = $frameHandler;
-        $this->factory = new Factory();
         $this->setLogger(new NullLogger());
     }
 
@@ -91,7 +90,27 @@ class MessageHandler implements LoggerAwareInterface
         }
 
         // Create message instance
-        $message = $this->factory->create($payload_opcode, $payload);
+        switch ($payload_opcode) {
+            case 'text':
+                $message = new Text();
+                break;
+            case 'binary':
+                $message = new Binary();
+                break;
+            case 'ping':
+                $message = new Ping();
+                break;
+            case 'pong':
+                $message = new Pong();
+                break;
+            case 'close':
+                $message = new Close();
+                break;
+            default:
+                throw new BadOpcodeException("Invalid opcode '{$payload_opcode}' provided");
+        }
+        $message->setPayload($payload);
+
         $this->logger->info("[message-handler] Pulled {$message}", [
             'opcode' => $message->getOpcode(),
             'content-length' => $message->getLength(),

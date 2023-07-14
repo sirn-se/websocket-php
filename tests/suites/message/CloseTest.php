@@ -31,21 +31,35 @@ class CloseTest extends TestCase
 
     public function testCloseMessage(): void
     {
-        $message = new Close('Some content');
+        $message = new Close(1000, 'Some content');
         $this->assertInstanceOf(Close::class, $message);
         $this->assertInstanceOf(Message::class, $message);
         $this->assertEquals('Some content', $message->getContent());
         $this->assertEquals('close', $message->getOpcode());
+        $this->assertEquals(1000, $message->getCloseStatus());
         $this->assertEquals(12, $message->getLength());
         $this->assertTrue($message->hasContent());
         $this->assertInstanceOf('DateTime', $message->getTimestamp());
         $message->setContent('');
+        $message->setCloseStatus(1020);
         $this->assertEquals(0, $message->getLength());
         $this->assertFalse($message->hasContent());
+        $this->assertEquals(1020, $message->getCloseStatus());
         $this->assertEquals('WebSocket\Message\Close', "{$message}");
 
         $frames = $message->getFrames();
         $this->assertCount(1, $frames);
         $this->assertContainsOnlyInstancesOf(Frame::class, $frames);
+    }
+
+    public function testClosePayload(): void
+    {
+        $message = new Close(1000, 'Some content');
+        $payload = $message->getPayload();
+        $this->assertEquals('A+hTb21lIGNvbnRlbnQ=', base64_encode($payload));
+        $message = new Close();
+        $message->setPayload($payload);
+        $this->assertEquals(1000, $message->getCloseStatus());
+        $this->assertEquals('Some content', $message->getContent());
     }
 }

@@ -48,4 +48,14 @@ class TextTest extends TestCase
         $this->assertCount(1, $frames);
         $this->assertContainsOnlyInstancesOf(Frame::class, $frames);
     }
+
+    public function testTextPayload(): void
+    {
+        $message = new Text('Some content');
+        $payload = $message->getPayload();
+        $this->assertEquals('U29tZSBjb250ZW50', base64_encode($payload));
+        $message = new Text();
+        $message->setPayload($payload);
+        $this->assertEquals('Some content', $message->getContent());
+    }
 }

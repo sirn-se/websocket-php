@@ -2,6 +2,20 @@
 
 # Websocket: Changelog
 
+## `v2.0`
+
+ > PHP version ≈
+
+### `2.0.0`
+
+ * `receive()` always return Message instance or null (@sirn-se)
+ * `send()` require Message instance as first argument (@sirn-se)
+ * `text()` `binary()` `ping()` `pong()` takes mask flag as second argument (@sirn-se)
+ * `Close` get close-status methods (@sirn-se)
+ * Removed deprecated methods and options (@sirn-se)
+ * Moved source (@sirn-se)
+ * Removed PHP `7.4` support (@sirn-se)
+
 ## `v1.7`
 
  > PHP version `^7.4|^8.0`

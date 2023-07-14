@@ -49,4 +49,14 @@ class BinaryTest extends TestCase
         $this->assertCount(1, $frames);
         $this->assertContainsOnlyInstancesOf(Frame::class, $frames);
     }
+
+    public function testBinaryPayload(): void
+    {
+        $message = new Binary('Some content');
+        $payload = $message->getPayload();
+        $this->assertEquals('U29tZSBjb250ZW50', base64_encode($payload));
+        $message = new Binary();
+        $message->setPayload($payload);
+        $this->assertEquals('Some content', $message->getContent());
+    }
 }

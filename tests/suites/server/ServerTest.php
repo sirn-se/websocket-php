@@ -76,20 +76,19 @@ class ServerTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(9, strlen($params[0]));
         });
-        $server->send('Connect');
+        $server->text('Connect');
 
         $this->assertEquals(8000, $server->getPort());
 
         $this->expectSocketStreamIsConnected();
         $this->assertTrue($server->isConnected());
         $this->assertEquals(4096, $server->getFragmentSize());
-        $this->assertNull($server->getCloseStatus());
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(19, strlen($params[0]));
         });
-        $server->send('Sending a message');
+        $server->text('Sending a message');
 
         $request = $server->getHandshakeRequest();
         $this->assertInstanceOf(Request::class, $request);
@@ -112,8 +111,7 @@ class ServerTest extends TestCase
         });
         $message = $server->receive();
 
-        $this->assertEquals('Receiving a message', $message);
-        $this->assertNull($server->getCloseStatus());
+        $this->assertEquals('Receiving a message', $message->getContent());
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
@@ -140,7 +138,6 @@ class ServerTest extends TestCase
 
         $this->expectSocketStreamIsConnected();
         $this->assertFalse($server->isConnected());
-        $this->assertEquals(1000, $server->getCloseStatus());
 
         $this->expectSocketStreamIsConnected();
         $server->close(); // Already closed
@@ -168,7 +165,7 @@ class ServerTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(9, strlen($params[0]));
         });
-        $server->send('Connect');
+        $server->text('Connect');
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
@@ -227,7 +224,7 @@ class ServerTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(9, strlen($params[0]));
         });
-        $server->send('Connect');
+        $server->text('Connect');
 
         $payload = file_get_contents(__DIR__ . '/../../mock/payload.128.txt');
 
@@ -235,7 +232,7 @@ class ServerTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(132, strlen($params[0]));
         });
-        $server->send($payload, 'text');
+        $server->text($payload);
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
@@ -280,7 +277,7 @@ class ServerTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(9, strlen($params[0]));
         });
-        $server->send('Connect');
+        $server->text('Connect');
 
         $payload = file_get_contents(__DIR__ . '/../../mock/payload.65536.txt');
 
@@ -288,7 +285,7 @@ class ServerTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(65546, strlen($params[0]));
         });
-        $server->send($payload, 'text');
+        $server->text($payload);
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
@@ -343,7 +340,7 @@ class ServerTest extends TestCase
         });
         $message = $server->receive();
 
-        $this->assertEquals($payload, $message);
+        $this->assertEquals($payload, $message->getContent());
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
@@ -369,7 +366,7 @@ class ServerTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(9, strlen($params[0]));
         });
-        $server->send('Connect');
+        $server->text('Connect');
 
         $server->setFragmentSize(8);
 
@@ -383,7 +380,7 @@ class ServerTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(5, strlen($params[0]));
         });
-        $server->send('Multi fragment test');
+        $server->text('Multi fragment test');
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
@@ -432,7 +429,7 @@ class ServerTest extends TestCase
             return base64_decode('bE8B');
         });
         $message = $server->receive();
-        $this->assertEquals('Multi fragment test', $message);
+        $this->assertEquals('Multi fragment test', $message->getContent());
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
@@ -458,19 +455,19 @@ class ServerTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(9, strlen($params[0]));
         });
-        $server->send('Connect');
+        $server->text('Connect');
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(13, strlen($params[0]));
         });
-        $server->send('Server ping', 'ping');
+        $server->ping('Server ping');
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(2, strlen($params[0]));
         });
-        $server->send('', 'ping');
+        $server->ping();
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
@@ -488,6 +485,9 @@ class ServerTest extends TestCase
         })->setReturn(function () {
             return base64_decode('UmRzd2RzIXFob2Y=');
         });
+        $message = $server->receive();
+
+        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
@@ -498,6 +498,9 @@ class ServerTest extends TestCase
         })->setReturn(function () {
             return base64_decode('AQEBAQ==');
         });
+        $message = $server->receive();
+
+        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
@@ -516,6 +519,9 @@ class ServerTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(13, strlen($params[0]));
         });
+        $message = $server->receive();
+
+        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
@@ -533,7 +539,7 @@ class ServerTest extends TestCase
         });
         $message = $server->receive();
 
-        $this->assertEquals('Receiving a message', $message);
+        $this->assertEquals('Receiving a message', $message->getContent());
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
@@ -559,7 +565,7 @@ class ServerTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(9, strlen($params[0]));
         });
-        $server->send('Connect');
+        $server->text('Connect');
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
@@ -607,7 +613,7 @@ class ServerTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(9, strlen($params[0]));
         });
-        $server->send('Connect');
+        $server->text('Connect');
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout(300);
@@ -666,7 +672,7 @@ class ServerTest extends TestCase
         $this->expectException(ConnectionException::class);
         $this->expectExceptionCode(ConnectionException::SERVER_ACCEPT_ERR);
         $this->expectExceptionMessage('Server failed to connect');
-        $server->send('Connect');
+        $server->text('Connect');
 
         unset($server);
     }
@@ -700,11 +706,11 @@ class ServerTest extends TestCase
         $this->expectException(ConnectionException::class);
         $this->expectExceptionCode(ConnectionException::SERVER_HANDSHAKE_ERR);
         $this->expectExceptionMessage('Client had no Key in upgrade request');
-        $server->send('Connect');
+        $server->text('Connect');
 
         unset($server);
     }
-
+/*
     public function testSendBadOpcode(): void
     {
         $this->expectStreamFactory();
@@ -724,7 +730,7 @@ class ServerTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(9, strlen($params[0]));
         });
-        $server->send('Connect');
+        $server->text('Connect');
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamIsConnected();
@@ -734,7 +740,7 @@ class ServerTest extends TestCase
         $this->expectExceptionMessage('Bad opcode \'bad\'.  Try \'text\' or \'binary\'.');
         $server->send('Bad Opcode', 'bad');
     }
-
+*/
     public function testRecieveBadOpcode(): void
     {
         $this->expectStreamFactory();
@@ -754,7 +760,7 @@ class ServerTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(9, strlen($params[0]));
         });
-        $server->send('Connect');
+        $server->text('Connect');
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
@@ -794,7 +800,7 @@ class ServerTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(9, strlen($params[0]));
         });
-        $server->send('Connect');
+        $server->text('Connect');
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -809,7 +815,7 @@ class ServerTest extends TestCase
         $this->expectException(ConnectionException::class);
         $this->expectExceptionCode(1025);
         $this->expectExceptionMessage('Could only write 14 out of 18 bytes.');
-        $server->send('Failing to write');
+        $server->text('Failing to write');
 
         unset($server);
     }
@@ -842,7 +848,7 @@ class ServerTest extends TestCase
         $this->expectException(TimeoutException::class);
         $this->expectExceptionCode(ConnectionException::TIMED_OUT);
         $this->expectExceptionMessage('Connection timeout');
-        $server->send('Failing to write');
+        $server->text('Failing to write');
 
         unset($server);
     }
@@ -916,7 +922,7 @@ class ServerTest extends TestCase
     public function testFrameFragmentation(): void
     {
         $this->expectStreamFactory();
-        $server = new Server(['filter' => ['text', 'binary', 'pong', 'close']]);
+        $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
         $this->expectStreamFactoryCreateSockerServer();
@@ -961,7 +967,7 @@ class ServerTest extends TestCase
             return base64_decode('UmRzd2RzIXFob2Y=');
         });
         $message = $server->receive();
-        $this->assertEquals('Server ping', $message);
+        $this->assertEquals('Server ping', $message->getContent());
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
@@ -995,7 +1001,7 @@ class ServerTest extends TestCase
             return base64_decode('bE8B');
         });
         $message = $server->receive();
-        $this->assertEquals('Multi fragment test', $message);
+        $this->assertEquals('Multi fragment test', $message->getContent());
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
@@ -1019,10 +1025,9 @@ class ServerTest extends TestCase
         $this->expectSocketStreamClose();
         $this->expectSocketStreamIsConnected();
         $message = $server->receive();
-        $this->assertEquals('Closing', $message);
+        $this->assertEquals('Closing', $message->getContent());
         $this->expectSocketStreamIsConnected();
         $this->assertFalse($server->isConnected());
-        $this->assertEquals(17260, $server->getCloseStatus());
 
         unset($server);
     }
@@ -1030,7 +1035,7 @@ class ServerTest extends TestCase
     public function testMessageFragmentation(): void
     {
         $this->expectStreamFactory();
-        $server = new Server(['filter' => ['text', 'binary', 'pong', 'close'], 'return_obj' => true]);
+        $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
         $this->expectStreamFactoryCreateSockerServer();
@@ -1188,7 +1193,6 @@ class ServerTest extends TestCase
         $this->assertFalse($server->isConnected());
         $this->assertNull($server->getName());
         $this->assertNull($server->getRemoteName());
-        $this->assertNull($server->getCloseStatus());
     }
 
     public function testFailedHandshake(): void
@@ -1220,7 +1224,7 @@ class ServerTest extends TestCase
         $this->expectException(ConnectionException::class);
         $this->expectExceptionCode(ConnectionException::SERVER_HANDSHAKE_ERR);
         $this->expectExceptionMessage('Client handshake error');
-        $server->send('Connect');
+        $server->text('Connect');
 
         unset($server);
     }
@@ -1248,7 +1252,7 @@ class ServerTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(9, strlen($params[0]));
         });
-        $server->send('Connect');
+        $server->text('Connect');
 
         $this->expectSocketStreamIsConnected();
         $this->assertTrue($server->isConnected());

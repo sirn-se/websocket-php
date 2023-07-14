@@ -19,12 +19,12 @@ use WebSocket\Frame\Frame;
 abstract class Message
 {
     protected $opcode;
-    protected $payload;
+    protected $content;
     protected $timestamp;
 
-    public function __construct(string $payload = '')
+    public function __construct(string $content = '')
     {
-        $this->payload = $payload;
+        $this->content = $content;
         $this->timestamp = new DateTime();
     }
 
@@ -35,7 +35,7 @@ abstract class Message
 
     public function getLength(): int
     {
-        return strlen($this->payload);
+        return strlen($this->content);
     }
 
     public function getTimestamp(): DateTime
@@ -45,17 +45,17 @@ abstract class Message
 
     public function getContent(): string
     {
-        return $this->payload;
+        return $this->content;
     }
 
-    public function setContent(string $payload = ''): void
+    public function setContent(string $content = ''): void
     {
-        $this->payload = $payload;
+        $this->content = $content;
     }
 
     public function hasContent(): bool
     {
-        return $this->payload != '';
+        return $this->content != '';
     }
 
     public function __toString(): string
@@ -63,11 +63,21 @@ abstract class Message
         return get_class($this);
     }
 
+    public function getPayload(): string
+    {
+        return $this->content;
+    }
+
+    public function setPayload(string $payload = ''): void
+    {
+        $this->content = $payload;
+    }
+
     // Split messages into frames
     public function getFrames(int $framesize = 4096): array
     {
         $frames = [];
-        $split = str_split($this->getContent(), $framesize) ?: [''];
+        $split = str_split($this->getPayload(), $framesize) ?: [''];
         foreach ($split as $i => $payload) {
             $frames[] = new Frame(
                 $i === 0 ? $this->opcode : 'continuation',

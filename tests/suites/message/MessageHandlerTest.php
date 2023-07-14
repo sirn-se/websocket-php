@@ -14,12 +14,17 @@ namespace WebSocket\Test\Message;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\SocketStream;
 use Phrity\Net\Mock\Stack\ExpectSocketStreamTrait;
-use WebSocket\ConnectionException;
+use WebSocket\BadOpcodeException;
 use WebSocket\Frame\{
     Frame,
     FrameHandler
 };
 use WebSocket\Message\{
+    Message,
+    Binary,
+    Close,
+    Ping,
+    Pong,
     Text,
     MessageHandler
 };
@@ -206,6 +211,80 @@ class MessageHandlerTest extends TestCase
         $message = $handler->pull();
         $this->assertEquals('Text message', $message->getContent());
         $this->assertEquals('text', $message->getOpcode());
+
+        fclose($temp);
+    }
+
+    public function testPullTypes(): void
+    {
+        $temp = tmpfile();
+
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $handler = new MessageHandler(new FrameHandler(new SocketStream($temp)));
+        $this->assertInstanceOf(MessageHandler::class, $handler);
+
+        $this->expectSocketStreamRead()->addAssert(function ($method, $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('gQA=');
+        });
+        $message = $handler->pull();
+        $this->assertInstanceOf(Text::class, $message);
+
+        $this->expectSocketStreamRead()->addAssert(function ($method, $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('ggA=');
+        });
+        $message = $handler->pull();
+        $this->assertInstanceOf(Binary::class, $message);
+
+        $this->expectSocketStreamRead()->addAssert(function ($method, $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('iQA=');
+        });
+        $message = $handler->pull();
+        $this->assertInstanceOf(Ping::class, $message);
+
+        $this->expectSocketStreamRead()->addAssert(function ($method, $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('igA=');
+        });
+        $message = $handler->pull();
+        $this->assertInstanceOf(Pong::class, $message);
+
+        $this->expectSocketStreamRead()->addAssert(function ($method, $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('iAA=');
+        });
+        $message = $handler->pull();
+        $this->assertInstanceOf(Close::class, $message);
+
+        fclose($temp);
+    }
+
+    public function testPullInvalidTypeError(): void
+    {
+        $temp = tmpfile();
+
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $handler = new MessageHandler(new FrameHandler(new SocketStream($temp)));
+        $this->assertInstanceOf(MessageHandler::class, $handler);
+
+        $this->expectSocketStreamRead()->addAssert(function ($method, $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('gwA=');
+        });
+        $this->expectException(BadOpcodeException::class);
+        $this->expectExceptionCode(BadOpcodeException::BAD_OPCODE);
+        $this->expectExceptionMEssage("Invalid opcode '3' provided");
+        $message = $handler->pull();
 
         fclose($temp);
     }

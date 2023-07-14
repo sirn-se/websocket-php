@@ -24,8 +24,12 @@ use WebSocket\Http\{
     Message as HttpMessage
 };
 use WebSocket\Message\{
-    Factory,
     Message,
+    Binary,
+    Close,
+    Ping,
+    Pong,
+    Text,
     MessageHandler
 };
 
@@ -39,13 +43,11 @@ class Connection implements LoggerAwareInterface
 
     private $stream;
     private $httpHandler;
-    private $messageFactory;
     private $messageHandler;
     private $options = ['masked' => false, 'fragment_size' => 4096];
     private $logger;
 
-    protected $is_closing = false;
-    protected $close_status = null;
+    private $is_closing = false;
 
 
     /* ---------- Construct & Destruct ----------------------------------------------------------------------------- */
@@ -53,7 +55,6 @@ class Connection implements LoggerAwareInterface
     public function __construct(SocketStream $stream, array $options = [])
     {
         $this->stream = $stream;
-        $this->messageFactory = new Factory();
         $this->httpHandler = new HttpHandler($this->stream);
         $this->messageHandler = new MessageHandler(new FrameHandler($this->stream));
         $this->setLogger(new NullLogger());
@@ -135,19 +136,13 @@ class Connection implements LoggerAwareInterface
      * @param integer $status  http://tools.ietf.org/html/rfc6455#section-7.4
      * @param string  $message A closing message, max 125 bytes.
      */
-    public function close(int $status = 1000, string $message = 'ttfn'): void
+    public function close(int $status = 1000, string $message = 'ttfn', ?bool $masked = null): void
     {
-        $status_binstr = sprintf('%016b', $status);
-        $status_str = '';
-        foreach (str_split($status_binstr, 8) as $binstr) {
-            $status_str .= chr(bindec($binstr));
-        }
-        $message = $this->messageFactory->create('close', $status_str . $message);
-        $this->pushMessage($message);
-
+        $this->pushMessage(new Close($status, $message), $masked);
         $this->logger->debug("[connection] Closing with status: {$status}.");
 
         $this->is_closing = true;
+
         while (true) {
             $message = $this->pullMessage();
             if ($message->getOpcode() == 'close') {
@@ -158,15 +153,6 @@ class Connection implements LoggerAwareInterface
 
 
     /* ---------- Connection state --------------------------------------------------------------------------------- */
-
-    /**
-     * Get connection close status.
-     * @return int|null Current close status
-     */
-    public function getCloseStatus(): ?int
-    {
-        return $this->close_status;
-    }
 
     /**
      * Get name of local socket, or null if not connected.
@@ -266,27 +252,14 @@ class Connection implements LoggerAwareInterface
             case 'ping':
                 // If we received a ping, respond with a pong
                 $this->logger->debug("[connection] Received 'ping', sending 'pong'.");
-                $pong = $this->messageFactory->create('pong', $message->getContent());
-                $this->pushMessage($pong);
+                $this->pushMessage(new Pong($message->getContent()));
                 return;
             case 'close':
                 // If we received close, possibly acknowledge and close connection
-                $status_bin = '';
-                $status = '';
-                $payload = $message->getContent();
-                if ($message->getLength() > 0) {
-                    $status_bin = $payload[0] . $payload[1];
-                    $status = current(unpack('n', $payload));
-                    $this->close_status = $status;
-                }
-                // Get additional close message
-                $message->setContent($message->getLength() >= 2 ? substr($payload, 2) : '');
-
-                $this->logger->debug("[connection] Received 'close', status: {$status}.");
+                $this->logger->debug("[connection] Received 'close', status: {$message->getCloseStatus()}.");
                 if (!$this->is_closing) {
-                    $ack =  "{$status_bin}Close acknowledged: {$status}";
-                    $message = $this->messageFactory->create('close', $ack);
-                    $this->pushMessage($message);
+                    $ack =  "Close acknowledged: {$message->getCloseStatus()}";
+                    $this->pushMessage(new Close($message->getCloseStatus(), $ack));
                 } else {
                     $this->is_closing = false; // A close response, all done.
                 }

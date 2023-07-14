@@ -103,7 +103,7 @@ class ClientTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(23, strlen($params[0]));
         });
-        $client->send('Sending a message');
+        $client->text('Sending a message');
 
         $response = $client->getHandshakeResponse();
         $this->assertInstanceOf(Response::class, $response);
@@ -129,7 +129,6 @@ class ClientTest extends TestCase
 
         $this->expectSocketStreamIsConnected();
         $this->assertTrue($client->isConnected());
-        $this->assertNull($client->getCloseStatus());
 
         // Close
         $this->expectSocketStreamIsConnected();
@@ -157,7 +156,6 @@ class ClientTest extends TestCase
 
         $this->expectSocketStreamIsConnected();
         $this->assertFalse($client->isConnected());
-        $this->assertEquals(1000, $client->getCloseStatus());
 
         unset($client);
     }
@@ -656,7 +654,7 @@ class ClientTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(136, strlen($params[0]));
         });
-        $client->send($payload);
+        $client->text($payload);
 
         // Receiving message
         $this->expectSocketStreamIsConnected();
@@ -677,7 +675,7 @@ class ClientTest extends TestCase
         });
         $message = $client->receive();
 
-        $this->assertEquals($payload, $message);
+        $this->assertEquals($payload, $message->getContent());
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
@@ -725,7 +723,7 @@ class ClientTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(65550, strlen($params[0]));
         });
-        $client->send($payload);
+        $client->text($payload);
 
         // Receiving message, multiple read cycles
         $this->expectSocketStreamIsConnected();
@@ -781,7 +779,7 @@ class ClientTest extends TestCase
         });
         $message = $client->receive();
 
-        $this->assertEquals($payload, $message);
+        $this->assertEquals($payload, $message->getContent());
         $this->assertEquals(65540, $client->getFragmentSize());
 
         $this->expectSocketStreamIsConnected();
@@ -841,7 +839,7 @@ class ClientTest extends TestCase
         })->setReturn(function () {
             return 9;
         });
-        $client->send('Multi fragment test', 'text', false);
+        $client->text('Multi fragment test', false);
 
         // Receiving message, multiple frames
         $this->expectSocketStreamIsConnected();
@@ -892,7 +890,7 @@ class ClientTest extends TestCase
         });
         $message = $client->receive();
 
-        $this->assertEquals('Multi fragment test', $message);
+        $this->assertEquals('Multi fragment test', $message->getContent());
         $this->assertEquals(8, $client->getFragmentSize());
 
         $this->expectSocketStreamIsConnected();
@@ -938,14 +936,14 @@ class ClientTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals('iQtTZXJ2ZXIgcGluZw==', base64_encode($params[0]));
         });
-        $client->send('Server ping', 'ping', false);
+        $client->ping('Server ping', false);
 
         // Sending ping without content
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals('iQA=', base64_encode($params[0]));
         });
-        $client->send('', 'ping', false);
+        $client->ping('', false);
 
         // Receiving pong for first ping
         $this->expectSocketStreamIsConnected();
@@ -964,7 +962,10 @@ class ClientTest extends TestCase
         })->setReturn(function () {
             return base64_decode('UmRzd2RzIXFob2Y=');
         });
+        $message = $client->receive();
+
         // Receiving pong for second ping
+        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
@@ -975,7 +976,10 @@ class ClientTest extends TestCase
         })->setReturn(function () {
             return base64_decode('AQEBAQ==');
         });
+        $message = $client->receive();
+
         // Receiving ping
+        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
@@ -993,7 +997,10 @@ class ClientTest extends TestCase
         });
         // Reply to ping
         $this->expectSocketStreamWrite();
+        $message = $client->receive();
+
         // Receiving text
+        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
@@ -1009,9 +1016,11 @@ class ClientTest extends TestCase
         })->setReturn(function () {
             return base64_decode('cwr2y0gZ/MBGT/SOTArm3UAI8A==');
         });
+
         $message = $client->receive();
 
-        $this->assertEquals('Receiving a message', $message);
+
+        $this->assertEquals('Receiving a message', $message->getContent());
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
@@ -1155,11 +1164,10 @@ class ClientTest extends TestCase
         $this->expectWsClientPerformHandshake();
         $this->expectSocketStreamWrite();
         $this->expectSocketStreamIsConnected();
-        $client->send('Autoconnect');
+        $client->text('Autoconnect');
 
         $this->expectSocketStreamIsConnected();
         $this->assertTrue($client->isConnected());
-        $this->assertNull($client->getCloseStatus());
 
         // Close
         $this->expectSocketStreamWrite();
@@ -1184,7 +1192,6 @@ class ClientTest extends TestCase
 
         $this->expectSocketStreamIsConnected();
         $this->assertFalse($client->isConnected());
-        $this->assertEquals(1000, $client->getCloseStatus());
 
         // Implicit reconnect and handshake, receive message
         $this->expectSocketStreamIsConnected();
@@ -1547,7 +1554,7 @@ class ClientTest extends TestCase
 
         unset($client);
     }
-
+/*
     public function testSendBadOpcode(): void
     {
         $this->expectStreamFactory();
@@ -1591,7 +1598,7 @@ class ClientTest extends TestCase
 
         unset($client);
     }
-
+*/
     public function testRecieveBadOpcode(): void
     {
         $this->expectStreamFactory();
@@ -1690,7 +1697,7 @@ class ClientTest extends TestCase
         $this->expectExceptionMessage('Could only write 18 out of 22 bytes.');
         $this->expectSocketStreamClose();
         $this->expectSocketStreamIsConnected();
-        $client->send('Failing to write');
+        $client->text('Failing to write');
 
         unset($client);
     }
@@ -1801,10 +1808,7 @@ class ClientTest extends TestCase
     public function testFrameFragmentation(): void
     {
         $this->expectStreamFactory();
-        $client = new Client(
-            'ws://localhost:8000/my/mock/path',
-            ['filter' => ['text', 'binary', 'pong', 'close']]
-        );
+        $client = new Client('ws://localhost:8000/my/mock/path');
         $client->setStreamFactory(new StreamFactory());
 
         // Implicit connect and handshake, send message
@@ -1867,7 +1871,7 @@ class ClientTest extends TestCase
             return base64_decode('UmRzd2RzIXFob2Y=');
         });
         $message = $client->receive();
-        $this->assertEquals('Server ping', $message);
+        $this->assertEquals('Server ping', $message->getContent());
 
         // Receiving 2 frames for text message
         $this->expectSocketStreamIsConnected();
@@ -1902,7 +1906,7 @@ class ClientTest extends TestCase
             return base64_decode('bE8B');
         });
         $message = $client->receive();
-        $this->assertEquals('Multi fragment test', $message);
+        $this->assertEquals('Multi fragment test', $message->getContent());
 
         // Receive close message
         $this->expectSocketStreamIsConnected();
@@ -1925,10 +1929,9 @@ class ClientTest extends TestCase
         $this->expectSocketStreamClose();
         $message = $client->receive();
 
-        $this->assertEquals('Closing', $message);
+        $this->assertEquals('Closing', $message->getContent());
         $this->expectSocketStreamIsConnected();
         $this->assertFalse($client->isConnected());
-        $this->assertEquals(17260, $client->getCloseStatus());
 
         $this->expectSocketStreamIsConnected();
         unset($client);
@@ -1937,10 +1940,7 @@ class ClientTest extends TestCase
     public function testMessageFragmentation(): void
     {
         $this->expectStreamFactory();
-        $client = new Client(
-            'ws://localhost:8000/my/mock/path',
-            ['filter' => ['text', 'binary', 'pong', 'close'], 'return_obj' => true]
-        );
+        $client = new Client('ws://localhost:8000/my/mock/path');
         $client->setStreamFactory(new StreamFactory());
 
         // Implicit connect and handshake, send message
@@ -2176,6 +2176,5 @@ class ClientTest extends TestCase
         $this->assertFalse($client->isConnected());
         $this->assertNull($client->getName());
         $this->assertNull($client->getRemoteName());
-        $this->assertNull($client->getCloseStatus());
     }
 }

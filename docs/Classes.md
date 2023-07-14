@@ -34,7 +34,7 @@ class WebSocket\Client implements Psr\Log\LoggerAwareInterface
     public function pong(string $payload = ''): void;
     public function close(int $status = 1000, string $message = 'ttfn'): void;
     public function send(WebSocket\Message\Message|string, string $opcode = 'text', bool|null $masked = null): void;
-    public function receive(): WebSocket\Message\Message|string|null;
+    public function receive(): WebSocket\Message\Message|null;
 
     // Connection management
 
@@ -48,11 +48,6 @@ class WebSocket\Client implements Psr\Log\LoggerAwareInterface
     public function getName(): string|null;
     public function getRemoteName(): string|null;
     public function getHandshakeResponse(): WebSocket\Http\Response|null;
-
-    // Deprecated methods
-
-    public function getLastOpcode(): string|null;
-    public function getPier(): string|null;
 }
 
 ```
@@ -103,14 +98,6 @@ class WebSocket\Server implements Psr\Log\LoggerAwareInterface
     public function getRemoteName(): string|null;
     public function getPort(): int
     public function getHandshakeRequest(): WebSocket\Http\Request|null;
-
-    // Deprecated methods
-
-    public function getLastOpcode(): string|null;
-    public function getPier(): string|null;
-    public function getPath(): string;
-    public function getRequest(): array;
-    public function getHeader($header): string|null;
 }
 ```
 
@@ -135,6 +122,16 @@ class WebSocket\Connection implements Psr\Log\LoggerAwareInterface
     public function setOptions(array $options = []): void;
     public function setLogger(Psr\Log\LoggerInterface $logger): void;
 
+    // Messaging operations
+
+    public function text(string $payload): void;
+    public function binary(string $payload): void;
+    public function ping(string $payload = ''): void;
+    public function pong(string $payload = ''): void;
+    public function close(int $status = 1000, string $message = 'ttfn'): void;
+    public function send(WebSocket\Message\Message|string, string $opcode = 'text', bool|null $masked = null): void;
+    public function receive(): WebSocket\Message\Message|null;
+
     // Connection management
 
     public function isConnected(): bool;
@@ -156,16 +153,6 @@ class WebSocket\Connection implements Psr\Log\LoggerAwareInterface
 
     public function pushHttp(HWebSocket\Http\Message $message): void;
     public function pullHttp(): HWebSocket\Http\Message;
-
-    // Deprecated methods
-
-   public function getLine(int $length, string $ending): string;
-   public function read(int $length): string;
-   public function write(string $data): void;
-   public function getMeta(): array;
-   public function tell(): int;
-   public function eof(): int;
-   public function getType(): string|null;
 }
 ```
 
