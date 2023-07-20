@@ -101,6 +101,22 @@ class ConnectionTest extends TestCase
         unset($stream);
     }
 
+    public function testDestruct(): void
+    {
+        $temp = tmpfile();
+
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $stream = new SocketStream($temp);
+
+        $connection = new Connection($stream, false, false);
+
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
+
+        unset($stream);
+    }
+
     public function testHttpMessages(): void
     {
         $temp = tmpfile();
