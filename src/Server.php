@@ -32,6 +32,9 @@ use WebSocket\Message\{
     Pong,
     Text
 };
+use WebSocket\Middleware\{
+    PingResponder
+};
 
 /**
  * WebSocket\Server class.
@@ -256,6 +259,7 @@ class Server implements LoggerAwareInterface
 
         $this->connection = new Connection($socket, $this->options);
         $this->connection->setLogger($this->logger);
+        $this->connection->addMiddleware(new PingResponder());
 
         $this->logger->info("Client has connected to port {port}", [
             'port' => $this->port,

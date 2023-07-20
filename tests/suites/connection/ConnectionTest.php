@@ -24,9 +24,11 @@ use WebSocket\Http\{
     Response
 };
 use WebSocket\Message\{
-    Close,
     Ping,
     Text
+};
+use WebSocket\Middleware\{
+    PingResponder
 };
 
 /**
@@ -160,87 +162,6 @@ class ConnectionTest extends TestCase
         });
         $message = $connection->pullMessage();
         $this->assertInstanceOf(Text::class, $message);
-
-        $this->expectSocketStreamClose();
-        $this->expectSocketStreamIsConnected();
-        $this->assertTrue($connection->disconnect());
-
-        unset($stream);
-    }
-
-    public function testCloseProcedure(): void
-    {
-        $temp = tmpfile();
-
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-        $stream = new SocketStream($temp);
-
-        $connection = new Connection($stream);
-
-        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
-            $this->assertEquals(base64_decode('iAYD6HR0Zm4'), $params[0]);
-        });
-        $this->expectSocketStreamRead()->setReturn(function () {
-            return base64_decode('iAY==');
-        });
-        $this->expectSocketStreamRead()->setReturn(function () {
-            return base64_decode('A+h0dGZu');
-        });
-        $this->expectSocketStreamClose();
-        $connection->close();
-
-        $this->expectSocketStreamIsConnected();
-        unset($stream);
-    }
-
-    public function testCloseAutoResponse(): void
-    {
-        $temp = tmpfile();
-
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-        $stream = new SocketStream($temp);
-
-        $connection = new Connection($stream);
-
-        $this->expectSocketStreamRead()->setReturn(function () {
-            return base64_decode('iAY==');
-        });
-        $this->expectSocketStreamRead()->setReturn(function () {
-            return base64_decode('A+h0dGZu');
-        });
-        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
-            $this->assertEquals(base64_decode('iBoD6ENsb3NlIGFja25vd2xlZGdlZDogMTAwMA=='), $params[0]);
-        });
-        $this->expectSocketStreamClose();
-        $message = $connection->pullMessage();
-
-        $this->assertInstanceOf(Close::class, $message);
-
-        $this->expectSocketStreamIsConnected();
-        unset($stream);
-    }
-
-    public function testPingAutoResponse(): void
-    {
-        $temp = tmpfile();
-
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-        $stream = new SocketStream($temp);
-
-        $connection = new Connection($stream);
-        $message = new Ping();
-
-        $this->expectSocketStreamRead()->setReturn(function () {
-            return base64_decode('iQA=');
-        });
-        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
-            $this->assertEquals(base64_decode('igA='), $params[0]);
-        });
-        $message = $connection->pullMessage();
-        $this->assertInstanceOf(Ping::class, $message);
 
         $this->expectSocketStreamClose();
         $this->expectSocketStreamIsConnected();

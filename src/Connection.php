@@ -32,6 +32,10 @@ use WebSocket\Message\{
     Text,
     MessageHandler
 };
+use WebSocket\Middleware\{
+    MiddlewareHandler,
+    MiddlewareInterface
+};
 
 /**
  * WebSocket\Connection class.
@@ -44,10 +48,9 @@ class Connection implements LoggerAwareInterface
     private $stream;
     private $httpHandler;
     private $messageHandler;
+    private $middlewareHandler;
     private $options = ['masked' => false, 'fragment_size' => 4096];
     private $logger;
-
-    private $is_closing = false;
 
 
     /* ---------- Construct & Destruct ----------------------------------------------------------------------------- */
@@ -57,6 +60,7 @@ class Connection implements LoggerAwareInterface
         $this->stream = $stream;
         $this->httpHandler = new HttpHandler($this->stream);
         $this->messageHandler = new MessageHandler(new FrameHandler($this->stream));
+        $this->middlewareHandler = new MiddlewareHandler();
         $this->setLogger(new NullLogger());
         $this->setOptions($options);
     }
@@ -66,6 +70,11 @@ class Connection implements LoggerAwareInterface
         if ($this->isConnected()) {
             $this->stream->close();
         }
+    }
+
+    public function __toString(): string
+    {
+        return get_class($this);
     }
 
 
@@ -80,6 +89,7 @@ class Connection implements LoggerAwareInterface
         $this->logger = $logger;
         $this->httpHandler->setLogger($logger);
         $this->messageHandler->setLogger($logger);
+        $this->middlewareHandler->setLogger($logger);
     }
 
     /**
@@ -108,6 +118,15 @@ class Connection implements LoggerAwareInterface
         $this->logger->debug("[connection] Setting timeout {$seconds}.{$microseconds} seconds");
     }
 
+    /**
+     * Add a middleware.
+     * @param MiddlewareInterface $middleware
+     */
+    public function addMiddleware(MiddlewareInterface $middleware): void
+    {
+        $this->middlewareHandler->add($middleware);
+    }
+
 
     /* ---------- Connection management ---------------------------------------------------------------------------- */
 
@@ -118,6 +137,24 @@ class Connection implements LoggerAwareInterface
     public function isConnected(): bool
     {
         return $this->stream->isConnected();
+    }
+
+    /**
+     * If connecttion is readable.
+     * @return bool
+     */
+    public function isReadable(): bool
+    {
+        return $this->stream->isReadable();
+    }
+
+    /**
+     * If connecttion is writable.
+     * @return bool
+     */
+    public function isWritable(): bool
+    {
+        return $this->stream->isWritable();
     }
 
     /**
@@ -132,6 +169,24 @@ class Connection implements LoggerAwareInterface
     }
 
     /**
+     * Close connection stream eading.
+     */
+    public function closeRead(): void
+    {
+        $this->logger->info('[connection] Closing further reading');
+        $this->stream->closeRead();
+    }
+
+    /**
+     * Close connection stream writing.
+     */
+    public function closeWrite(): void
+    {
+        $this->logger->info('[connection] Closing further writing');
+        $this->stream->closeWrite();
+    }
+
+    /**
      * Tell the socket to close.
      * @param integer $status  http://tools.ietf.org/html/rfc6455#section-7.4
      * @param string  $message A closing message, max 125 bytes.
@@ -140,15 +195,6 @@ class Connection implements LoggerAwareInterface
     {
         $this->pushMessage(new Close($status, $message), $masked);
         $this->logger->debug("[connection] Closing with status: {$status}.");
-
-        $this->is_closing = true;
-
-        while (true) {
-            $message = $this->pullMessage();
-            if ($message->getOpcode() == 'close') {
-                return;
-            }
-        }
     }
 
 
@@ -180,7 +226,9 @@ class Connection implements LoggerAwareInterface
     {
         try {
             $masked = is_null($masked) ? $this->options['masked'] : $masked;
-            $this->messageHandler->push($message, $masked, $this->options['fragment_size']);
+            $this->middlewareHandler->processOutgoing($this, $message, function (Message $message) use ($masked) {
+                $this->messageHandler->push($message, $masked, $this->options['fragment_size']);
+            });
         } catch (Throwable $e) {
             $this->throwException($e);
         }
@@ -190,9 +238,9 @@ class Connection implements LoggerAwareInterface
     public function pullMessage(): Message
     {
         try {
-            $message = $this->messageHandler->pull();
-            $this->autoRespond($message);
-            return $message;
+            return $this->middlewareHandler->processIncoming($this, function () {
+                return $this->messageHandler->pull();
+            });
         } catch (Throwable $e) {
             $this->throwException($e);
         }
@@ -243,28 +291,5 @@ class Connection implements LoggerAwareInterface
         $message = "Connection error: {$e->getMessage()}";
         $this->logger->error("[connection] {$message}  original: {$exception}");
         throw new ConnectionException($message, 0);
-    }
-
-    // Trigger auto response for frame
-    protected function autoRespond(Message $message): void
-    {
-        switch ($message->getOpcode()) {
-            case 'ping':
-                // If we received a ping, respond with a pong
-                $this->logger->debug("[connection] Received 'ping', sending 'pong'.");
-                $this->pushMessage(new Pong($message->getContent()));
-                return;
-            case 'close':
-                // If we received close, possibly acknowledge and close connection
-                $this->logger->debug("[connection] Received 'close', status: {$message->getCloseStatus()}.");
-                if (!$this->is_closing) {
-                    $ack =  "Close acknowledged: {$message->getCloseStatus()}";
-                    $this->pushMessage(new Close($message->getCloseStatus(), $ack));
-                } else {
-                    $this->is_closing = false; // A close response, all done.
-                }
-                $this->disconnect();
-                return;
-        }
     }
 }

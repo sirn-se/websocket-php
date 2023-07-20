@@ -34,7 +34,10 @@ use WebSocket\Test\{
     MockStreamTrait,
     MockUri
 };
-use WebSocket\Message\Text;
+use WebSocket\Message\{
+    Close,
+    Text
+};
 
 class ServerTest extends TestCase
 {
@@ -117,6 +120,9 @@ class ServerTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(8, strlen($params[0]));
         });
+        $server->close();
+
+        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
@@ -134,7 +140,8 @@ class ServerTest extends TestCase
         });
         $this->expectSocketStreamClose();
         $this->expectSocketStreamIsConnected();
-        $server->close();
+        $message = $server->receive();
+        $this->assertInstanceOf(Close::class, $message);
 
         $this->expectSocketStreamIsConnected();
         $this->assertFalse($server->isConnected());

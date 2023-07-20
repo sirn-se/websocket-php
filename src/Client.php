@@ -33,6 +33,10 @@ use WebSocket\Message\{
     Pong,
     Text
 };
+use WebSocket\Middleware\{
+    CloseHandler,
+    PingResponder
+};
 
 /**
  * WebSocket\Client class.
@@ -269,6 +273,8 @@ class Client implements LoggerAwareInterface
         }
         $this->connection = new Connection($stream, $this->options);
         $this->connection->setLogger($this->logger);
+        $this->connection->addMiddleware(new CloseHandler());
+        $this->connection->addMiddleware(new PingResponder());
 
         if (!$this->isConnected()) {
             $error = "Invalid stream on \"{$host_uri}\".";
