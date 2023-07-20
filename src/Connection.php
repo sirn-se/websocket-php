@@ -50,17 +50,16 @@ class Connection implements LoggerAwareInterface
     private $messageHandler;
     private $middlewareHandler;
     private $logger;
-    private $masked = false;
     private $frameSize = 4096;
 
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
 
-    public function __construct(SocketStream $stream)
+    public function __construct(SocketStream $stream, bool $pushMasked, bool $pullMaskedRequired)
     {
         $this->stream = $stream;
         $this->httpHandler = new HttpHandler($this->stream);
-        $this->messageHandler = new MessageHandler(new FrameHandler($this->stream));
+        $this->messageHandler = new MessageHandler(new FrameHandler($this->stream, $pushMasked, $pullMaskedRequired));
         $this->middlewareHandler = new MiddlewareHandler();
         $this->setLogger(new NullLogger());
     }
@@ -74,7 +73,11 @@ class Connection implements LoggerAwareInterface
 
     public function __toString(): string
     {
-        return get_class($this);
+        return sprintf(
+            "%s(%s)",
+            get_class($this),
+            $this->getName() ?: 'closed'
+        );
     }
 
 
@@ -115,17 +118,6 @@ class Connection implements LoggerAwareInterface
     public function setFrameSize(int $frameSize): self
     {
         $this->frameSize = $frameSize;
-        return $this;
-    }
-
-    /**
-     * If sent frames should be masked
-     * @param bool $masked
-     * @return self.
-     */
-    public function setMasked(bool $masked): self
-    {
-        $this->masked = $masked;
         return $this;
     }
 
@@ -225,12 +217,11 @@ class Connection implements LoggerAwareInterface
     /* ---------- WebSocket Message methods ------------------------------------------------------------------------ */
 
     // Push a message to stream
-    public function pushMessage(Message $message, ?bool $masked = null): Message
+    public function pushMessage(Message $message): Message
     {
         try {
-            $masked = is_null($masked) ? $this->masked : $masked;
-            return $this->middlewareHandler->processOutgoing($this, $message, function (Message $message) use ($masked) {
-                $this->messageHandler->push($message, $masked, $this->frameSize);
+            return $this->middlewareHandler->processOutgoing($this, $message, function (Message $message) {
+                $this->messageHandler->push($message, $this->frameSize);
             });
         } catch (Throwable $e) {
             $this->throwException($e);

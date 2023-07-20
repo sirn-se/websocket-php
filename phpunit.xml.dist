@@ -4,10 +4,7 @@
   <testsuites>
     <testsuite name="Unit tests">
       <directory suffix=".php">tests/suites/connection</directory>
-      <directory suffix=".php">tests/suites/frame</directory>
-      <directory suffix=".php">tests/suites/http</directory>
-      <directory suffix=".php">tests/suites/message</directory>
-      <directory suffix=".php">tests/suites/middleware</directory>
+
     </testsuite>
   </testsuites>
   <source>

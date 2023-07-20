@@ -46,7 +46,7 @@ class FrameHandlerTest extends TestCase
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
-        $handler = new FrameHandler($stream);
+        $handler = new FrameHandler($stream, false, false);
         $this->assertInstanceOf(FrameHandler::class, $handler);
 
         $frame = new Frame('text', 'Text message', true);
@@ -68,7 +68,7 @@ class FrameHandlerTest extends TestCase
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
-        $handler = new FrameHandler($stream);
+        $handler = new FrameHandler($stream, false, false);
         $this->assertInstanceOf(FrameHandler::class, $handler);
 
         $this->expectSocketStreamRead()->addAssert(function ($method, $params) {
@@ -95,7 +95,7 @@ class FrameHandlerTest extends TestCase
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
-        $handler = new FrameHandler($stream);
+        $handler = new FrameHandler($stream, true, false);
         $this->assertInstanceOf(FrameHandler::class, $handler);
 
         $frame = new Frame('text', 'Text message', true);
@@ -115,7 +115,7 @@ class FrameHandlerTest extends TestCase
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
-        $handler = new FrameHandler($stream);
+        $handler = new FrameHandler($stream, false, true);
         $this->assertInstanceOf(FrameHandler::class, $handler);
 
         $this->expectSocketStreamRead()->addAssert(function ($method, $params) {
@@ -148,7 +148,7 @@ class FrameHandlerTest extends TestCase
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
-        $handler = new FrameHandler($stream);
+        $handler = new FrameHandler($stream, false, false);
         $this->assertInstanceOf(FrameHandler::class, $handler);
 
         $frame = new Frame('text', $payload, true);
@@ -172,7 +172,7 @@ class FrameHandlerTest extends TestCase
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
-        $handler = new FrameHandler($stream);
+        $handler = new FrameHandler($stream, false, false);
         $this->assertInstanceOf(FrameHandler::class, $handler);
 
         $this->expectSocketStreamRead()->addAssert(function ($method, $params) {
@@ -206,7 +206,7 @@ class FrameHandlerTest extends TestCase
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
-        $handler = new FrameHandler($stream);
+        $handler = new FrameHandler($stream, false, false);
         $this->assertInstanceOf(FrameHandler::class, $handler);
 
         $frame = new Frame('text', $payload, true);
@@ -230,7 +230,7 @@ class FrameHandlerTest extends TestCase
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
-        $handler = new FrameHandler($stream);
+        $handler = new FrameHandler($stream, false, false);
         $this->assertInstanceOf(FrameHandler::class, $handler);
 
         $this->expectSocketStreamRead()->addAssert(function ($method, $params) {
@@ -263,7 +263,7 @@ class FrameHandlerTest extends TestCase
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
-        $handler = new FrameHandler($stream);
+        $handler = new FrameHandler($stream, false, false);
         $this->assertInstanceOf(FrameHandler::class, $handler);
 
         $frame = new Frame('text', 'Failed message', true);
@@ -285,7 +285,7 @@ class FrameHandlerTest extends TestCase
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
-        $handler = new FrameHandler($stream);
+        $handler = new FrameHandler($stream, false, false);
         $this->assertInstanceOf(FrameHandler::class, $handler);
 
         $this->expectSocketStreamRead()->addAssert(function ($method, $params) {

@@ -53,7 +53,7 @@ class MessageHandlerTest extends TestCase
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $handler = new MessageHandler(new FrameHandler(new SocketStream($temp)));
+        $handler = new MessageHandler(new FrameHandler(new SocketStream($temp), false, false));
         $this->assertInstanceOf(MessageHandler::class, $handler);
 
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
@@ -62,7 +62,7 @@ class MessageHandlerTest extends TestCase
             $this->assertEquals('Text message', substr($params[0], 2));
         });
         $message = new Text('Text message');
-        $handler->push($message, false);
+        $handler->push($message);
 
         fclose($temp);
     }
@@ -73,7 +73,7 @@ class MessageHandlerTest extends TestCase
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $handler = new MessageHandler(new FrameHandler(new SocketStream($temp)));
+        $handler = new MessageHandler(new FrameHandler(new SocketStream($temp), false, false));
         $this->assertInstanceOf(MessageHandler::class, $handler);
 
         $this->expectSocketStreamRead()->addAssert(function ($method, $params) {
@@ -99,14 +99,14 @@ class MessageHandlerTest extends TestCase
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $handler = new MessageHandler(new FrameHandler(new SocketStream($temp)));
+        $handler = new MessageHandler(new FrameHandler(new SocketStream($temp), true, false));
         $this->assertInstanceOf(MessageHandler::class, $handler);
 
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(18, strlen($params[0]));
         });
         $message = new Text('Text message');
-        $handler->push($message, true);
+        $handler->push($message);
 
         fclose($temp);
     }
@@ -117,7 +117,7 @@ class MessageHandlerTest extends TestCase
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $handler = new MessageHandler(new FrameHandler(new SocketStream($temp)));
+        $handler = new MessageHandler(new FrameHandler(new SocketStream($temp), false, true));
         $this->assertInstanceOf(MessageHandler::class, $handler);
 
         $this->expectSocketStreamRead()->addAssert(function ($method, $params) {
@@ -148,7 +148,7 @@ class MessageHandlerTest extends TestCase
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $handler = new MessageHandler(new FrameHandler(new SocketStream($temp)));
+        $handler = new MessageHandler(new FrameHandler(new SocketStream($temp), false, false));
         $this->assertInstanceOf(MessageHandler::class, $handler);
 
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
@@ -164,7 +164,7 @@ class MessageHandlerTest extends TestCase
             $this->assertEquals('ge', substr($params[0], 2));
         });
         $message = new Text('Text message');
-        $handler->push($message, false, 5);
+        $handler->push($message, 5);
 
         fclose($temp);
     }
@@ -175,7 +175,7 @@ class MessageHandlerTest extends TestCase
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $handler = new MessageHandler(new FrameHandler(new SocketStream($temp)));
+        $handler = new MessageHandler(new FrameHandler(new SocketStream($temp), false, false));
         $this->assertInstanceOf(MessageHandler::class, $handler);
 
         $this->expectSocketStreamRead()->addAssert(function ($method, $params) {
@@ -221,7 +221,7 @@ class MessageHandlerTest extends TestCase
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $handler = new MessageHandler(new FrameHandler(new SocketStream($temp)));
+        $handler = new MessageHandler(new FrameHandler(new SocketStream($temp), false, false));
         $this->assertInstanceOf(MessageHandler::class, $handler);
 
         $this->expectSocketStreamRead()->addAssert(function ($method, $params) {
@@ -273,7 +273,7 @@ class MessageHandlerTest extends TestCase
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $handler = new MessageHandler(new FrameHandler(new SocketStream($temp)));
+        $handler = new MessageHandler(new FrameHandler(new SocketStream($temp), false, false));
         $this->assertInstanceOf(MessageHandler::class, $handler);
 
         $this->expectSocketStreamRead()->addAssert(function ($method, $params) {

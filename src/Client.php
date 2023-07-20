@@ -271,8 +271,7 @@ class Client implements LoggerAwareInterface
             $this->logger->error("[client] {$error}", []);
             throw new ConnectionException($error, ConnectionException::CLIENT_CONNECT_ERR, [], $e);
         }
-        $this->connection = new Connection($stream, $this->options);
-        $this->connection->setMasked(true);
+        $this->connection = new Connection($stream, true, false);
         $this->connection->setTimeout($this->options['timeout']);
         $this->connection->setLogger($this->logger);
         $this->connection->addMiddleware(new CloseHandler());

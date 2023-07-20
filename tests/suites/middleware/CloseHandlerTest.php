@@ -44,7 +44,7 @@ class CloseHandlerTest extends TestCase
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
 
-        $connection = new Connection($stream);
+        $connection = new Connection($stream, false, false);
         $connection->addMiddleware(new CloseHandler());
 
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
@@ -78,7 +78,7 @@ class CloseHandlerTest extends TestCase
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
 
-        $connection = new Connection($stream);
+        $connection = new Connection($stream, false, false);
         $connection->addMiddleware(new CloseHandler());
 
         $this->expectSocketStreamRead()->setReturn(function () {

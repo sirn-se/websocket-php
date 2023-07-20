@@ -44,7 +44,7 @@ class PingResponderTest extends TestCase
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
 
-        $connection = new Connection($stream);
+        $connection = new Connection($stream, false, false);
         $connection->addMiddleware(new PingResponder());
         $message = new Ping();
 

@@ -42,11 +42,11 @@ class MessageHandler implements LoggerAwareInterface
     }
 
     // Push message
-    public function push(Message $message, bool $masked, int $size = self::DEFAULT_SIZE): void
+    public function push(Message $message, int $size = self::DEFAULT_SIZE): void
     {
         $frames = $message->getFrames($size);
         foreach ($frames as $frame) {
-            $this->frameHandler->push($frame, $masked);
+            $this->frameHandler->push($frame);
         }
         $this->logger->info("[message-handler] Pushed {$message}", [
             'opcode' => $message->getOpcode(),

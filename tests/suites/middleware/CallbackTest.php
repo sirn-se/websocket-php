@@ -45,7 +45,7 @@ class CallbackTest extends TestCase
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
 
-        $connection = new Connection($stream);
+        $connection = new Connection($stream, false, false);
 
         $connection->addMiddleware(new Callback(incoming: function ($stack, $connection) {
             $message = $stack->handleIncoming();
@@ -76,7 +76,7 @@ class CallbackTest extends TestCase
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
 
-        $connection = new Connection($stream);
+        $connection = new Connection($stream, false, false);
 
         $connection->addMiddleware(new Callback(outgoing: function ($stack, $connection, $message) {
             $this->assertEquals('Test message', $message->getContent());

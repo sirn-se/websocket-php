@@ -28,10 +28,14 @@ class FrameHandler implements LoggerAwareInterface
 
     private $stream;
     private $logger;
+    private $pushMasked;
+    private $pullMaskedRequired;
 
-    public function __construct(SocketStream $stream)
+    public function __construct(SocketStream $stream, bool $pushMasked, bool $pullMaskedRequired)
     {
         $this->stream = $stream;
+        $this->pushMasked = $pushMasked;
+        $this->pullMaskedRequired = $pullMaskedRequired;
         $this->setLogger(new NullLogger());
     }
 
@@ -78,6 +82,8 @@ class FrameHandler implements LoggerAwareInterface
             $masking_key = $this->stream->read(4);
         }
 
+        // @todo Throw exception if !masked && pullMaskedRequired
+
         // Get the actual payload, if any (might not be for e.g. close frames).
         if ($payload_length > 0) {
             $data = $this->read($payload_length);
@@ -100,7 +106,7 @@ class FrameHandler implements LoggerAwareInterface
     }
 
     // Push frame to stream
-    public function push(Frame $frame, bool $masked): int
+    public function push(Frame $frame, bool $masked = null): int
     {
         $final = $frame->isFinal();
         $payload = $frame->getPayload();
@@ -112,7 +118,7 @@ class FrameHandler implements LoggerAwareInterface
         $byte_1 |= self::$opcodes[$opcode]; // Set opcode.
         $data .= pack('C', $byte_1);
 
-        $byte_2 = $masked ? 0b10000000 : 0b00000000; // Masking bit marker.
+        $byte_2 = $this->pushMasked ? 0b10000000 : 0b00000000; // Masking bit marker.
 
         // 7 bits of payload length
         if ($payload_length > 65535) {
@@ -126,7 +132,7 @@ class FrameHandler implements LoggerAwareInterface
         }
 
         // Handle masking.
-        if ($masked) {
+        if ($this->pushMasked) {
             // Generate a random mask.
             $mask = '';
             for ($i = 0; $i < 4; $i++) {

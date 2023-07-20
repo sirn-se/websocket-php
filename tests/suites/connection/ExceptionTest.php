@@ -50,7 +50,7 @@ class ExceptionTest extends TestCase
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
-        $connection = new Connection($stream);
+        $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
             throw new BadOpcodeException('Bad Opcode', Exception::BAD_OPCODE);
@@ -72,7 +72,7 @@ class ExceptionTest extends TestCase
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
-        $connection = new Connection($stream);
+        $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
             throw new BadUriException('Bad URI');
@@ -94,7 +94,7 @@ class ExceptionTest extends TestCase
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
-        $connection = new Connection($stream);
+        $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
             throw new ConnectionException('Connection error', Exception::CLIENT_CONNECT_ERR);
@@ -116,7 +116,7 @@ class ExceptionTest extends TestCase
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
-        $connection = new Connection($stream);
+        $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
             throw new TimeoutException('Timeout', Exception::TIMED_OUT);
@@ -138,7 +138,7 @@ class ExceptionTest extends TestCase
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
-        $connection = new Connection($stream);
+        $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
             throw new RuntimeException('Generic error', 77);
@@ -164,7 +164,7 @@ class ExceptionTest extends TestCase
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
-        $connection = new Connection($stream);
+        $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
             throw new RuntimeException('Generic error', 77);
@@ -190,7 +190,7 @@ class ExceptionTest extends TestCase
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
-        $connection = new Connection($stream);
+        $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
             throw new RuntimeException('Generic error', 77);
