@@ -27,9 +27,7 @@ use WebSocket\Message\{
     Ping,
     Text
 };
-use WebSocket\Middleware\{
-    PingResponder
-};
+use WebSocket\Middleware\Callback;
 
 /**
  * Test case for WebSocket\Connection: Connection.
@@ -69,11 +67,27 @@ class ConnectionTest extends TestCase
         $this->expectSocketStreamGetRemoteName();
         $this->assertEquals('', $connection->getRemoteName());
 
-        $connection->setLogger(new NullLogger());
-        $connection->setOptions([]);
-
         $this->expectSocketStreamSetTimeout();
         $connection->setTimeout(10);
+
+        $connection->setLogger(new NullLogger());
+        $connection->setMasked(true);
+        $connection->setFrameSize(64);
+        $connection->addMiddleware(new Callback());
+
+        $this->expectSocketStreamIsReadable();
+        $this->assertTrue($connection->isReadable());
+
+        $this->expectSocketStreamIsWritable();
+        $this->assertTrue($connection->isWritable());
+
+        $this->expectSocketStreamCloseRead();
+        $this->expectSocketStreamGetMetadata();
+        $connection->closeRead();
+
+        $this->expectSocketStreamCloseWrite();
+        $this->expectSocketStreamClose();
+        $connection->closeWrite();
 
         $this->expectSocketStreamClose();
         $this->expectSocketStreamIsConnected();
@@ -81,30 +95,6 @@ class ConnectionTest extends TestCase
 
         $this->expectSocketStreamIsConnected();
         $this->assertFalse($connection->isConnected());
-
-        unset($stream);
-    }
-
-    public function testCreateWithOptions(): void
-    {
-        $temp = tmpfile();
-
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-        $stream = new SocketStream($temp);
-
-        $this->expectSocketStreamSetTimeout();
-        $connection = new Connection($stream, [
-            'masked' => false,
-            'fragment_size' => 4096,
-            'logger' => new NullLogger(),
-            'timeout' => 10,
-        ]);
-        $this->assertInstanceOf(Connection::class, $connection);
-
-        $this->expectSocketStreamClose();
-        $this->expectSocketStreamIsConnected();
-        $this->assertTrue($connection->disconnect());
 
         unset($stream);
     }
@@ -152,7 +142,8 @@ class ConnectionTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(base64_decode('gQxUZXN0IG1lc3NhZ2U'), $params[0]);
         });
-        $connection->pushMessage($message);
+        $message = $connection->pushMessage($message);
+        $this->assertInstanceOf(Text::class, $message);
 
         $this->expectSocketStreamRead()->setReturn(function () {
             return base64_decode('gQw=');

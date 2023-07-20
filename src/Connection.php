@@ -49,20 +49,20 @@ class Connection implements LoggerAwareInterface
     private $httpHandler;
     private $messageHandler;
     private $middlewareHandler;
-    private $options = ['masked' => false, 'fragment_size' => 4096];
     private $logger;
+    private $masked = false;
+    private $frameSize = 4096;
 
 
-    /* ---------- Construct & Destruct ----------------------------------------------------------------------------- */
+    /* ---------- Magic methods ------------------------------------------------------------------------------------ */
 
-    public function __construct(SocketStream $stream, array $options = [])
+    public function __construct(SocketStream $stream)
     {
         $this->stream = $stream;
         $this->httpHandler = new HttpHandler($this->stream);
         $this->messageHandler = new MessageHandler(new FrameHandler($this->stream));
         $this->middlewareHandler = new MiddlewareHandler();
         $this->setLogger(new NullLogger());
-        $this->setOptions($options);
     }
 
     public function __destruct()
@@ -83,48 +83,62 @@ class Connection implements LoggerAwareInterface
     /**
      * Set logger.
      * @param Psr\Log\LoggerInterface $logger Logger implementation
+     * @return self.
      */
-    public function setLogger(LoggerInterface $logger): void
+    public function setLogger(LoggerInterface $logger): self
     {
         $this->logger = $logger;
         $this->httpHandler->setLogger($logger);
         $this->messageHandler->setLogger($logger);
         $this->middlewareHandler->setLogger($logger);
-    }
-
-    /**
-     * Set connection options.
-     * @param array $options Options
-     */
-    public function setOptions(array $options = []): void
-    {
-        $this->options = array_merge($this->options, $options);
-        if (!empty($options['logger'])) {
-            $this->setLogger($options['logger']);
-        }
-        if (!empty($options['timeout'])) {
-            $this->setTimeout($options['timeout']);
-        }
+        $this->logger->debug("[connection] Setting logger: " . get_class($logger));
+        return $this;
     }
 
     /**
      * Set time out on connection.
      * @param int $seconds Timeout part in seconds
-     * @param int $microseconds Timeout part in microseconds
+     * @return self.
      */
-    public function setTimeout(int $seconds, int $microseconds = 0): void
+    public function setTimeout(int $seconds): self
     {
-        $this->stream->setTimeout($seconds, $microseconds);
-        $this->logger->debug("[connection] Setting timeout {$seconds}.{$microseconds} seconds");
+        $this->stream->setTimeout($seconds, 0);
+        $this->logger->debug("[connection] Setting timeout: {$seconds} seconds");
+        return $this;
+    }
+
+    /**
+     * Set fragmentation size.
+     * @param int $frameSize Frame size in bytes.
+     * @return self.
+     */
+    public function setFrameSize(int $frameSize): self
+    {
+        $this->frameSize = $frameSize;
+        return $this;
+    }
+
+    /**
+     * If sent frames should be masked
+     * @param bool $masked
+     * @return self.
+     */
+    public function setMasked(bool $masked): self
+    {
+        $this->masked = $masked;
+        return $this;
     }
 
     /**
      * Add a middleware.
      * @param MiddlewareInterface $middleware
+     * @return self.
      */
-    public function addMiddleware(MiddlewareInterface $middleware): void
+    public function addMiddleware(MiddlewareInterface $middleware): self
     {
         $this->middlewareHandler->add($middleware);
+        $this->logger->debug("[connection] Addded middleware: {$middleware}");
+        return $this;
     }
 
 
@@ -186,17 +200,6 @@ class Connection implements LoggerAwareInterface
         $this->stream->closeWrite();
     }
 
-    /**
-     * Tell the socket to close.
-     * @param integer $status  http://tools.ietf.org/html/rfc6455#section-7.4
-     * @param string  $message A closing message, max 125 bytes.
-     */
-    public function close(int $status = 1000, string $message = 'ttfn', ?bool $masked = null): void
-    {
-        $this->pushMessage(new Close($status, $message), $masked);
-        $this->logger->debug("[connection] Closing with status: {$status}.");
-    }
-
 
     /* ---------- Connection state --------------------------------------------------------------------------------- */
 
@@ -222,12 +225,12 @@ class Connection implements LoggerAwareInterface
     /* ---------- WebSocket Message methods ------------------------------------------------------------------------ */
 
     // Push a message to stream
-    public function pushMessage(Message $message, ?bool $masked = null): void
+    public function pushMessage(Message $message, ?bool $masked = null): Message
     {
         try {
-            $masked = is_null($masked) ? $this->options['masked'] : $masked;
-            $this->middlewareHandler->processOutgoing($this, $message, function (Message $message) use ($masked) {
-                $this->messageHandler->push($message, $masked, $this->options['fragment_size']);
+            $masked = is_null($masked) ? $this->masked : $masked;
+            return $this->middlewareHandler->processOutgoing($this, $message, function (Message $message) use ($masked) {
+                $this->messageHandler->push($message, $masked, $this->frameSize);
             });
         } catch (Throwable $e) {
             $this->throwException($e);

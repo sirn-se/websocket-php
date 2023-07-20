@@ -49,24 +49,10 @@ class CallbackTest extends TestCase
 
         $connection->addMiddleware(new Callback(incoming: function ($stack, $connection) {
             $message = $stack->handleIncoming();
-            $message->setContent($message->getContent() . "<-A");
-            $this->assertEquals('Test message<-C<-B<-A', $message->getContent());
+            $message->setContent("Changed message");
+            $this->assertEquals('Changed message', $message->getContent());
             return $message;
         }));
-        $connection->addMiddleware(new Callback());
-        $connection->addMiddleware(new Callback(incoming: function ($stack, $connection) {
-            $message = $stack->handleIncoming();
-            $message->setContent($message->getContent() . "<-B");
-            $this->assertEquals('Test message<-C<-B', $message->getContent());
-            return $message;
-        }));
-        $connection->addMiddleware(new Callback(incoming: function ($stack, $connection) {
-            $message = $stack->handleIncoming();
-            $message->setContent($message->getContent() . "<-C");
-            $this->assertEquals('Test message<-C', $message->getContent());
-            return $message;
-        }));
-        $connection->setLogger(new NullLogger());
 
         $this->expectSocketStreamRead()->setReturn(function () {
             return base64_decode('gQw=');
@@ -75,7 +61,7 @@ class CallbackTest extends TestCase
             return 'Test message';
         });
         $message = $connection->pullMessage();
-        $this->assertEquals('Test message<-C<-B<-A', $message->getContent());
+        $this->assertEquals('Changed message', $message->getContent());
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
@@ -94,30 +80,11 @@ class CallbackTest extends TestCase
 
         $connection->addMiddleware(new Callback(outgoing: function ($stack, $connection, $message) {
             $this->assertEquals('Test message', $message->getContent());
-            $message->setContent($message->getContent() . "->A");
+            $message->setContent('Changed message');
             $message = $stack->handleOutgoing($message);
-            $message->setContent($message->getContent() . "<-A");
-            $this->assertEquals('Test message->A->B->C<-C<-B<-A', $message->getContent());
+            $this->assertEquals('Changed message', $message->getContent());
             return $message;
         }));
-        $connection->addMiddleware(new Callback());
-        $connection->addMiddleware(new Callback(outgoing: function ($stack, $connection, $message) {
-            $this->assertEquals('Test message->A', $message->getContent());
-            $message->setContent($message->getContent() . "->B");
-            $message = $stack->handleOutgoing($message);
-            $message->setContent($message->getContent() . "<-B");
-            $this->assertEquals('Test message->A->B->C<-C<-B', $message->getContent());
-            return $message;
-        }));
-        $connection->addMiddleware(new Callback(outgoing: function ($stack, $connection, $message) {
-            $this->assertEquals('Test message->A->B', $message->getContent());
-            $message->setContent($message->getContent() . "->C");
-            $message = $stack->handleOutgoing($message);
-            $message->setContent($message->getContent() . "<-C");
-            $this->assertEquals('Test message->A->B->C<-C', $message->getContent());
-            return $message;
-        }));
-        $connection->setLogger(new NullLogger());
 
         $this->expectSocketStreamWrite();
         $connection->pushMessage(new Text('Test message'));

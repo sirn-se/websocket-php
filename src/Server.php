@@ -132,7 +132,7 @@ class Server implements LoggerAwareInterface
         if (!$this->connection) {
             return $this;
         }
-        $this->connection->setOptions(['fragment_size' => $fragment_size]);
+        $this->connection->setFrameSize($fragment_size);
         return $this;
     }
 

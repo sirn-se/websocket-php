@@ -135,7 +135,7 @@ class Client implements LoggerAwareInterface
         if (!$this->connection) {
             return $this;
         }
-        $this->connection->setOptions(['fragment_size' => $fragment_size]);
+        $this->connection->setFrameSize($fragment_size);
         return $this;
     }
 
@@ -272,6 +272,8 @@ class Client implements LoggerAwareInterface
             throw new ConnectionException($error, ConnectionException::CLIENT_CONNECT_ERR, [], $e);
         }
         $this->connection = new Connection($stream, $this->options);
+        $this->connection->setMasked(true);
+        $this->connection->setTimeout($this->options['timeout']);
         $this->connection->setLogger($this->logger);
         $this->connection->addMiddleware(new CloseHandler());
         $this->connection->addMiddleware(new PingResponder());
