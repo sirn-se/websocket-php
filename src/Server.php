@@ -314,24 +314,16 @@ class Server implements LoggerAwareInterface
         $this->disconnect();
         $exception = null;
 
-        do {
-            try {
-                $uri = new Uri("{$this->options['schema']}://0.0.0.0:{$this->port}");
-                $this->listening = $this->streamFactory->createSocketServer($uri);
-            } catch (RuntimeException $e) {
-                $this->logger->error("Could not connect on port {$this->port}: {$e->getMessage()}");
-                $exception = $e;
-            }
-        } while (is_null($this->listening) && $this->port++ < 10000);
 
-        if (!$this->listening) {
-            $error = "Could not open listening socket: {$exception->getMessage()}";
-            $this->logger->error($error);
+        try {
+            $uri = new Uri("{$this->options['schema']}://0.0.0.0:{$this->port}");
+            $this->listening = $this->streamFactory->createSocketServer($uri);
+        } catch (Throwable $e) {
+            $this->logger->error("Could not connect on port {$this->port}: {$e->getMessage()}");
             throw new ConnectionException($error, ConnectionException::SERVER_SOCKET_ERR);
         }
 
         $this->logger->info("Server listening to port {$uri}");
-
         return (bool)$this->listening;
     }
 

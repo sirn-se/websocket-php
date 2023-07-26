@@ -11,7 +11,6 @@ declare(strict_types=1);
 
 namespace WebSocket\Test\Server;
 
-use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\StreamException;
 use Phrity\Net\Mock\StreamFactory;
@@ -20,8 +19,6 @@ use Phrity\Net\Mock\Stack\{
     ExpectSocketStreamTrait,
     ExpectStreamFactoryTrait
 };
-
-use Psr\Log\NullLogger;
 use WebSocket\{
     ConnectionException,
     Server
@@ -55,7 +52,6 @@ class HandshakeTest extends TestCase
 
     public function testHandshakeRequest(): void
     {
-        // Creating client
         $this->expectStreamFactory();
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
