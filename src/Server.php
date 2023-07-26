@@ -172,41 +172,37 @@ class Server implements LoggerAwareInterface
     /**
      * Send text message.
      * @param string $message Content as string.
-     * @param bool $masked If message should be masked
      */
-    public function text(string $message, ?bool $masked = null): void
+    public function text(string $message): void
     {
-        $this->send(new Text($message), $masked);
+        $this->send(new Text($message));
     }
 
     /**
      * Send binary message.
      * @param string $message Content as binary string.
-     * @param bool $masked If message should be masked
      */
-    public function binary(string $message, ?bool $masked = null): void
+    public function binary(string $message): void
     {
-        $this->send(new Binary($message), $masked);
+        $this->send(new Binary($message));
     }
 
     /**
      * Send ping.
      * @param string $message Optional text as string.
-     * @param bool $masked If message should be masked
      */
-    public function ping(string $message = '', ?bool $masked = null): void
+    public function ping(string $message = ''): void
     {
-        $this->send(new Ping($message), $masked);
+        $this->send(new Ping($message));
     }
 
     /**
      * Send unsolicited pong.
      * @param string $message Optional text as string.
-     * @param bool $masked If message should be masked
      */
-    public function pong(string $message = '', ?bool $masked = null): void
+    public function pong(string $message = ''): void
     {
-        $this->send(new Pong($message), $masked);
+        $this->send(new Pong($message));
     }
 
     /**
@@ -219,20 +215,19 @@ class Server implements LoggerAwareInterface
         if (!$this->isConnected()) {
             return;
         }
-        $this->send(new Close($status, $message), $masked);
+        $this->send(new Close($status, $message));
     }
 
     /**
      * Send message.
      * @param Message $message Message to send.
-     * @param bool $masked If message should be masked
      */
-    public function send(Message $message, ?bool $masked = null): void
+    public function send(Message $message): void
     {
         if (!$this->isConnected()) {
             $this->connect();
         }
-        $this->connection->pushMessage($message, $masked);
+        $this->connection->pushMessage($message);
     }
 
     /**
@@ -274,7 +269,7 @@ class Server implements LoggerAwareInterface
             }
         } catch (RuntimeException $e) {
             $error = "Server failed to connect. {$e->getMessage()}";
-            $this->logger->error($error);
+            $this->logger->error("[server] {$error}");
             throw new ConnectionException($error, ConnectionException::SERVER_ACCEPT_ERR, [], $e);
         }
 
@@ -319,7 +314,8 @@ class Server implements LoggerAwareInterface
             $uri = new Uri("{$this->options['schema']}://0.0.0.0:{$this->port}");
             $this->listening = $this->streamFactory->createSocketServer($uri);
         } catch (Throwable $e) {
-            $this->logger->error("Could not connect on port {$this->port}: {$e->getMessage()}");
+            $error = "Could not connect on port {$this->port}: {$e->getMessage()}";
+            $this->logger->error("[server] {$error}");
             throw new ConnectionException($error, ConnectionException::SERVER_SOCKET_ERR);
         }
 
@@ -378,31 +374,31 @@ class Server implements LoggerAwareInterface
             $request = $connection->pullHttp();
         } catch (Throwable $e) {
             $error = 'Server handshake error';
-            $this->logger->error($error);
+            $this->logger->error("[server] {$error}");
             throw new ConnectionException($error, ConnectionException::SERVER_HANDSHAKE_ERR);
         }
 
         $connectionHeader = trim($request->getHeaderLine('Connection'));
         if (strtolower($connectionHeader) != 'upgrade') {
             $error = "Handshake request with invalid Connection header: '{$connectionHeader}'";
-            $this->logger->error($error);
+            $this->logger->error("[server] {$error}");
             throw new ConnectionException($error, ConnectionException::SERVER_HANDSHAKE_ERR);
         }
         $upgradeHeader = trim($request->getHeaderLine('Upgrade'));
         if (strtolower($upgradeHeader) != 'websocket') {
             $error = "Handshake request with invalid Upgrade header: '{$upgradeHeader}'";
-            $this->logger->error($error);
+            $this->logger->error("[server] {$error}");
             throw new ConnectionException($error, ConnectionException::SERVER_HANDSHAKE_ERR);
         }
         $keyHeader = trim($request->getHeaderLine('Sec-WebSocket-Key'));
         if (empty($keyHeader)) {
             $error = "Handshake request with invalid Sec-WebSocket-Key header: '{$keyHeader}'";
-            $this->logger->error($error);
+            $this->logger->error("[server] {$error}");
             throw new ConnectionException($error, ConnectionException::SERVER_HANDSHAKE_ERR);
         }
         if (strlen(base64_decode($keyHeader)) != 16) {
             $error = "Handshake request with invalid Sec-WebSocket-Key header: '{$keyHeader}'";
-            $this->logger->error($error);
+            $this->logger->error("[server] {$error}");
             throw new ConnectionException($error, ConnectionException::SERVER_HANDSHAKE_ERR);
         }
 
@@ -415,11 +411,11 @@ class Server implements LoggerAwareInterface
             $connection->pushHttp($response);
         } catch (Throwable $e) {
             $error = 'Server handshake error';
-            $this->logger->error($error);
+            $this->logger->error("[server] {$error}");
             throw new ConnectionException($error, ConnectionException::SERVER_HANDSHAKE_ERR);
         }
 
-        $this->logger->debug("Handshake on {$request->getUri()->getPath()}");
+        $this->logger->debug("[server] Handshake on {$request->getUri()->getPath()}");
         $this->handshakeRequest = $request;
     }
 }

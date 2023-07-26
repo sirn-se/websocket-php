@@ -177,23 +177,6 @@ class ConfigTest extends TestCase
 
     public function testContextOption(): void
     {
-        $context = stream_context_create(['ssl' => ['verify_peer' => false]]);
-
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path', ['context' => $context]);
-        $client->setStreamFactory(new StreamFactory());
-
-        $this->expectWsClientConnect(context: ['ssl' => ['verify_peer' => false]]);
-        $this->expectWsClientPerformHandshake('localhost:8000', '/my/mock/path');
-        $client->connect();
-
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
-        unset($client);
-    }
-
-    public function testContextArrayOption(): void
-    {
         $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path', ['context' => ['ssl' => ['verify_peer' => false]]]);
         $client->setStreamFactory(new StreamFactory());

@@ -166,68 +166,62 @@ class Client implements LoggerAwareInterface
     /**
      * Send text message.
      * @param string $message Content as string.
-     * @param bool $masked If message should be masked
      */
-    public function text(string $message, ?bool $masked = null): void
+    public function text(string $message): void
     {
-        $this->send(new Text($message), $masked);
+        $this->send(new Text($message));
     }
 
     /**
      * Send binary message.
      * @param string $message Content as binary string.
-     * @param bool $masked If message should be masked
      */
-    public function binary(string $message, ?bool $masked = null): void
+    public function binary(string $message): void
     {
-        $this->send(new Binary($message), $masked);
+        $this->send(new Binary($message));
     }
 
     /**
      * Send ping.
      * @param string $message Optional text as string.
-     * @param bool $masked If message should be masked
      */
-    public function ping(string $message = '', ?bool $masked = null): void
+    public function ping(string $message = ''): void
     {
-        $this->send(new Ping($message), $masked);
+        $this->send(new Ping($message));
     }
 
     /**
      * Send unsolicited pong.
      * @param string $message Optional text as string.
-     * @param bool $masked If message should be masked
      */
-    public function pong(string $message = '', ?bool $masked = null): void
+    public function pong(string $message = ''): void
     {
-        $this->send(new Pong($message), $masked);
+        $this->send(new Pong($message));
     }
 
     /**
      * Tell the socket to close.
      * @param integer $status  http://tools.ietf.org/html/rfc6455#section-7.4
      * @param string  $message A closing message, max 125 bytes.
-     * @param bool $masked If message should be masked
      */
-    public function close(int $status = 1000, string $message = 'ttfn', ?bool $masked = null): void
+    public function close(int $status = 1000, string $message = 'ttfn'): void
     {
         if (!$this->isConnected()) {
             return;
         }
-        $this->send(new Close($status, $message), $masked);
+        $this->send(new Close($status, $message));
     }
 
     /**
      * Send message.
      * @param Message $message Message to send.
-     * @param bool $masked If message should be masked
      */
-    public function send(Message $message, ?bool $masked = null): void
+    public function send(Message $message): void
     {
         if (!$this->isConnected()) {
             $this->connect();
         }
-        $this->connection->pushMessage($message, $masked);
+        $this->connection->pushMessage($message);
     }
 
     /**
@@ -473,13 +467,7 @@ class Client implements LoggerAwareInterface
         if (is_array($this->options['context'])) {
             return $this->options['context'];
         }
-        if (
-            is_resource($this->options['context'])
-            && get_resource_type($this->options['context']) === 'stream-context'
-        ) {
-            return stream_context_get_options($this->options['context']);
-        }
-        $error = "Stream context in \$options['context'] isn't a valid context.";
+        $error = "Stream context option is invalid.";
         $this->logger->error("[client] {$error}");
         throw new InvalidArgumentException($error);
     }

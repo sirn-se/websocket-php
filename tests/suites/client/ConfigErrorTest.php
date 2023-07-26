@@ -78,7 +78,7 @@ class ConfigErrorTest extends TestCase
         $client = new Client('ws:///my/mock/path');
     }
 
-    public function testContextArrayOptionInvald(): void
+    public function testContextOptionInvald(): void
     {
         $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path', ['context' => 'BAD']);
@@ -86,7 +86,7 @@ class ConfigErrorTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionCode(0);
-        $this->expectExceptionMessage('Stream context in $options[\'context\'] isn\'t a valid context');
+        $this->expectExceptionMessage('Stream context option is invalid.');
         $client->connect();
 
         $this->expectSocketStreamClose();
