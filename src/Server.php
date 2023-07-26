@@ -268,7 +268,7 @@ class Server implements LoggerAwareInterface
                 throw new RuntimeException('No socket');
             }
         } catch (RuntimeException $e) {
-            $error = "Server failed to connect. {$e->getMessage()}";
+            $error = "Server failed to connect: {$e->getMessage()}";
             $this->logger->error("[server] {$error}");
             throw new ConnectionException($error, ConnectionException::SERVER_ACCEPT_ERR, [], $e);
         }
@@ -282,9 +282,7 @@ class Server implements LoggerAwareInterface
         $this->connection->addMiddleware(new CloseHandler());
         $this->connection->addMiddleware(new PingResponder());
 
-        $this->logger->info("Client has connected to port {port}", [
-            'port' => $this->port,
-        ]);
+        $this->logger->info("Client has connected to port {$this->port}");
         $this->performHandshake($this->connection);
     }
 
@@ -309,12 +307,11 @@ class Server implements LoggerAwareInterface
         $this->disconnect();
         $exception = null;
 
-
         try {
             $uri = new Uri("{$this->options['schema']}://0.0.0.0:{$this->port}");
             $this->listening = $this->streamFactory->createSocketServer($uri);
         } catch (Throwable $e) {
-            $error = "Could not connect on port {$this->port}: {$e->getMessage()}";
+            $error = "Server failed to accept: {$e->getMessage()}";
             $this->logger->error("[server] {$error}");
             throw new ConnectionException($error, ConnectionException::SERVER_SOCKET_ERR);
         }

@@ -72,11 +72,11 @@ class ConfigTest extends TestCase
             'logger' => new NullLogger(),
             'timeout' => 300,
             'schema' => 'ssl',
-            'port' => 404,
+            'port' => 8001,
         ]);
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectWsServerAccept(schema: 'ssl', port: 404);
+        $this->expectWsServerAccept(schema: 'ssl', port: 8001);
         $server->accept();
 
         $this->expectWsServerConnect(timeout: 300);
