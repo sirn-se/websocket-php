@@ -39,7 +39,7 @@ use WebSocket\Middleware\{
 
 /**
  * WebSocket\Connection class.
- * A client/server connection.
+ * A client/server connection, wrapping socket stream.
  */
 class Connection implements LoggerAwareInterface
 {
@@ -165,31 +165,35 @@ class Connection implements LoggerAwareInterface
 
     /**
      * Close connection stream.
-     * @return bool
+     * @return self.
      */
-    public function disconnect(): bool
+    public function disconnect(): self
     {
         $this->logger->info('[connection] Closing connection');
         $this->stream->close();
-        return true;
+        return $this;
     }
 
     /**
      * Close connection stream eading.
+     * @return self.
      */
-    public function closeRead(): void
+    public function closeRead(): self
     {
         $this->logger->info('[connection] Closing further reading');
         $this->stream->closeRead();
+        return $this;
     }
 
     /**
      * Close connection stream writing.
+     * @return self.
      */
-    public function closeWrite(): void
+    public function closeWrite(): self
     {
         $this->logger->info('[connection] Closing further writing');
         $this->stream->closeWrite();
+        return $this;
     }
 
 

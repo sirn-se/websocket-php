@@ -243,7 +243,19 @@ class ConfigTest extends TestCase
         unset($client);
     }
 
-    public function testSetTimeout(): void
+    public function testConfigUnconnectedClient(): void
+    {
+        $this->expectStreamFactory();
+        $client = new Client('ws://localhost:8000/my/mock/path', ['masked' => false]);
+        $client->setStreamFactory(new StreamFactory());
+
+        $this->assertFalse($client->isConnected());
+        $client->setTimeout(300);
+        $client->setFragmentSize(64);
+        $this->assertEquals(64, $client->getFragmentSize());
+    }
+
+    public function testConfigConnectedClient(): void
     {
         $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');
@@ -259,6 +271,9 @@ class ConfigTest extends TestCase
             $this->assertEquals(0, $params[1]);
         });
         $client->setTimeout(300);
+
+        $client->setFragmentSize(64);
+        $this->assertEquals(64, $client->getFragmentSize());
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();

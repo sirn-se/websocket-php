@@ -57,9 +57,7 @@ trait MockStreamTrait
     private function expectWsClientPerformHandshake(
         string $host = 'localhost:8000',
         string $path = '/my/mock/path',
-        string $headers = '',
-        int $timeout = 5,
-        $tell = null
+        string $headers = ''
     ): void {
         $this->expectSocketStreamWrite()->addAssert(
             function (string $method, array $params) use ($host, $path, $headers): void {
@@ -73,7 +71,6 @@ trait MockStreamTrait
                 );
             }
         );
-
         $this->expectSocketStreamReadLine()->addAssert(function (string $method, array $params): void {
             $this->assertEquals(1024, $params[0]);
         })->setReturn(function (array $params) {
@@ -86,16 +83,54 @@ trait MockStreamTrait
 
     /* ---------- WebSocket Server combinded asserts --------------------------------------------------------------- */
 
-    private function expectWsServerPerformHandshake(?int $timeout = null): void
+    private function expectWsServerAccept(string $schema = 'tcp', int $port = 8000): void
     {
-        $this->expectSocketStreamReadLine()->addAssert(function (string $method, array $params): void {
-            $this->assertEquals(1024, $params[0]);
-        })->setReturn(function (array $params) {
-            return "GET /my/mock/path HTTP/1.1\r\nHost: localhost:8000\r\nUser-Agent: websocket-client-php\r\n"
-            . "Connection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Key: cktLWXhUdDQ2OXF0ZCFqOQ==\r\n"
-            . "Sec-WebSocket-Version: 13"
-            . "\r\n\r\n";
+        $this->expectStreamFactoryCreateSockerServer()->addAssert(function ($method, $params) use ($schema, $port) {
+            $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
+            $this->assertEquals("{$schema}://0.0.0.0:{$port}", "{$params[0]}");
         });
+        $this->expectSocketServer()->addAssert(function ($method, $params) use ($schema, $port) {
+            $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
+            $this->assertEquals("{$schema}://0.0.0.0:{$port}", "{$params[0]}");
+        });
+        $this->expectSocketServerGetTransports();
+        $this->expectSocketServerGetMetadata();
+    }
+
+    private function expectWsServerConnect(?int $timeout = null): void
+    {
+        $this->expectSocketServerAccept()->addAssert(function ($method, $params) use ($timeout) {
+            if (is_null($timeout)) {
+                $this->assertEmpty($params);
+            } else {
+                $this->assertCount(1, $params);
+                $this->assertEquals($timeout, $params[0]);
+            }
+        });
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        if (!is_null($timeout)) {
+            $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($timeout) {
+                $this->assertEquals($timeout, $params[0]);
+            });
+        }
+    }
+
+    private function expectWsServerPerformHandshake(
+        string $host = 'localhost:8000',
+        string $path = '/my/mock/path',
+        string $headers = ''
+    ): void {
+        $this->expectSocketStreamReadLine()->addAssert(
+            function (string $method, array $params): void {
+                $this->assertEquals(1024, $params[0]);
+            })->setReturn(function (array $params) use ($host, $path, $headers) {
+                return "GET {$path} HTTP/1.1\r\nHost: {$host}\r\nUser-Agent: websocket-client-php\r\n"
+                . "Connection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Key: cktLWXhUdDQ2OXF0ZCFqOQ==\r\n"
+                . "Sec-WebSocket-Version: 13"
+                . "\r\n{$headers}\r\n";
+            }
+        );
         $this->expectSocketStreamWrite()->addAssert(function (string $method, array $params): void {
             $expect = "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
             . "Sec-WebSocket-Accept: YmysboNHNoWzWVeQpduY7xELjgU=\r\n\r\n";

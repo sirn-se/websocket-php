@@ -9,19 +9,20 @@
 
 namespace WebSocket;
 
+use InvalidArgumentException;
 use Phrity\Net\{
     StreamFactory,
     Uri
 };
 use Psr\Log\{
     LoggerAwareInterface,
-    LoggerAwareTrait,
+    LoggerInterface,
     NullLogger
 };
 use RuntimeException;
 use Throwable;
 use WebSocket\Http\{
-    Request,
+    ServerRequest,
     Response
 };
 use WebSocket\Message\{
@@ -33,6 +34,7 @@ use WebSocket\Message\{
     Text
 };
 use WebSocket\Middleware\{
+    CloseHandler,
     PingResponder
 };
 
@@ -42,14 +44,14 @@ use WebSocket\Middleware\{
  */
 class Server implements LoggerAwareInterface
 {
-    use LoggerAwareTrait; // Provides setLogger(LoggerInterface $logger)
     use OpcodeTrait;
+
+    private const GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 
     // Default options
     protected static $default_options = [
         'fragment_size' => 4096,
         'logger'        => null,
-        'masked'        => false,
         'port'          => 8000,
         'schema'        => 'tcp',
         'timeout'       => null,
@@ -68,7 +70,6 @@ class Server implements LoggerAwareInterface
     /**
      * @param array $options
      *   Associative array containing:
-     *   - filter:        Array of opcodes to handle. Default: ['text', 'binary'].
      *   - fragment_size: Set framgemnt size.  Default: 4096
      *   - logger:        PSR-3 compatible logger.  Default NullLogger.
      *   - port:          Chose port for listening.  Default 8000.
@@ -78,7 +79,13 @@ class Server implements LoggerAwareInterface
     public function __construct(array $options = [])
     {
         $this->options = array_merge(self::$default_options, $options);
-        $this->port = $this->options['port'];
+        if (!in_array($this->options['schema'], ['tcp', 'ssl'])) {
+            throw new InvalidArgumentException("Invalid schema '{$this->options['schema']}' provided");
+        }
+        if (!is_int($this->options['port']) || $this->options['port'] < 0 || $this->options['port'] > 65535) {
+            throw new InvalidArgumentException("Invalid port '{$this->options['port']}' provided");
+        }
+        $this->port = (int)$this->options['port'];
         $this->setLogger($this->options['logger'] ?: new NullLogger());
         $this->setStreamFactory(new StreamFactory());
     }
@@ -98,6 +105,20 @@ class Server implements LoggerAwareInterface
 
 
     /* ---------- Configuration ------------------------------------------------------------------------------------ */
+
+    /**
+     * Set logger.
+     * @param Psr\Log\LoggerInterface $logger Logger implementation
+     * @return self.
+     */
+    public function setLogger(LoggerInterface $logger): self
+    {
+        $this->logger = $logger;
+        if ($this->connection) {
+            $this->connection->setLogger($this->logger);
+        }
+        return $this;
+    }
 
     /**
      * Set stream factory to use.
@@ -198,7 +219,7 @@ class Server implements LoggerAwareInterface
         if (!$this->isConnected()) {
             return;
         }
-        $this->connection->close($status, $message);
+        $this->send(new Close($status, $message), $masked);
     }
 
     /**
@@ -257,8 +278,13 @@ class Server implements LoggerAwareInterface
             throw new ConnectionException($error, ConnectionException::SERVER_ACCEPT_ERR, [], $e);
         }
 
-        $this->connection = new Connection($socket, $this->options);
+        $this->connection = new Connection($socket, false, true);
+        $this->connection->setFrameSize($this->options['fragment_size']);
+        if ($this->options['timeout']) {
+            $this->connection->setTimeout($this->options['timeout']);
+        }
         $this->connection->setLogger($this->logger);
+        $this->connection->addMiddleware(new CloseHandler());
         $this->connection->addMiddleware(new PingResponder());
 
         $this->logger->info("Client has connected to port {port}", [
@@ -341,9 +367,9 @@ class Server implements LoggerAwareInterface
 
     /**
      * Get Request for handshake procedure.
-     * @return Request|null Handshake.
+     * @return ServerRequest|null Handshake.
      */
-    public function getHandshakeRequest(): ?Request
+    public function getHandshakeRequest(): ?ServerRequest
     {
         return $this->connection ? $this->handshakeRequest : null;
     }
@@ -358,33 +384,50 @@ class Server implements LoggerAwareInterface
 
         try {
             $request = $connection->pullHttp();
-        } catch (RuntimeException $e) {
-            $error = 'Client handshake error';
+        } catch (Throwable $e) {
+            $error = 'Server handshake error';
             $this->logger->error($error);
             throw new ConnectionException($error, ConnectionException::SERVER_HANDSHAKE_ERR);
         }
 
-        $key = trim((string)$request->getHeaderLine('Sec-WebSocket-Key'));
-        if (empty($key)) {
-            $error = sprintf(
-                "Client had no Key in upgrade request: %s",
-                json_encode($request->getHeaders())
-            );
+        $connectionHeader = trim($request->getHeaderLine('Connection'));
+        if (strtolower($connectionHeader) != 'upgrade') {
+            $error = "Handshake request with invalid Connection header: '{$connectionHeader}'";
+            $this->logger->error($error);
+            throw new ConnectionException($error, ConnectionException::SERVER_HANDSHAKE_ERR);
+        }
+        $upgradeHeader = trim($request->getHeaderLine('Upgrade'));
+        if (strtolower($upgradeHeader) != 'websocket') {
+            $error = "Handshake request with invalid Upgrade header: '{$upgradeHeader}'";
+            $this->logger->error($error);
+            throw new ConnectionException($error, ConnectionException::SERVER_HANDSHAKE_ERR);
+        }
+        $keyHeader = trim($request->getHeaderLine('Sec-WebSocket-Key'));
+        if (empty($keyHeader)) {
+            $error = "Handshake request with invalid Sec-WebSocket-Key header: '{$keyHeader}'";
+            $this->logger->error($error);
+            throw new ConnectionException($error, ConnectionException::SERVER_HANDSHAKE_ERR);
+        }
+        if (strlen(base64_decode($keyHeader)) != 16) {
+            $error = "Handshake request with invalid Sec-WebSocket-Key header: '{$keyHeader}'";
             $this->logger->error($error);
             throw new ConnectionException($error, ConnectionException::SERVER_HANDSHAKE_ERR);
         }
 
-        /// @todo Validate key length and base 64...
-        $response_key = base64_encode(pack('H*', sha1($key . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')));
-
-        $response = $response
-            ->withHeader('Upgrade', 'websocket')
-            ->withHeader('Connection', 'Upgrade')
-            ->withHeader('Sec-WebSocket-Accept', $response_key);
-        $connection->pushHttp($response);
+        $responseKey = base64_encode(pack('H*', sha1($keyHeader . self::GUID)));
+        try {
+            $response = $response
+                ->withHeader('Upgrade', 'websocket')
+                ->withHeader('Connection', 'Upgrade')
+                ->withHeader('Sec-WebSocket-Accept', $responseKey);
+            $connection->pushHttp($response);
+        } catch (Throwable $e) {
+            $error = 'Server handshake error';
+            $this->logger->error($error);
+            throw new ConnectionException($error, ConnectionException::SERVER_HANDSHAKE_ERR);
+        }
 
         $this->logger->debug("Handshake on {$request->getUri()->getPath()}");
-
         $this->handshakeRequest = $request;
     }
 }

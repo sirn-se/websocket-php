@@ -59,7 +59,7 @@ class PingResponderTest extends TestCase
 
         $this->expectSocketStreamClose();
         $this->expectSocketStreamIsConnected();
-        $this->assertTrue($connection->disconnect());
+        $this->assertSame($connection, $connection->disconnect());
 
         unset($stream);
     }

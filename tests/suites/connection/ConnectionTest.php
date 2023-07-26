@@ -71,11 +71,11 @@ class ConnectionTest extends TestCase
         $this->assertEquals('WebSocket\Connection(closed)', "{$connection}");
 
         $this->expectSocketStreamSetTimeout();
-        $connection->setTimeout(10);
+        $this->assertSame($connection, $connection->setTimeout(10));
 
-        $connection->setLogger(new NullLogger());
-        $connection->setFrameSize(64);
-        $connection->addMiddleware(new Callback());
+        $this->assertSame($connection, $connection->setLogger(new NullLogger()));
+        $this->assertSame($connection, $connection->setFrameSize(64));
+        $this->assertSame($connection, $connection->addMiddleware(new Callback()));
 
         $this->expectSocketStreamIsReadable();
         $this->assertTrue($connection->isReadable());
@@ -85,15 +85,15 @@ class ConnectionTest extends TestCase
 
         $this->expectSocketStreamCloseRead();
         $this->expectSocketStreamGetMetadata();
-        $connection->closeRead();
+        $this->assertSame($connection, $connection->closeRead());
 
         $this->expectSocketStreamCloseWrite();
         $this->expectSocketStreamClose();
-        $connection->closeWrite();
+        $this->assertSame($connection, $connection->closeWrite());
 
         $this->expectSocketStreamClose();
         $this->expectSocketStreamIsConnected();
-        $this->assertTrue($connection->disconnect());
+        $this->assertSame($connection, $connection->disconnect());
 
         $this->expectSocketStreamIsConnected();
         $this->assertFalse($connection->isConnected());
@@ -141,7 +141,7 @@ class ConnectionTest extends TestCase
 
         $this->expectSocketStreamClose();
         $this->expectSocketStreamIsConnected();
-        $this->assertTrue($connection->disconnect());
+        $this->assertSame($connection, $connection->disconnect());
 
         unset($stream);
     }
@@ -174,7 +174,7 @@ class ConnectionTest extends TestCase
 
         $this->expectSocketStreamClose();
         $this->expectSocketStreamIsConnected();
-        $this->assertTrue($connection->disconnect());
+        $this->assertSame($connection, $connection->disconnect());
 
         unset($stream);
     }

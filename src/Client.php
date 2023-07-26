@@ -17,7 +17,7 @@ use Phrity\Net\{
 use Psr\Http\Message\UriInterface;
 use Psr\Log\{
     LoggerAwareInterface,
-    LoggerAwareTrait,
+    LoggerInterface,
     NullLogger
 };
 use Throwable;
@@ -44,7 +44,6 @@ use WebSocket\Middleware\{
  */
 class Client implements LoggerAwareInterface
 {
-    use LoggerAwareTrait; // provides setLogger(LoggerInterface $logger)
     use OpcodeTrait;
 
     // Default options
@@ -53,7 +52,6 @@ class Client implements LoggerAwareInterface
         'fragment_size' => 4096,
         'headers'       => [],
         'logger'        => null,
-        'masked'        => true,
         'persistent'    => false,
         'timeout'       => 5,
     ];
@@ -61,8 +59,6 @@ class Client implements LoggerAwareInterface
     private $socket_uri;
     private $connection;
     private $options = [];
-    private $listen = false;
-    private $last_opcode = null;
     private $streamFactory;
     private $handshakeResponse;
 
@@ -73,10 +69,12 @@ class Client implements LoggerAwareInterface
      * @param UriInterface|string $uri A ws/wss-URI
      * @param array $options
      *   Associative array containing:
-     *   - context:       Set the stream context. Default: empty context
-     *   - timeout:       Set the socket timeout in seconds.  Default: 5
+     *   - context:       Set the stream context.  Default: empty context
      *   - fragment_size: Set framgemnt size.  Default: 4096
-     *   - headers:       Associative array of headers to set/override.
+     *   - headers:       Associative array of headers to set/override
+     *   - logger:        PSR-3 compatible logger.  Default NullLogger
+     *   - persistent:    True for persistent connection.  Default false
+     *   - timeout:       Set the socket timeout in seconds.  Default: 5
      */
     public function __construct($uri, array $options = [])
     {
@@ -101,6 +99,20 @@ class Client implements LoggerAwareInterface
 
 
     /* ---------- Configuration ------------------------------------------------------------------------------------ */
+
+    /**
+     * Set logger.
+     * @param Psr\Log\LoggerInterface $logger Logger implementation
+     * @return self.
+     */
+    public function setLogger(LoggerInterface $logger): self
+    {
+        $this->logger = $logger;
+        if ($this->connection) {
+            $this->connection->setLogger($this->logger);
+        }
+        return $this;
+    }
 
     /**
      * Set stream factory to use.
@@ -202,7 +214,7 @@ class Client implements LoggerAwareInterface
         if (!$this->isConnected()) {
             return;
         }
-        $this->connection->close($status, $message);
+        $this->send(new Close($status, $message), $masked);
     }
 
     /**
@@ -272,6 +284,7 @@ class Client implements LoggerAwareInterface
             throw new ConnectionException($error, ConnectionException::CLIENT_CONNECT_ERR, [], $e);
         }
         $this->connection = new Connection($stream, true, false);
+        $this->connection->setFrameSize($this->options['fragment_size']);
         $this->connection->setTimeout($this->options['timeout']);
         $this->connection->setLogger($this->logger);
         $this->connection->addMiddleware(new CloseHandler());

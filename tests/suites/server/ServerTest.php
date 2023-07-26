@@ -684,70 +684,6 @@ class ServerTest extends TestCase
         unset($server);
     }
 
-    public function testFailedWsKey(): void
-    {
-        $this->expectStreamFactory();
-        $server = new Server();
-        $server->setStreamFactory(new StreamFactory());
-
-        $this->expectStreamFactoryCreateSockerServer();
-        $this->expectSocketServer();
-        $this->expectSocketServerGetTransports();
-        $this->expectSocketServerGetMetadata();
-        $server->accept();
-
-        $this->expectSocketServerAccept();
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-
-        $this->expectSocketStreamReadLine()->addAssert(function (string $method, array $params): void {
-            $this->assertEquals(1024, $params[0]);
-        })->setReturn(function (array $params) {
-            return "GET /my/mock/path HTTP/1.1\r\nHost: localhost:8000\r\nUser-Agent: websocket-client-php\r\n"
-            . "Connection: Upgrade\r\nUpgrade: websocket\r\n"
-            . "Sec-WebSocket-Version: 13"
-            . "\r\n\r\n";
-        });
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
-        $this->expectException(ConnectionException::class);
-        $this->expectExceptionCode(ConnectionException::SERVER_HANDSHAKE_ERR);
-        $this->expectExceptionMessage('Client had no Key in upgrade request');
-        $server->text('Connect');
-
-        unset($server);
-    }
-/*
-    public function testSendBadOpcode(): void
-    {
-        $this->expectStreamFactory();
-        $server = new Server();
-        $server->setStreamFactory(new StreamFactory());
-
-        $this->expectStreamFactoryCreateSockerServer();
-        $this->expectSocketServer();
-        $this->expectSocketServerGetTransports();
-        $this->expectSocketServerGetMetadata();
-        $server->accept();
-
-        $this->expectSocketServerAccept();
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-        $this->expectWsServerPerformHandshake();
-        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
-            $this->assertEquals(9, strlen($params[0]));
-        });
-        $server->text('Connect');
-
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
-        $this->expectException(BadOpcodeException::class);
-        $this->expectExceptionCode(ConnectionException::BAD_OPCODE);
-        $this->expectExceptionMessage('Bad opcode \'bad\'.  Try \'text\' or \'binary\'.');
-        $server->send('Bad Opcode', 'bad');
-    }
-*/
     public function testRecieveBadOpcode(): void
     {
         $this->expectStreamFactory();
@@ -1200,40 +1136,6 @@ class ServerTest extends TestCase
         $this->assertFalse($server->isConnected());
         $this->assertNull($server->getName());
         $this->assertNull($server->getRemoteName());
-    }
-
-    public function testFailedHandshake(): void
-    {
-        $this->expectStreamFactory();
-        $server = new Server();
-        $server->setStreamFactory(new StreamFactory());
-
-        $this->assertNull($server->getName());
-        $this->assertNull($server->getRemoteName());
-        $this->assertEquals('WebSocket\Server(closed)', "{$server}");
-
-        $this->expectStreamFactoryCreateSockerServer();
-        $this->expectSocketServer();
-        $this->expectSocketServerGetTransports();
-        $this->expectSocketServerGetMetadata();
-        $server->accept();
-
-        $this->expectSocketServerAccept();
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamReadLine()->addAssert(function (string $method, array $params): void {
-            $this->assertEquals(1024, $params[0]);
-        })->setReturn(function () {
-            throw new StreamException(StreamException::NOT_READABLE);
-        });
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
-        $this->expectException(ConnectionException::class);
-        $this->expectExceptionCode(ConnectionException::SERVER_HANDSHAKE_ERR);
-        $this->expectExceptionMessage('Client handshake error');
-        $server->text('Connect');
-
-        unset($server);
     }
 
     public function testServerDisconnect(): void
