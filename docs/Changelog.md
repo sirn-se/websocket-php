@@ -4,14 +4,19 @@
 
 ## `v2.0`
 
- > PHP version ≈
+ > PHP version `^8.0`
 
 ### `2.0.0`
 
+ * Listeners for client and server (@sirn-se)
+ * Middleware support (@sirn-se)
+ * Multi connection server (@sirn-se)
  * `receive()` always return Message instance or null (@sirn-se)
  * `send()` require Message instance as first argument (@sirn-se)
- * `text()` `binary()` `ping()` `pong()` takes mask flag as second argument (@sirn-se)
+ * Strict mask policy (@sirn-se)
+ * Strict handshake procedure (@sirn-se)
  * `Close` get close-status methods (@sirn-se)
+ * Server no longer auto-increment port (@sirn-se)
  * Removed deprecated methods and options (@sirn-se)
  * Moved source (@sirn-se)
  * Removed PHP `7.4` support (@sirn-se)

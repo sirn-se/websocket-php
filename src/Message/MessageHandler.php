@@ -42,7 +42,7 @@ class MessageHandler implements LoggerAwareInterface
     }
 
     // Push message
-    public function push(Message $message, int $size = self::DEFAULT_SIZE): void
+    public function push(Message $message, int $size = self::DEFAULT_SIZE): Message
     {
         $frames = $message->getFrames($size);
         foreach ($frames as $frame) {
@@ -53,6 +53,7 @@ class MessageHandler implements LoggerAwareInterface
             'content-length' => $message->getLength(),
             'frames' => count($frames),
         ]);
+        return $message;
     }
 
     // Pull message

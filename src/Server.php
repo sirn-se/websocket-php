@@ -11,6 +11,8 @@ namespace WebSocket;
 
 use InvalidArgumentException;
 use Phrity\Net\{
+    SocketServer,
+    SocketStream,
     StreamFactory,
     Uri
 };
@@ -19,23 +21,20 @@ use Psr\Log\{
     LoggerInterface,
     NullLogger
 };
-use RuntimeException;
 use Throwable;
 use WebSocket\Http\{
     ServerRequest,
     Response
 };
-use WebSocket\Message\{
-    Message,
-    Binary,
-    Close,
-    Ping,
-    Pong,
-    Text
-};
+use WebSocket\Message\Message;
 use WebSocket\Middleware\{
     CloseHandler,
     PingResponder
+};
+use WebSocket\Trait\{
+    ListenerTrait,
+    OpcodeTrait,
+    SendMethodsTrait
 };
 
 /**
@@ -44,49 +43,44 @@ use WebSocket\Middleware\{
  */
 class Server implements LoggerAwareInterface
 {
+    use ListenerTrait;
     use OpcodeTrait;
+    use SendMethodsTrait;
 
     private const GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 
-    // Default options
-    protected static $default_options = [
-        'fragment_size' => 4096,
-        'logger'        => null,
-        'port'          => 8000,
-        'schema'        => 'tcp',
-        'timeout'       => null,
-    ];
-
-    private $streamFactory;
+    // Settings
     private $port;
-    private $listening;
-    private $handshakeRequest;
-    private $connection;
-    private $options = [];
+    private $scheme;
+    private $logger;
+    private $timeout = 60;
+    private $frameSize = 4096;
+
+    // Internal resources
+    private $streamFactory;
+    private $server;
+    private $streams;
+    private $running = false;
+    private $connections = [];
 
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
 
     /**
-     * @param array $options
-     *   Associative array containing:
-     *   - fragment_size: Set framgemnt size.  Default: 4096
-     *   - logger:        PSR-3 compatible logger.  Default NullLogger.
-     *   - port:          Chose port for listening.  Default 8000.
-     *   - schema:        Set socket schema (tcp or ssl).
-     *   - timeout:       Set the socket timeout in seconds.
+     * @param int $port Socket port to listen to
+     * @param string $scheme Scheme (tcp or ssl)
      */
-    public function __construct(array $options = [])
+    public function __construct(int $port = 8000, string $scheme = 'tcp')
     {
-        $this->options = array_merge(self::$default_options, $options);
-        if (!in_array($this->options['schema'], ['tcp', 'ssl'])) {
-            throw new InvalidArgumentException("Invalid schema '{$this->options['schema']}' provided");
+        if ($port < 0 || $port > 65535) {
+            throw new InvalidArgumentException("Invalid port '{$port}' provided");
         }
-        if (!is_int($this->options['port']) || $this->options['port'] < 0 || $this->options['port'] > 65535) {
-            throw new InvalidArgumentException("Invalid port '{$this->options['port']}' provided");
+        if (!in_array($scheme, ['tcp', 'ssl'])) {
+            throw new InvalidArgumentException("Invalid scheme '{$scheme}' provided");
         }
-        $this->port = (int)$this->options['port'];
-        $this->setLogger($this->options['logger'] ?: new NullLogger());
+        $this->port = $port;
+        $this->scheme = $scheme;
+        $this->logger = new NullLogger();
         $this->setStreamFactory(new StreamFactory());
     }
 
@@ -96,29 +90,11 @@ class Server implements LoggerAwareInterface
      */
     public function __toString(): string
     {
-        return sprintf(
-            "%s(%s)",
-            get_class($this),
-            $this->getName() ?: 'closed'
-        );
+        return sprintf("Server(%s)", $this->getName() ?: 'closed');
     }
 
 
     /* ---------- Configuration ------------------------------------------------------------------------------------ */
-
-    /**
-     * Set logger.
-     * @param Psr\Log\LoggerInterface $logger Logger implementation
-     * @return self.
-     */
-    public function setLogger(LoggerInterface $logger): self
-    {
-        $this->logger = $logger;
-        if ($this->connection) {
-            $this->connection->setLogger($this->logger);
-        }
-        return $this;
-    }
 
     /**
      * Set stream factory to use.
@@ -130,219 +106,71 @@ class Server implements LoggerAwareInterface
     }
 
     /**
+     * Set logger.
+     * @param Psr\Log\LoggerInterface $logger Logger implementation
+     * @return self.
+     */
+    public function setLogger(LoggerInterface $logger): self
+    {
+        $this->logger = $logger;
+        foreach ($this->connections as $connection) {
+            $connection->setLogger($this->logger);
+        }
+        return $this;
+    }
+
+    /**
      * Set timeout.
      * @param int $timeout Timeout in seconds.
      */
     public function setTimeout(int $timeout): void
     {
-        $this->options['timeout'] = $timeout;
-        if (!$this->isConnected()) {
-            return;
+        if ($timeout < 0) {
+            throw new InvalidArgumentException("Invalid timeout '{$timeout}' provided");
         }
-        $this->connection->setTimeout($timeout);
+        $this->timeout = $timeout;
+        foreach ($this->connections as $connection) {
+            $connection->setTimeout($timeout);
+        }
     }
 
     /**
-     * Set fragmentation size.
-     * @param int $fragment_size Fragment size in bytes.
+     * Get timeout.
+     * @return int Timeout in seconds.
+     */
+    public function getTimeout(): int
+    {
+        return $this->timeout;
+    }
+
+    /**
+     * Set frame size.
+     * @param int $frameSize Frame size in bytes.
      * @return self.
      */
-    public function setFragmentSize(int $fragment_size): self
+    public function setFrameSize(int $frameSize): self
     {
-        $this->options['fragment_size'] = $fragment_size;
-        if (!$this->connection) {
-            return $this;
+        if ($frameSize < 1) {
+            throw new InvalidArgumentException("Invalid frameSize '{$frameSize}' provided");
         }
-        $this->connection->setFrameSize($fragment_size);
+        $this->frameSize = $frameSize;
+        foreach ($this->connections as $connection) {
+            $connection->setFrameSize($frameSize);
+        }
         return $this;
     }
 
     /**
-     * Get fragmentation size.
-     * @return int $fragment_size Fragment size in bytes.
+     * Get frame size.
+     * @return int Frame size in bytes.
      */
-    public function getFragmentSize(): int
+    public function getFrameSize(): int
     {
-        return $this->options['fragment_size'];
-    }
-
-
-    /* ---------- Messaging operations ----------------------------------------------------------------------------- */
-
-    /**
-     * Send text message.
-     * @param string $message Content as string.
-     */
-    public function text(string $message): void
-    {
-        $this->send(new Text($message));
+        return $this->frameSize;
     }
 
     /**
-     * Send binary message.
-     * @param string $message Content as binary string.
-     */
-    public function binary(string $message): void
-    {
-        $this->send(new Binary($message));
-    }
-
-    /**
-     * Send ping.
-     * @param string $message Optional text as string.
-     */
-    public function ping(string $message = ''): void
-    {
-        $this->send(new Ping($message));
-    }
-
-    /**
-     * Send unsolicited pong.
-     * @param string $message Optional text as string.
-     */
-    public function pong(string $message = ''): void
-    {
-        $this->send(new Pong($message));
-    }
-
-    /**
-     * Tell the socket to close.
-     * @param integer $status  http://tools.ietf.org/html/rfc6455#section-7.4
-     * @param string  $message A closing message, max 125 bytes.
-     */
-    public function close(int $status = 1000, string $message = 'ttfn'): void
-    {
-        if (!$this->isConnected()) {
-            return;
-        }
-        $this->send(new Close($status, $message));
-    }
-
-    /**
-     * Send message.
-     * @param Message $message Message to send.
-     */
-    public function send(Message $message): void
-    {
-        if (!$this->isConnected()) {
-            $this->connect();
-        }
-        $this->connection->pushMessage($message);
-    }
-
-    /**
-     * Receive message.
-     * Note that this operation will block reading.
-     * @return Message|null
-     */
-    public function receive(): ?Message
-    {
-        if (!$this->isConnected()) {
-            $this->connect();
-        }
-        return $this->connection->pullMessage();
-    }
-
-
-    /* ---------- Connection management ---------------------------------------------------------------------------- */
-
-    /**
-     * If Server has active connections.
-     * @return bool True if active connection.
-     */
-    public function isConnected(): bool
-    {
-        return $this->connection && $this->connection->isConnected();
-    }
-
-    // Connect when read/write operation is performed.
-    public function connect(): void
-    {
-        try {
-            if (isset($this->options['timeout'])) {
-                $socket = $this->listening->accept($this->options['timeout']);
-            } else {
-                $socket = $this->listening->accept();
-            }
-            if (!$socket) {
-                throw new RuntimeException('No socket');
-            }
-        } catch (RuntimeException $e) {
-            $error = "Server failed to connect: {$e->getMessage()}";
-            $this->logger->error("[server] {$error}");
-            throw new ConnectionException($error, ConnectionException::SERVER_ACCEPT_ERR, [], $e);
-        }
-
-        $this->connection = new Connection($socket, false, true);
-        $this->connection->setFrameSize($this->options['fragment_size']);
-        if ($this->options['timeout']) {
-            $this->connection->setTimeout($this->options['timeout']);
-        }
-        $this->connection->setLogger($this->logger);
-        $this->connection->addMiddleware(new CloseHandler());
-        $this->connection->addMiddleware(new PingResponder());
-
-        $this->logger->info("Client has connected to port {$this->port}");
-        $this->performHandshake($this->connection);
-    }
-
-    /**
-     * Disconnect client.
-     */
-    public function disconnect(): void
-    {
-        if ($this->isConnected()) {
-            $this->connection->disconnect();
-            $this->logger->info('[server] Server disconnected');
-        }
-    }
-
-    /**
-     * Accept a single incoming request.
-     * Note that this operation will block accepting additional requests.
-     * @return bool True if listening.
-     */
-    public function accept(): bool
-    {
-        $this->disconnect();
-        $exception = null;
-
-        try {
-            $uri = new Uri("{$this->options['schema']}://0.0.0.0:{$this->port}");
-            $this->listening = $this->streamFactory->createSocketServer($uri);
-        } catch (Throwable $e) {
-            $error = "Server failed to accept: {$e->getMessage()}";
-            $this->logger->error("[server] {$error}");
-            throw new ConnectionException($error, ConnectionException::SERVER_SOCKET_ERR);
-        }
-
-        $this->logger->info("Server listening to port {$uri}");
-        return (bool)$this->listening;
-    }
-
-
-    /* ---------- Connection state --------------------------------------------------------------------------------- */
-
-    /**
-     * Get name of local socket from single connection.
-     * @return string|null Name of local socket.
-     */
-    public function getName(): ?string
-    {
-        return $this->isConnected() ? $this->connection->getName() : null;
-    }
-
-    /**
-     * Get name of remote socket from single connection.
-     * @return string|null Name of remote socket.
-     */
-    public function getRemoteName(): ?string
-    {
-        return $this->isConnected() ? $this->connection->getRemoteName() : null;
-    }
-
-    /**
-     * Get current port.
+     * Get socket port number.
      * @return int port.
      */
     public function getPort(): int
@@ -351,19 +179,182 @@ class Server implements LoggerAwareInterface
     }
 
     /**
-     * Get Request for handshake procedure.
-     * @return ServerRequest|null Handshake.
+     * Get connection scheme.
+     * @return string scheme.
      */
-    public function getHandshakeRequest(): ?ServerRequest
+    public function getScheme(): string
     {
-        return $this->connection ? $this->handshakeRequest : null;
+        return $this->scheme;
+    }
+
+    /**
+     * If server is running (accepting connections and messages).
+     * @return bool.
+     */
+    public function isRunning(): bool
+    {
+        return $this->running;
+    }
+
+    /**
+     * Number of currently connected clients.
+     * @return int Connection count.
+     */
+    public function getConnectionCount(): int
+    {
+        return count($this->connections);
+    }
+
+
+    /* ---------- Messaging operations ----------------------------------------------------------------------------- */
+
+    /**
+     * Send message (broadcast to all connected clients).
+     * @param Message $message Message to send.
+     */
+    public function send(Message $message): Message
+    {
+        foreach ($this->connections as $connection) {
+            if ($connection->isWritable()) {
+                $connection->send($message);
+            }
+        }
+        return $message;
+    }
+
+
+    /* ---------- Server operations -------------------------------------------------------------------------------- */
+
+    /**
+     * Start server listener.
+     */
+    public function start(): void
+    {
+        // Create socket server
+        if (empty($this->server)) {
+            $this->createSocketServer();
+        }
+
+        // Check if running
+        if ($this->running) {
+            $this->logger->warning("[server] Server is already running");
+            return;
+        }
+        $this->running = true;
+        $this->logger->info("[server] Server is running");
+
+        // Run handler
+        while ($this->running) {
+            try {
+                // Clear closed connections
+                $this->detachUnconnected();
+
+                // Get streams with readable content
+                $readables = $this->streams->waitRead($this->timeout);
+                foreach ($readables as $key => $readable) {
+                    // Accept new client connection
+                    if ($key == '@server') {
+                        $this->acceptSocket($readable);
+                        continue;
+                    }
+                    // Read from connection
+                    $connection = $this->connections[$key];
+                    if ($message = $connection->pullMessage()) {
+                        $this->dispatch($message->getOpcode(), [$this, $connection, $message]);
+                    }
+                }
+            } catch (Throwable $t) {
+                $this->logger->error("[server] {$t->getMessage()} {$t}");
+                $this->dispatch('error', [$this, null, $t]);
+            }
+            gc_collect_cycles(); // Collect garbage
+            $this->dispatch('tick', [$this]);
+        }
+    }
+
+    /**
+     * Stop server listener (resumable).
+     */
+    public function stop(): void
+    {
+        $this->running = false;
+        $this->logger->info("[server] Server is stopped");
+    }
+
+    /**
+     * Disconnect all connections and stop server.
+     */
+    public function disconnect(): void
+    {
+        $this->running = false;
+        foreach ($this->connections as $connection) {
+            $connection->disconnect();
+        }
+        $this->connections = [];
+        $this->server->close();
+        $this->server = $this->streams = null;
+        $this->logger->info('[server] Server disconnected');
     }
 
 
     /* ---------- Internal helper methods -------------------------------------------------------------------------- */
 
+    // Create socket server
+    protected function createSocketServer(): void
+    {
+        try {
+            $uri = new Uri("{$this->scheme}://0.0.0.0:{$this->port}");
+            $this->server = $this->streamFactory->createSocketServer($uri);
+            $this->streams = $this->streamFactory->createStreamCollection();
+            $this->streams->attach($this->server, '@server');
+            $this->logger->info("[server] Starting server on {$uri}.");
+        } catch (Throwable $t) {
+            $error = "Server failed to start: {$t->getMessage()}";
+            $this->logger->error("[server] {$error}");
+            throw new ConnectionException($error, ConnectionException::SERVER_SOCKET_ERR);
+        }
+    }
+
+    // Accept connection on socket server
+    protected function acceptSocket(SocketServer $socket): void
+    {
+        try {
+            $stream = $socket->accept();
+            $name = $stream->getRemoteName();
+            $this->streams->attach($stream, $name);
+            $connection = new Connection($stream, false, true);
+            $connection
+                ->setLogger($this->logger)
+                ->setFrameSize($this->frameSize)
+                ->setTimeout($this->timeout)
+                ->addMiddleware(new CloseHandler())
+                ->addMiddleware(new PingResponder())
+                ;
+            $this->connections[$name] = $connection;
+            $this->logger->info("[server] Accepted connection from {$name}.");
+            $request = $this->performHandshake($connection);
+            $this->dispatch('connect', [$this, $connection, $request]);
+        } catch (Throwable $t) {
+            $error = "Server failed to accept: {$t->getMessage()}";
+            $this->logger->error("[server] {$error}");
+            throw new ConnectionException($error, ConnectionException::SERVER_ACCEPT_ERR, [], $t);
+        }
+    }
+
+    protected function detachUnconnected(): void
+    {
+        foreach ($this->connections as $key => $connection) {
+            if (!$connection->isConnected()) {
+                $this->streams->detach($key);
+                unset($this->connections[$key]);
+                $this->logger->info("[server] Disconnected {$key}.");
+                $this->dispatch('disconnect', [$this, $connection]);
+            }
+        }
+    }
+
     // Perform upgrade handshake on new connections.
-    protected function performHandshake(Connection $connection): void
+    protected function performHandshake(Connection $connection): ServerRequest
     {
         $response = new Response(101);
 
@@ -375,6 +366,11 @@ class Server implements LoggerAwareInterface
             throw new ConnectionException($error, ConnectionException::SERVER_HANDSHAKE_ERR);
         }
 
+        if ($request->getMethod() != 'GET') {
+            $error = "Handshake request with invalid method: '{$request->getMethod()}'";
+            $this->logger->error("[server] {$error}");
+            throw new ConnectionException($error, ConnectionException::SERVER_HANDSHAKE_ERR);
+        }
         $connectionHeader = trim($request->getHeaderLine('Connection'));
         if (strtolower($connectionHeader) != 'upgrade') {
             $error = "Handshake request with invalid Connection header: '{$connectionHeader}'";
@@ -413,6 +409,8 @@ class Server implements LoggerAwareInterface
         }
 
         $this->logger->debug("[server] Handshake on {$request->getUri()->getPath()}");
-        $this->handshakeRequest = $request;
+        $connection->setHandshakeRequest($request);
+        $connection->setHandshakeResponse($response);
+        return $request;
     }
 }

@@ -55,26 +55,25 @@ class ConnectionTest extends TestCase
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
 
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
         $connection = new Connection($stream, false, false);
         $this->assertInstanceOf(Connection::class, $connection);
 
         $this->expectSocketStreamIsConnected();
         $this->assertTrue($connection->isConnected());
 
-        $this->expectSocketStreamGetLocalName();
         $this->assertEquals('', $connection->getName());
-
-        $this->expectSocketStreamGetRemoteName();
         $this->assertEquals('', $connection->getRemoteName());
-
-        $this->expectSocketStreamGetLocalName();
         $this->assertEquals('WebSocket\Connection(closed)', "{$connection}");
 
         $this->expectSocketStreamSetTimeout();
         $this->assertSame($connection, $connection->setTimeout(10));
+        $this->assertEquals(10, $connection->getTimeout());
 
         $this->assertSame($connection, $connection->setLogger(new NullLogger()));
         $this->assertSame($connection, $connection->setFrameSize(64));
+        $this->assertEquals(64, $connection->getFrameSize());
         $this->assertSame($connection, $connection->addMiddleware(new Callback()));
 
         $this->expectSocketStreamIsReadable();
@@ -109,6 +108,8 @@ class ConnectionTest extends TestCase
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
 
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamIsConnected();
@@ -125,8 +126,12 @@ class ConnectionTest extends TestCase
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
 
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
         $connection = new Connection($stream, false, false);
         $request = new Request('GET', 'ws://test.com/path');
+        $connection->setHandshakeRequest($request);
+        $this->assertSame($request, $connection->getHandshakeRequest());
 
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals("GET /path HTTP/1.1\r\nHost: test.com\r\n\r\n", $params[0]);
@@ -138,6 +143,9 @@ class ConnectionTest extends TestCase
         });
         $response = $connection->pullHttp();
         $this->assertInstanceOf(Response::class, $response);
+
+        $connection->setHandshakeResponse($response);
+        $this->assertSame($response, $connection->getHandshakeResponse());
 
         $this->expectSocketStreamClose();
         $this->expectSocketStreamIsConnected();
@@ -154,13 +162,15 @@ class ConnectionTest extends TestCase
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
 
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
         $connection = new Connection($stream, false, false);
         $message = new Text('Test message');
 
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(base64_decode('gQxUZXN0IG1lc3NhZ2U'), $params[0]);
         });
-        $message = $connection->pushMessage($message);
+        $message = $connection->send($message);
         $this->assertInstanceOf(Text::class, $message);
 
         $this->expectSocketStreamRead()->setReturn(function () {
@@ -179,7 +189,7 @@ class ConnectionTest extends TestCase
         unset($stream);
     }
 
-    public function testPushMessageError(): void
+    public function testSendMessageError(): void
     {
         $temp = tmpfile();
 
@@ -187,6 +197,8 @@ class ConnectionTest extends TestCase
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
 
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -196,7 +208,7 @@ class ConnectionTest extends TestCase
         $this->expectSocketStreamIsConnected();
         $this->expectException(ConnectionException::class);
         $this->expectExceptionMessage('Connection error');
-        $connection->pushMessage(new Text('Connection error'));
+        $connection->send(new Text('Connection error'));
 
         unset($stream);
     }
@@ -209,6 +221,8 @@ class ConnectionTest extends TestCase
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
 
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
         $connection = new Connection($stream, false, false);
         $message = new Text('Test message');
 

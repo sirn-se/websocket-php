@@ -29,4 +29,5 @@ abstract class Exception extends \Exception
     public const SERVER_SOCKET_ERR = 1200;
     public const SERVER_ACCEPT_ERR = 1201;
     public const SERVER_HANDSHAKE_ERR = 1202;
+    public const SERVER_RUNTIME_ERR = 1203;
 }

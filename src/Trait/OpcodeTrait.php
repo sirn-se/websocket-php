@@ -7,10 +7,10 @@
  * License text: https://raw.githubusercontent.com/sirn-se/websocket-php/master/COPYING.md
  */
 
-namespace WebSocket;
+namespace WebSocket\Trait;
 
 /**
- * WebSocket\OpcodeTrait trait.
+ * WebSocket\Trait\OpcodeTrait trait.
  * Opcode number/name list.
  */
 trait OpcodeTrait

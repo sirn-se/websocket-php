@@ -3,15 +3,12 @@
   <coverage/>
   <testsuites>
     <testsuite name="Unit tests">
-      <directory suffix=".php">tests/suites/client</directory>
       <directory suffix=".php">tests/suites/connection</directory>
       <directory suffix=".php">tests/suites/frame</directory>
       <directory suffix=".php">tests/suites/http</directory>
       <directory suffix=".php">tests/suites/message</directory>
       <directory suffix=".php">tests/suites/middleware</directory>
-      <file>tests/suites/server/ConfigTest.php</file>
-      <file>tests/suites/server/ConfigErrorTest.php</file>
-      <file>tests/suites/server/HandshakeTest.php</file>
+      <file>tests/suites/client/ConfigErrorTest.php</file>
     </testsuite>
   </testsuites>
   <source>

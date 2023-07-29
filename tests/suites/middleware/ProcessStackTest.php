@@ -49,6 +49,8 @@ class ProcessStackTest extends TestCase
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
 
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
         $connection = new Connection($stream, false, false);
 
         $connection->addMiddleware(new Callback(incoming: function ($stack, $connection) {
@@ -96,6 +98,8 @@ class ProcessStackTest extends TestCase
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
 
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
         $connection = new Connection($stream, false, false);
 
         $connection->addMiddleware(new Callback(outgoing: function ($stack, $connection, $message) {

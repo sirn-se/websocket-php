@@ -15,26 +15,26 @@ use Psr\Log\{
     LoggerInterface,
     NullLogger
 };
-use RuntimeException;
 use Throwable;
 use WebSocket\Exception;
 use WebSocket\Frame\FrameHandler;
 use WebSocket\Http\{
     HttpHandler,
-    Message as HttpMessage
+    Message as HttpMessage,
+    Request,
+    Response
 };
 use WebSocket\Message\{
     Message,
-    Binary,
-    Close,
-    Ping,
-    Pong,
-    Text,
     MessageHandler
 };
 use WebSocket\Middleware\{
     MiddlewareHandler,
     MiddlewareInterface
+};
+use WebSocket\Trait\{
+    OpcodeTrait,
+    SendMethodsTrait
 };
 
 /**
@@ -51,6 +51,11 @@ class Connection implements LoggerAwareInterface
     private $middlewareHandler;
     private $logger;
     private $frameSize = 4096;
+    private $timeout = 60;
+    private $localName;
+    private $remoteName;
+    private $handshakeRequest;
+    private $handshakeResponse;
 
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
@@ -60,8 +65,10 @@ class Connection implements LoggerAwareInterface
         $this->stream = $stream;
         $this->httpHandler = new HttpHandler($this->stream);
         $this->messageHandler = new MessageHandler(new FrameHandler($this->stream, $pushMasked, $pullMaskedRequired));
-        $this->middlewareHandler = new MiddlewareHandler();
+        $this->middlewareHandler = new MiddlewareHandler($this->messageHandler);
         $this->setLogger(new NullLogger());
+        $this->localName = $this->stream->getLocalName();
+        $this->remoteName = $this->stream->getRemoteName();
     }
 
     public function __destruct()
@@ -73,11 +80,7 @@ class Connection implements LoggerAwareInterface
 
     public function __toString(): string
     {
-        return sprintf(
-            "%s(%s)",
-            get_class($this),
-            $this->getName() ?: 'closed'
-        );
+        return sprintf("%s(%s)", get_class($this), $this->localName ?: 'closed');
     }
 
 
@@ -105,13 +108,23 @@ class Connection implements LoggerAwareInterface
      */
     public function setTimeout(int $seconds): self
     {
+        $this->timeout = $seconds;
         $this->stream->setTimeout($seconds, 0);
         $this->logger->debug("[connection] Setting timeout: {$seconds} seconds");
         return $this;
     }
 
     /**
-     * Set fragmentation size.
+     * Get timeout.
+     * @return int Timeout in seconds.
+     */
+    public function getTimeout(): int
+    {
+        return $this->timeout;
+    }
+
+    /**
+     * Set frame size.
      * @param int $frameSize Frame size in bytes.
      * @return self.
      */
@@ -119,6 +132,15 @@ class Connection implements LoggerAwareInterface
     {
         $this->frameSize = $frameSize;
         return $this;
+    }
+
+    /**
+     * Get frame size.
+     * @return int Frame size in bytes
+     */
+    public function getFrameSize(): int
+    {
+        return $this->frameSize;
     }
 
     /**
@@ -205,7 +227,7 @@ class Connection implements LoggerAwareInterface
      */
     public function getName(): ?string
     {
-        return $this->stream->getLocalName();
+        return $this->localName;
     }
 
     /**
@@ -214,19 +236,25 @@ class Connection implements LoggerAwareInterface
      */
     public function getRemoteName(): ?string
     {
-        return $this->stream->getRemoteName();
+        return $this->remoteName;
     }
 
 
     /* ---------- WebSocket Message methods ------------------------------------------------------------------------ */
 
+    public function send(Message $message): Message
+    {
+        return $this->pushMessage($message);
+    }
+
+
+
+
     // Push a message to stream
     public function pushMessage(Message $message): Message
     {
         try {
-            return $this->middlewareHandler->processOutgoing($this, $message, function (Message $message) {
-                $this->messageHandler->push($message, $this->frameSize);
-            });
+            return $this->middlewareHandler->processOutgoing($this, $message);
         } catch (Throwable $e) {
             $this->throwException($e);
         }
@@ -236,9 +264,7 @@ class Connection implements LoggerAwareInterface
     public function pullMessage(): Message
     {
         try {
-            return $this->middlewareHandler->processIncoming($this, function () {
-                return $this->messageHandler->pull();
-            });
+            return $this->middlewareHandler->processIncoming($this);
         } catch (Throwable $e) {
             $this->throwException($e);
         }
@@ -255,6 +281,28 @@ class Connection implements LoggerAwareInterface
     public function pullHttp(): HttpMessage
     {
         return $this->httpHandler->pull();
+    }
+
+    public function setHandshakeRequest(Request $request): self
+    {
+        $this->handshakeRequest = $request;
+        return $this;
+    }
+
+    public function getHandshakeRequest(): ?Request
+    {
+        return $this->handshakeRequest;
+    }
+
+    public function setHandshakeResponse(Response $response): self
+    {
+        $this->handshakeResponse = $response;
+        return $this;
+    }
+
+    public function getHandshakeResponse(): ?Response
+    {
+        return $this->handshakeResponse;
     }
 
 

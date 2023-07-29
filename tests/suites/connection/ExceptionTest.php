@@ -50,6 +50,8 @@ class ExceptionTest extends TestCase
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -60,7 +62,7 @@ class ExceptionTest extends TestCase
         $this->expectException(BadOpcodeException::class);
         $this->expectExceptionCode(Exception::BAD_OPCODE);
         $this->expectExceptionMessage('Bad Opcode');
-        $connection->pushMessage(new Text('Bad Opcode'));
+        $connection->send(new Text('Bad Opcode'));
 
         unset($stream);
     }
@@ -72,6 +74,8 @@ class ExceptionTest extends TestCase
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -82,7 +86,7 @@ class ExceptionTest extends TestCase
         $this->expectException(BadUriException::class);
         $this->expectExceptionCode(0);
         $this->expectExceptionMessage('Bad URI');
-        $connection->pushMessage(new Text('Bad URI'));
+        $connection->send(new Text('Bad URI'));
 
         unset($stream);
     }
@@ -94,6 +98,8 @@ class ExceptionTest extends TestCase
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -104,7 +110,7 @@ class ExceptionTest extends TestCase
         $this->expectException(ConnectionException::class);
         $this->expectExceptionCode(Exception::CLIENT_CONNECT_ERR);
         $this->expectExceptionMessage('Connection error');
-        $connection->pushMessage(new Text('Connection error'));
+        $connection->send(new Text('Connection error'));
 
         unset($stream);
     }
@@ -116,6 +122,8 @@ class ExceptionTest extends TestCase
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -126,7 +134,7 @@ class ExceptionTest extends TestCase
         $this->expectException(TimeoutException::class);
         $this->expectExceptionCode(Exception::TIMED_OUT);
         $this->expectExceptionMessage('Timeout');
-        $connection->pushMessage(new Text('Timeout'));
+        $connection->send(new Text('Timeout'));
 
         unset($stream);
     }
@@ -138,6 +146,8 @@ class ExceptionTest extends TestCase
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -152,7 +162,7 @@ class ExceptionTest extends TestCase
         $this->expectException(TimeoutException::class);
         $this->expectExceptionCode(Exception::TIMED_OUT);
         $this->expectExceptionMessage('Connection timeout: Generic error');
-        $connection->pushMessage(new Text('Timeout'));
+        $connection->send(new Text('Timeout'));
 
         unset($stream);
     }
@@ -164,6 +174,8 @@ class ExceptionTest extends TestCase
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -178,7 +190,7 @@ class ExceptionTest extends TestCase
         $this->expectException(ConnectionException::class);
         $this->expectExceptionCode(Exception::EOF);
         $this->expectExceptionMessage('Connection closed: Generic error');
-        $connection->pushMessage(new Text('Eof'));
+        $connection->send(new Text('Eof'));
 
         unset($stream);
     }
@@ -190,6 +202,8 @@ class ExceptionTest extends TestCase
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -203,7 +217,7 @@ class ExceptionTest extends TestCase
         $this->expectException(ConnectionException::class);
         $this->expectExceptionCode(0);
         $this->expectExceptionMessage('Connection error: Generic error');
-        $connection->pushMessage(new Text('Generic'));
+        $connection->send(new Text('Generic'));
 
         unset($stream);
     }

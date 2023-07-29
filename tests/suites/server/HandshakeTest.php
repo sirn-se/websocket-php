@@ -98,6 +98,31 @@ class HandshakeTest extends TestCase
         unset($server);
     }
 
+    public function testHandshakeMethodFailure(): void
+    {
+        $this->expectStreamFactory();
+        $server = new Server();
+        $server->setStreamFactory(new StreamFactory());
+
+        $this->expectWsServerAccept();
+        $server->accept();
+
+        $this->expectWsServerConnect();
+        $this->expectSocketStreamReadLine()->setReturn(function () {
+            return "POST / HTTP/1.1\r\nHost: localhost\r\n"
+            . "Connection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Key: cktLWXhUdDQ2OXF0ZCFqOQ==\r\n"
+            . "Sec-WebSocket-Version: 13\r\n\r\n";
+        });
+        $this->expectException(ConnectionException::class);
+        $this->expectExceptionCode(ConnectionException::SERVER_HANDSHAKE_ERR);
+        $this->expectExceptionMessage("Handshake request with invalid method: 'POST'");
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
+        $server->connect();
+
+        unset($server);
+    }
+
     public function testHandshakeConnectionHeaderFailure(): void
     {
         $this->expectStreamFactory();

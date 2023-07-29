@@ -37,6 +37,9 @@ use WebSocket\Middleware\{
     CloseHandler,
     PingResponder
 };
+use WebSocket\Trait\{
+    OpcodeTrait
+};
 
 /**
  * WebSocket\Client class.
@@ -166,62 +169,65 @@ class Client implements LoggerAwareInterface
     /**
      * Send text message.
      * @param string $message Content as string.
+     * @return Message Sent message
      */
-    public function text(string $message): void
+    public function text(string $message): Message
     {
-        $this->send(new Text($message));
+        return $this->send(new Text($message));
     }
 
     /**
      * Send binary message.
      * @param string $message Content as binary string.
+     * @return Message Sent message
      */
-    public function binary(string $message): void
+    public function binary(string $message): Message
     {
-        $this->send(new Binary($message));
+        return $this->send(new Binary($message));
     }
 
     /**
      * Send ping.
      * @param string $message Optional text as string.
+     * @return Message Sent message
      */
-    public function ping(string $message = ''): void
+    public function ping(string $message = ''): Message
     {
-        $this->send(new Ping($message));
+        return $this->send(new Ping($message));
     }
 
     /**
      * Send unsolicited pong.
      * @param string $message Optional text as string.
+     * @return Message Sent message
      */
-    public function pong(string $message = ''): void
+    public function pong(string $message = ''): Message
     {
-        $this->send(new Pong($message));
+        return $this->send(new Pong($message));
     }
 
     /**
      * Tell the socket to close.
      * @param integer $status  http://tools.ietf.org/html/rfc6455#section-7.4
      * @param string  $message A closing message, max 125 bytes.
+     * @return Message Sent message
      */
-    public function close(int $status = 1000, string $message = 'ttfn'): void
+    public function close(int $status = 1000, string $message = 'ttfn'): Message
     {
-        if (!$this->isConnected()) {
-            return;
-        }
-        $this->send(new Close($status, $message));
+        return $this->send(new Close($status, $message));
     }
 
     /**
      * Send message.
      * @param Message $message Message to send.
+     * @return Message Sent message
      */
-    public function send(Message $message): void
+    public function send(Message $message): Message
     {
         if (!$this->isConnected()) {
             $this->connect();
         }
-        $this->connection->pushMessage($message);
+        return $this->connection->pushMessage($message);
     }
 
     /**

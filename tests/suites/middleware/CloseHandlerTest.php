@@ -44,6 +44,8 @@ class CloseHandlerTest extends TestCase
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
 
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
         $connection = new Connection($stream, false, false);
         $connection->addMiddleware(new CloseHandler());
 
@@ -78,6 +80,8 @@ class CloseHandlerTest extends TestCase
         $this->expectSocketStreamGetMetadata();
         $stream = new SocketStream($temp);
 
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
         $connection = new Connection($stream, false, false);
         $connection->addMiddleware(new CloseHandler());
 

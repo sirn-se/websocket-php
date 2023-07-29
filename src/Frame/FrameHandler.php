@@ -16,7 +16,7 @@ use Psr\Log\{
     NullLogger
 };
 use RuntimeException;
-use WebSocket\OpcodeTrait;
+use WebSocket\Trait\OpcodeTrait;
 
 /**
  * WebSocket\Frame\FrameHandler class.

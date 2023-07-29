@@ -16,7 +16,10 @@ use Psr\Log\{
     NullLogger
 };
 use WebSocket\Connection;
-use WebSocket\Message\Message;
+use WebSocket\Message\{
+    Message,
+    MessageHandler
+};
 
 /**
  * WebSocket\Middleware\MiddlewareHandler class.
@@ -26,13 +29,24 @@ class MiddlewareHandler implements LoggerAwareInterface
 {
     private $incoming = [];
     private $outgoing = [];
+    private $messageHandler;
 
-    public function __construct()
+    /**
+     * Create MiddlewareHandler.
+     * @param MessageHandler $messageHandler
+     */
+    public function __construct(MessageHandler $messageHandler)
     {
+        $this->messageHandler = $messageHandler;
         $this->setLogger(new NullLogger());
     }
 
-    public function setLogger(LoggerInterface $logger): void
+    /**
+     * Set logger on MiddlewareHandler and all LoggerAware middlewares.
+     * @param LoggerInterface $logger
+     * @return $this
+     */
+    public function setLogger(LoggerInterface $logger): self
     {
         $this->logger = $logger;
         foreach ($this->incoming as $middleware) {
@@ -45,9 +59,15 @@ class MiddlewareHandler implements LoggerAwareInterface
                 $middleware->setLogger($this->logger);
             }
         }
+        return $this;
     }
 
-    public function add(MiddlewareInterface $middleware): void
+    /**
+     * Add a middleware.
+     * @param MiddlewareInterface $middleware
+     * @return $this
+     */
+    public function add(MiddlewareInterface $middleware): self
     {
         if ($middleware instanceof ProcessIncomingInterface) {
             $this->logger->info("[middleware-handler] Added incoming: {$middleware}");
@@ -63,19 +83,33 @@ class MiddlewareHandler implements LoggerAwareInterface
             }
             $this->outgoing[] = $middleware;
         }
+        return $this;
     }
 
-    public function processIncoming(Connection $connection, Closure $cb): Message
+    /**
+     * Process middlewares for incoming messages.
+     * @param Connection $connection
+     * @return Message
+     */
+    public function processIncoming(Connection $connection): Message
     {
         $this->logger->info("[middleware-handler] Processing incoming");
-        $stack = new ProcessStack($connection, $this->incoming, $cb);
+        $stack = new ProcessStack($connection, $this->messageHandler,  $this->incoming);
         return $stack->handleIncoming();
     }
 
-    public function processOutgoing(Connection $connection, Message $message, Closure $cb): Message
+    /**
+     * Process middlewares for outgoing messages.
+     * @param Connection $connection
+     * @param Message $message
+     * @return Message
+     */
+    public function processOutgoing(Connection $connection, Message $message): Message
     {
         $this->logger->info("[middleware-handler] Processing outgoing");
-        $stack = new ProcessStack($connection, $this->outgoing, $cb);
+        $stack = new ProcessStack($connection, $this->messageHandler, $this->outgoing);
         return $stack->handleOutgoing($message);
     }
+
+
 }

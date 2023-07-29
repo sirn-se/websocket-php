@@ -10,7 +10,10 @@
 namespace WebSocket\Middleware;
 
 use WebSocket\Connection;
-use WebSocket\Message\Message;
+use WebSocket\Message\{
+    Message,
+    MessageHandler
+};
 
 /**
  * WebSocket\Middleware\ProcessStack class.
@@ -19,32 +22,46 @@ use WebSocket\Message\Message;
 class ProcessStack
 {
     private $connection;
+    private $messageHandler;
     private $processors;
-    private $cb;
 
-    public function __construct(Connection $connection, array $processors, $cb)
+    /**
+     * Create ProcessStack.
+     * @param Connection $connection
+     * @param MessageHandler $messageHandler
+     * @param array $processors
+     */
+    public function __construct(Connection $connection, MessageHandler $messageHandler, array $processors)
     {
         $this->connection = $connection;
+        $this->messageHandler = $messageHandler;
         $this->processors = $processors;
-        $this->cb = $cb;
     }
 
+    /**
+     * Process middleware for incoming message.
+     * @return Message
+     */
     public function handleIncoming(): Message
     {
         $processor = array_shift($this->processors);
         if ($processor) {
             return $processor->processIncoming($this, $this->connection);
         }
-        return call_user_func($this->cb);
+        return $this->messageHandler->pull();
     }
 
+    /**
+     * Process middleware for outgoing message.
+     * @param Message $message
+     * @return Message
+     */
     public function handleOutgoing(Message $message): Message
     {
         $processor = array_shift($this->processors);
         if ($processor) {
             return $processor->processOutgoing($this, $this->connection, $message);
         }
-        call_user_func($this->cb, $message);
-        return $message;
+        return $this->messageHandler->push($message, $this->connection->getFrameSize());
     }
 }

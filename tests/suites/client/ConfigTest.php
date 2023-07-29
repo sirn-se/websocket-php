@@ -19,6 +19,7 @@ use Phrity\Net\Mock\Stack\{
     ExpectStreamFactoryTrait
 };
 use Phrity\Net\Uri;
+use Psr\Log\NullLogger;
 use WebSocket\Client;
 use WebSocket\Test\{
     MockStreamTrait,
@@ -233,6 +234,7 @@ class ConfigTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         $this->assertFalse($client->isConnected());
+        $client->setLogger(new NullLogger());
         $client->setTimeout(300);
         $client->setFragmentSize(64);
         $this->assertEquals(64, $client->getFragmentSize());
@@ -247,6 +249,8 @@ class ConfigTest extends TestCase
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake();
         $client->connect();
+
+        $client->setLogger(new NullLogger());
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
