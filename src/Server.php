@@ -263,12 +263,12 @@ class Server implements LoggerAwareInterface
                         $this->dispatch($message->getOpcode(), [$this, $connection, $message]);
                     }
                 }
+                $this->dispatch('tick', [$this]);
             } catch (Throwable $t) {
-                $this->logger->error("[server] {$t->getMessage()} {$t}");
+                $this->logger->error("[server] {$t->getMessage()}");
                 $this->dispatch('error', [$this, null, $t]);
             }
             gc_collect_cycles(); // Collect garbage
-            $this->dispatch('tick', [$this]);
         }
     }
 
@@ -308,8 +308,9 @@ class Server implements LoggerAwareInterface
             $this->streams = $this->streamFactory->createStreamCollection();
             $this->streams->attach($this->server, '@server');
             $this->logger->info("[server] Starting server on {$uri}.");
+        } catch (\PHPUnit\Exception $t) {
+            throw $t;
         } catch (Throwable $t) {
-            $error = "Server failed to start: {$t->getMessage()}";
             $this->logger->error("[server] {$error}");
             throw new ConnectionException($error, ConnectionException::SERVER_SOCKET_ERR);
         }
@@ -334,9 +335,10 @@ class Server implements LoggerAwareInterface
             $this->logger->info("[server] Accepted connection from {$name}.");
             $request = $this->performHandshake($connection);
             $this->dispatch('connect', [$this, $connection, $request]);
+        } catch (\PHPUnit\Exception $t) {
+            throw $t;
         } catch (Throwable $t) {
             $error = "Server failed to accept: {$t->getMessage()}";
-            $this->logger->error("[server] {$error}");
             throw new ConnectionException($error, ConnectionException::SERVER_ACCEPT_ERR, [], $t);
         }
     }

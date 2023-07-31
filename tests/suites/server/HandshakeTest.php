@@ -13,10 +13,13 @@ namespace WebSocket\Test\Server;
 
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\StreamException;
+use Phrity\Net\Mock\SocketStream;
+use Phrity\Net\Mock\StreamCollection;
 use Phrity\Net\Mock\StreamFactory;
 use Phrity\Net\Mock\Stack\{
     ExpectSocketServerTrait,
     ExpectSocketStreamTrait,
+    ExpectStreamCollectionTrait,
     ExpectStreamFactoryTrait
 };
 use WebSocket\{
@@ -36,6 +39,7 @@ class HandshakeTest extends TestCase
 {
     use ExpectSocketServerTrait;
     use ExpectSocketStreamTrait;
+    use ExpectStreamCollectionTrait;
     use ExpectStreamFactoryTrait;
     use MockStreamTrait;
 
@@ -56,22 +60,32 @@ class HandshakeTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->assertFalse($server->isConnected());
-        $this->assertEquals(4096, $server->getFragmentSize());
-
-        $this->expectWsServerAccept();
-        $server->accept();
-
-        $this->expectWsServerConnect();
+        $this->expectWsServerAccept(schema: 'tcp', port: 8000);
+        $this->expectStreamFactoryCreateStreamCollection();
+        $this->expectStreamCollection();
+        $this->expectStreamCollectionAttach();
+        $this->expectStreamCollectionWaitRead()->setReturn(function ($params, $default, $instance) {
+            return $instance->getReadable();
+        });
+        $this->expectStreamCollectionGetReadable();
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
+            return "fake-connection";
+        });
+        $this->expectStreamCollectionAttach();
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($server) {
+            $server->stop();
+        });
         $this->expectWsServerPerformHandshake();
-        $server->connect();
-
-        $request = $server->getHandshakeRequest();
-        $this->assertInstanceOf(ServerRequest::class, $request);
-        $this->assertEquals('localhost', $request->getUri()->getHost());
+        $server->start();
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
+
         unset($server);
     }
 
@@ -81,19 +95,33 @@ class HandshakeTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectWsServerAccept();
-        $server->accept();
+        $this->expectWsServerAccept(schema: 'tcp', port: 8000);
+        $this->expectStreamFactoryCreateStreamCollection();
+        $this->expectStreamCollection();
+        $this->expectStreamCollectionAttach();
+        $this->expectStreamCollectionWaitRead()->setReturn(function ($params, $default, $instance) {
+            return $instance->getReadable();
+        });
+        $this->expectStreamCollectionGetReadable();
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
+            return "fake-connection";
+        });
+        $this->expectStreamCollectionAttach();
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($server) {
+            $server->stop();
+        });
 
-        $this->expectWsServerConnect();
         $this->expectSocketStreamReadLine()->setReturn(function () {
             throw new StreamException(StreamException::FAIL_READ);
         });
-        $this->expectException(ConnectionException::class);
-        $this->expectExceptionCode(ConnectionException::SERVER_HANDSHAKE_ERR);
-        $this->expectExceptionMessage('Server handshake error');
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        $server->connect();
+        $server->start();
 
         unset($server);
     }
@@ -104,21 +132,34 @@ class HandshakeTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectWsServerAccept();
-        $server->accept();
-
-        $this->expectWsServerConnect();
+        $this->expectWsServerAccept(schema: 'tcp', port: 8000);
+        $this->expectStreamFactoryCreateStreamCollection();
+        $this->expectStreamCollection();
+        $this->expectStreamCollectionAttach();
+        $this->expectStreamCollectionWaitRead()->setReturn(function ($params, $default, $instance) {
+            return $instance->getReadable();
+        });
+        $this->expectStreamCollectionGetReadable();
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
+            return "fake-connection";
+        });
+        $this->expectStreamCollectionAttach();
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($server) {
+            $server->stop();
+        });
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "POST / HTTP/1.1\r\nHost: localhost\r\n"
             . "Connection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Key: cktLWXhUdDQ2OXF0ZCFqOQ==\r\n"
             . "Sec-WebSocket-Version: 13\r\n\r\n";
         });
-        $this->expectException(ConnectionException::class);
-        $this->expectExceptionCode(ConnectionException::SERVER_HANDSHAKE_ERR);
-        $this->expectExceptionMessage("Handshake request with invalid method: 'POST'");
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        $server->connect();
+        $server->start();
 
         unset($server);
     }
@@ -129,21 +170,34 @@ class HandshakeTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectWsServerAccept();
-        $server->accept();
-
-        $this->expectWsServerConnect();
+        $this->expectWsServerAccept(schema: 'tcp', port: 8000);
+        $this->expectStreamFactoryCreateStreamCollection();
+        $this->expectStreamCollection();
+        $this->expectStreamCollectionAttach();
+        $this->expectStreamCollectionWaitRead()->setReturn(function ($params, $default, $instance) {
+            return $instance->getReadable();
+        });
+        $this->expectStreamCollectionGetReadable();
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
+            return "fake-connection";
+        });
+        $this->expectStreamCollectionAttach();
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($server) {
+            $server->stop();
+        });
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "GET / HTTP/1.1\r\nHost: localhost\r\n"
             . "Connection: Invalid\r\nUpgrade: websocket\r\nSec-WebSocket-Key: cktLWXhUdDQ2OXF0ZCFqOQ==\r\n"
             . "Sec-WebSocket-Version: 13\r\n\r\n";
         });
-        $this->expectException(ConnectionException::class);
-        $this->expectExceptionCode(ConnectionException::SERVER_HANDSHAKE_ERR);
-        $this->expectExceptionMessage("Handshake request with invalid Connection header: 'Invalid'");
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        $server->connect();
+        $server->start();
 
         unset($server);
     }
@@ -154,21 +208,34 @@ class HandshakeTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectWsServerAccept();
-        $server->accept();
-
-        $this->expectWsServerConnect();
+        $this->expectWsServerAccept(schema: 'tcp', port: 8000);
+        $this->expectStreamFactoryCreateStreamCollection();
+        $this->expectStreamCollection();
+        $this->expectStreamCollectionAttach();
+        $this->expectStreamCollectionWaitRead()->setReturn(function ($params, $default, $instance) {
+            return $instance->getReadable();
+        });
+        $this->expectStreamCollectionGetReadable();
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
+            return "fake-connection";
+        });
+        $this->expectStreamCollectionAttach();
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($server) {
+            $server->stop();
+        });
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "GET / HTTP/1.1\r\nHost: localhost\r\n"
             . "Connection: Upgrade\r\nUpgrade: Invalid\r\nSec-WebSocket-Key: cktLWXhUdDQ2OXF0ZCFqOQ==\r\n"
             . "Sec-WebSocket-Version: 13\r\n\r\n";
         });
-        $this->expectException(ConnectionException::class);
-        $this->expectExceptionCode(ConnectionException::SERVER_HANDSHAKE_ERR);
-        $this->expectExceptionMessage("Handshake request with invalid Upgrade header: 'Invalid'");
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        $server->connect();
+        $server->start();
 
         unset($server);
     }
@@ -179,21 +246,34 @@ class HandshakeTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectWsServerAccept();
-        $server->accept();
-
-        $this->expectWsServerConnect();
+        $this->expectWsServerAccept(schema: 'tcp', port: 8000);
+        $this->expectStreamFactoryCreateStreamCollection();
+        $this->expectStreamCollection();
+        $this->expectStreamCollectionAttach();
+        $this->expectStreamCollectionWaitRead()->setReturn(function ($params, $default, $instance) {
+            return $instance->getReadable();
+        });
+        $this->expectStreamCollectionGetReadable();
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
+            return "fake-connection";
+        });
+        $this->expectStreamCollectionAttach();
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($server) {
+            $server->stop();
+        });
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "GET / HTTP/1.1\r\nHost: localhost\r\n"
             . "Connection: Upgrade\r\nUpgrade: websocket\r\n"
             . "Sec-WebSocket-Version: 13\r\n\r\n";
         });
-        $this->expectException(ConnectionException::class);
-        $this->expectExceptionCode(ConnectionException::SERVER_HANDSHAKE_ERR);
-        $this->expectExceptionMessage("Handshake request with invalid Sec-WebSocket-Key header: ''");
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        $server->connect();
+        $server->start();
 
         unset($server);
     }
@@ -204,21 +284,34 @@ class HandshakeTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectWsServerAccept();
-        $server->accept();
-
-        $this->expectWsServerConnect();
+        $this->expectWsServerAccept(schema: 'tcp', port: 8000);
+        $this->expectStreamFactoryCreateStreamCollection();
+        $this->expectStreamCollection();
+        $this->expectStreamCollectionAttach();
+        $this->expectStreamCollectionWaitRead()->setReturn(function ($params, $default, $instance) {
+            return $instance->getReadable();
+        });
+        $this->expectStreamCollectionGetReadable();
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
+            return "fake-connection";
+        });
+        $this->expectStreamCollectionAttach();
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($server) {
+            $server->stop();
+        });
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "GET / HTTP/1.1\r\nHost: localhost\r\n"
             . "Connection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Key: jww=\r\n"
             . "Sec-WebSocket-Version: 13\r\n\r\n";
         });
-        $this->expectException(ConnectionException::class);
-        $this->expectExceptionCode(ConnectionException::SERVER_HANDSHAKE_ERR);
-        $this->expectExceptionMessage("Handshake request with invalid Sec-WebSocket-Key header: 'jww='");
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        $server->connect();
+        $server->start();
 
         unset($server);
     }
@@ -229,10 +322,26 @@ class HandshakeTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectWsServerAccept();
-        $server->accept();
-
-        $this->expectWsServerConnect();
+        $this->expectWsServerAccept(schema: 'tcp', port: 8000);
+        $this->expectStreamFactoryCreateStreamCollection();
+        $this->expectStreamCollection();
+        $this->expectStreamCollectionAttach();
+        $this->expectStreamCollectionWaitRead()->setReturn(function ($params, $default, $instance) {
+            return $instance->getReadable();
+        });
+        $this->expectStreamCollectionGetReadable();
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
+            return "fake-connection";
+        });
+        $this->expectStreamCollectionAttach();
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($server) {
+            $server->stop();
+        });
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "GET / HTTP/1.1\r\nHost: localhost\r\n"
             . "Connection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Key: cktLWXhUdDQ2OXF0ZCFqOQ==\r\n"
@@ -241,12 +350,9 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamWrite()->setReturn(function () {
             throw new StreamException(StreamException::FAIL_WRITE);
         });
-        $this->expectException(ConnectionException::class);
-        $this->expectExceptionCode(ConnectionException::SERVER_HANDSHAKE_ERR);
-        $this->expectExceptionMessage('Server handshake error');
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        $server->connect();
+        $server->start();
 
         unset($server);
     }

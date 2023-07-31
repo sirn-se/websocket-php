@@ -113,6 +113,9 @@ class ConnectionTest extends TestCase
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamIsConnected();
+        $this->assertTrue($connection->isConnected());
+
+        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
 
         unset($stream);

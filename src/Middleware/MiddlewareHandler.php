@@ -94,7 +94,7 @@ class MiddlewareHandler implements LoggerAwareInterface
     public function processIncoming(Connection $connection): Message
     {
         $this->logger->info("[middleware-handler] Processing incoming");
-        $stack = new ProcessStack($connection, $this->messageHandler,  $this->incoming);
+        $stack = new ProcessStack($connection, $this->messageHandler, $this->incoming);
         return $stack->handleIncoming();
     }
 
@@ -110,6 +110,4 @@ class MiddlewareHandler implements LoggerAwareInterface
         $stack = new ProcessStack($connection, $this->messageHandler, $this->outgoing);
         return $stack->handleOutgoing($message);
     }
-
-
 }

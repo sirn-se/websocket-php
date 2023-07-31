@@ -49,7 +49,6 @@ try {
     })->onText(function ($server, $connection, $message) {
         echo "> [{$connection->getRemoteName()}] Received [{$message->getOpcode()}] {$message->getContent()}\n";
         switch ($message->getContent()) {
-
             // Connection commands
             case '@close':
                 echo "< [{$connection->getRemoteName()}] Sending Close\n";
@@ -69,9 +68,9 @@ try {
                 echo "  - Remote:      {$connection->getRemoteName()}\n";
                 echo "  - Request:     {$connection->getHandshakeRequest()->getUri()}\n";
                 echo "  - Response:    {$connection->getHandshakeResponse()->getStatusCode()}\n";
-                echo "  - Connected:   ". json_encode($connection->isConnected()) ."\n";
-                echo "  - Readable:    ". json_encode($connection->isReadable()) ."\n";
-                echo "  - Writable:    ". json_encode($connection->isWritable()) ."\n";
+                echo "  - Connected:   " . json_encode($connection->isConnected()) . "\n";
+                echo "  - Readable:    " . json_encode($connection->isReadable()) . "\n";
+                echo "  - Writable:    " . json_encode($connection->isWritable()) . "\n";
                 echo "  - Timeout:     {$connection->getTimeout()}s\n";
                 echo "  - Frame size:  {$connection->getFrameSize()}b\n";
                 break;
@@ -95,7 +94,7 @@ try {
                 break;
             case '@server-info':
                 echo "< [{$connection->getRemoteName()}] Server info:\n";
-                echo "  - Running:     ". json_encode($server->isRunning()) ."\n";
+                echo "  - Running:     " . json_encode($server->isRunning()) . "\n";
                 echo "  - Connections: {$server->getConnectionCount()}\n";
                 echo "  - Port:        {$server->getPort()}\n";
                 echo "  - Scheme:      {$server->getScheme()}\n";
@@ -115,13 +114,13 @@ try {
     })->onPong(function ($server, $connection, $message) {
         echo "> [{$connection->getRemoteName()}] Received [{$message->getOpcode()}] {$message->getContent()}\n";
     })->onClose(function ($server, $connection, $message) {
-        echo "> [{$connection->getRemoteName()}] Received [{$message->getOpcode()}] {$message->getCloseStatus()} {$message->getContent()}\n";
+        echo "> [{$connection->getRemoteName()}] Received [{$message->getOpcode()}] "
+            . "{$message->getCloseStatus()} {$message->getContent()}\n";
     })->onError(function ($server, $connection, $exception) {
         echo "> Error: {$exception->getMessage()}\n";
     })->onTick(function ($server) {
         echo "-\n";
     })->start();
-
 } catch (Throwable $e) {
     echo "> ERROR: {$e->getMessage()}\n";
 }

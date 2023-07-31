@@ -52,7 +52,6 @@ try {
     if (!is_null($message)) {
         echo "> Got '{$message->getContent()}' [opcode: {$message->getOpcode()}]\n";
     }
-
 } catch (\Throwable $e) {
     echo "> ERROR: {$e->getMessage()} [{$e->getCode()}]\n";
 }
