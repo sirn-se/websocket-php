@@ -64,6 +64,7 @@ class Client implements LoggerAwareInterface
     private $options = [];
     private $streamFactory;
     private $handshakeResponse;
+    private $logger;
 
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */

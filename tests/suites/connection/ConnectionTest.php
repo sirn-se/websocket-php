@@ -65,7 +65,7 @@ class ConnectionTest extends TestCase
 
         $this->assertEquals('', $connection->getName());
         $this->assertEquals('', $connection->getRemoteName());
-        $this->assertEquals('WebSocket\Connection(closed)', "{$connection}");
+        $this->assertEquals('Connection()', "{$connection}");
 
         $this->expectSocketStreamSetTimeout();
         $this->assertSame($connection, $connection->setTimeout(10));

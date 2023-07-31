@@ -30,6 +30,7 @@ class MiddlewareHandler implements LoggerAwareInterface
     private $incoming = [];
     private $outgoing = [];
     private $messageHandler;
+    private $logger;
 
     /**
      * Create MiddlewareHandler.

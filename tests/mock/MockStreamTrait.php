@@ -6,6 +6,8 @@
 
 namespace WebSocket\Test;
 
+use Phrity\Net\Mock\StreamCollection;
+
 trait MockStreamTrait
 {
     private $stack = [];
@@ -83,7 +85,7 @@ trait MockStreamTrait
 
     /* ---------- WebSocket Server combinded asserts --------------------------------------------------------------- */
 
-    private function expectWsServerAccept(string $schema = 'tcp', int $port = 8000): void
+    private function expectWsServerSetup(string $schema = 'tcp', int $port = 8000): void
     {
         $this->expectStreamFactoryCreateSockerServer()->addAssert(function ($method, $params) use ($schema, $port) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
@@ -95,24 +97,28 @@ trait MockStreamTrait
         });
         $this->expectSocketServerGetTransports();
         $this->expectSocketServerGetMetadata();
+        $this->expectStreamFactoryCreateStreamCollection();
+        $this->expectStreamCollection();
+        $this->expectStreamCollectionAttach()->addAssert(function ($method, $params) {
+            $this->assertEquals('@server', $params[1]);
+        });
     }
 
-    private function expectWsServerConnect(?int $timeout = null): void
+    private function expectWsSelectConnections(array $keys = []): void
     {
-        $this->expectSocketServerAccept()->addAssert(function ($method, $params) use ($timeout) {
-            if (is_null($timeout)) {
-                $this->assertEmpty($params);
-            } else {
-                $this->assertCount(1, $params);
-                $this->assertEquals($timeout, $params[0]);
+        $this->expectStreamCollectionWaitRead()->setReturn(function ($params, $default, $collection) use ($keys) {
+            $keys = array_flip($keys);
+            $selected = new StreamCollection();
+            foreach ($collection as $key => $stream) {
+                if (array_key_exists($key, $keys)) {
+                    $selected->attach($stream, $key);
+                }
             }
+            return $selected;
         });
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-        if (!is_null($timeout)) {
-            $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($timeout) {
-                $this->assertEquals($timeout, $params[0]);
-            });
+        $this->expectStreamCollection();
+        foreach ($keys as $key) {
+            $this->expectStreamCollectionAttach();
         }
     }
 

@@ -27,10 +27,7 @@ use WebSocket\Http\{
     Response
 };
 use WebSocket\Message\Message;
-use WebSocket\Middleware\{
-    CloseHandler,
-    PingResponder
-};
+use WebSocket\Middleware\MiddlewareInterface;
 use WebSocket\Trait\{
     ListenerTrait,
     OpcodeTrait,
@@ -62,6 +59,7 @@ class Server implements LoggerAwareInterface
     private $streams;
     private $running = false;
     private $connections = [];
+    private $middlewares = [];
 
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
@@ -90,7 +88,7 @@ class Server implements LoggerAwareInterface
      */
     public function __toString(): string
     {
-        return sprintf("Server(%s)", $this->getName() ?: 'closed');
+        return sprintf("Server(%s)", "{$this->scheme}://0.0.0.0:{$this->port}" ?: 'closed');
     }
 
 
@@ -205,6 +203,20 @@ class Server implements LoggerAwareInterface
         return count($this->connections);
     }
 
+    /**
+     * Add a middleware.
+     * @param MiddlewareInterface $middleware
+     * @return self.
+     */
+    public function addMiddleware(MiddlewareInterface $middleware): self
+    {
+        $this->middlewares[] = $middleware;
+        foreach ($this->connections as $connection) {
+            $connection->addMiddleware($middleware);
+        }
+        return $this;
+    }
+
 
     /* ---------- Messaging operations ----------------------------------------------------------------------------- */
 
@@ -264,6 +276,8 @@ class Server implements LoggerAwareInterface
                     }
                 }
                 $this->dispatch('tick', [$this]);
+            } catch (\PHPUnit\Exception $t) {
+                throw $t;
             } catch (Throwable $t) {
                 $this->logger->error("[server] {$t->getMessage()}");
                 $this->dispatch('error', [$this, null, $t]);
@@ -289,6 +303,7 @@ class Server implements LoggerAwareInterface
         $this->running = false;
         foreach ($this->connections as $connection) {
             $connection->disconnect();
+            $this->dispatch('disconnect', [$this, $connection]);
         }
         $this->connections = [];
         $this->server->close();
@@ -311,7 +326,7 @@ class Server implements LoggerAwareInterface
         } catch (\PHPUnit\Exception $t) {
             throw $t;
         } catch (Throwable $t) {
-            $this->logger->error("[server] {$error}");
+            $error = "Server failed to start: {$t->getMessage()}";
             throw new ConnectionException($error, ConnectionException::SERVER_SOCKET_ERR);
         }
     }
@@ -328,9 +343,10 @@ class Server implements LoggerAwareInterface
                 ->setLogger($this->logger)
                 ->setFrameSize($this->frameSize)
                 ->setTimeout($this->timeout)
-                ->addMiddleware(new CloseHandler())
-                ->addMiddleware(new PingResponder())
                 ;
+            foreach ($this->middlewares as $middleware) {
+                $connection->addMiddleware($middleware);
+            }
             $this->connections[$name] = $connection;
             $this->logger->info("[server] Accepted connection from {$name}.");
             $request = $this->performHandshake($connection);

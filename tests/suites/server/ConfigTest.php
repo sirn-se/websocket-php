@@ -61,16 +61,11 @@ class ConfigTest extends TestCase
         $this->assertFalse($server->isRunning());
         $this->assertEquals(0, $server->getConnectionCount());
 
-        $this->expectWsServerAccept(schema: 'tcp', port: 8000);
-        $this->expectStreamFactoryCreateStreamCollection();
-        $this->expectStreamCollection();
-        $this->expectStreamCollectionAttach();
+        $this->expectWsServerSetup(schema: 'tcp', port: 8000);
         $this->expectStreamCollectionWaitRead()->addAssert(function ($method, $params) {
             $this->assertEquals(60, $params[0]);
         });
-        $this->expectStreamCollection();
-        $this->expectStreamCollectionRewind();
-        $this->expectStreamCollectionValid()->addAssert(function ($method, $params) use ($server) {
+        $this->expectStreamCollection()->addAssert(function ($method, $params) use ($server) {
             $this->assertTrue($server->isRunning());
             $this->assertEquals(0, $server->getConnectionCount());
             $server->stop();
@@ -98,16 +93,11 @@ class ConfigTest extends TestCase
         $this->assertFalse($server->isRunning());
         $this->assertEquals(0, $server->getConnectionCount());
 
-        $this->expectWsServerAccept(schema: 'ssl', port: 9000);
-        $this->expectStreamFactoryCreateStreamCollection();
-        $this->expectStreamCollection();
-        $this->expectStreamCollectionAttach();
+        $this->expectWsServerSetup(schema: 'ssl', port: 9000);
         $this->expectStreamCollectionWaitRead()->addAssert(function ($method, $params) {
             $this->assertEquals(300, $params[0]);
         });
-        $this->expectStreamCollection();
-        $this->expectStreamCollectionRewind();
-        $this->expectStreamCollectionValid()->addAssert(function ($method, $params) use ($server) {
+        $this->expectStreamCollection()->addAssert(function ($method, $params) use ($server) {
             $this->assertTrue($server->isRunning());
             $this->assertEquals(0, $server->getConnectionCount());
             $server->stop();

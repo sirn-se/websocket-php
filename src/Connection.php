@@ -80,7 +80,7 @@ class Connection implements LoggerAwareInterface
 
     public function __toString(): string
     {
-        return sprintf("%s(%s)", get_class($this), $this->localName ?: 'closed');
+        return "Connection({$this->localName})";
     }
 
 

@@ -60,14 +60,8 @@ class HandshakeTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectWsServerAccept(schema: 'tcp', port: 8000);
-        $this->expectStreamFactoryCreateStreamCollection();
-        $this->expectStreamCollection();
-        $this->expectStreamCollectionAttach();
-        $this->expectStreamCollectionWaitRead()->setReturn(function ($params, $default, $instance) {
-            return $instance->getReadable();
-        });
-        $this->expectStreamCollectionGetReadable();
+        $this->expectWsServerSetup(schema: 'tcp', port: 8000);
+        $this->expectWsSelectConnections(['@server']);
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -95,14 +89,8 @@ class HandshakeTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectWsServerAccept(schema: 'tcp', port: 8000);
-        $this->expectStreamFactoryCreateStreamCollection();
-        $this->expectStreamCollection();
-        $this->expectStreamCollectionAttach();
-        $this->expectStreamCollectionWaitRead()->setReturn(function ($params, $default, $instance) {
-            return $instance->getReadable();
-        });
-        $this->expectStreamCollectionGetReadable();
+        $this->expectWsServerSetup(schema: 'tcp', port: 8000);
+        $this->expectWsSelectConnections(['@server']);
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -132,14 +120,8 @@ class HandshakeTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectWsServerAccept(schema: 'tcp', port: 8000);
-        $this->expectStreamFactoryCreateStreamCollection();
-        $this->expectStreamCollection();
-        $this->expectStreamCollectionAttach();
-        $this->expectStreamCollectionWaitRead()->setReturn(function ($params, $default, $instance) {
-            return $instance->getReadable();
-        });
-        $this->expectStreamCollectionGetReadable();
+        $this->expectWsServerSetup(schema: 'tcp', port: 8000);
+        $this->expectWsSelectConnections(['@server']);
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -170,14 +152,8 @@ class HandshakeTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectWsServerAccept(schema: 'tcp', port: 8000);
-        $this->expectStreamFactoryCreateStreamCollection();
-        $this->expectStreamCollection();
-        $this->expectStreamCollectionAttach();
-        $this->expectStreamCollectionWaitRead()->setReturn(function ($params, $default, $instance) {
-            return $instance->getReadable();
-        });
-        $this->expectStreamCollectionGetReadable();
+        $this->expectWsServerSetup(schema: 'tcp', port: 8000);
+        $this->expectWsSelectConnections(['@server']);
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -208,14 +184,8 @@ class HandshakeTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectWsServerAccept(schema: 'tcp', port: 8000);
-        $this->expectStreamFactoryCreateStreamCollection();
-        $this->expectStreamCollection();
-        $this->expectStreamCollectionAttach();
-        $this->expectStreamCollectionWaitRead()->setReturn(function ($params, $default, $instance) {
-            return $instance->getReadable();
-        });
-        $this->expectStreamCollectionGetReadable();
+        $this->expectWsServerSetup(schema: 'tcp', port: 8000);
+        $this->expectWsSelectConnections(['@server']);
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -246,14 +216,8 @@ class HandshakeTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectWsServerAccept(schema: 'tcp', port: 8000);
-        $this->expectStreamFactoryCreateStreamCollection();
-        $this->expectStreamCollection();
-        $this->expectStreamCollectionAttach();
-        $this->expectStreamCollectionWaitRead()->setReturn(function ($params, $default, $instance) {
-            return $instance->getReadable();
-        });
-        $this->expectStreamCollectionGetReadable();
+        $this->expectWsServerSetup(schema: 'tcp', port: 8000);
+        $this->expectWsSelectConnections(['@server']);
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -284,14 +248,8 @@ class HandshakeTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectWsServerAccept(schema: 'tcp', port: 8000);
-        $this->expectStreamFactoryCreateStreamCollection();
-        $this->expectStreamCollection();
-        $this->expectStreamCollectionAttach();
-        $this->expectStreamCollectionWaitRead()->setReturn(function ($params, $default, $instance) {
-            return $instance->getReadable();
-        });
-        $this->expectStreamCollectionGetReadable();
+        $this->expectWsServerSetup(schema: 'tcp', port: 8000);
+        $this->expectWsSelectConnections(['@server']);
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -322,14 +280,8 @@ class HandshakeTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectWsServerAccept(schema: 'tcp', port: 8000);
-        $this->expectStreamFactoryCreateStreamCollection();
-        $this->expectStreamCollection();
-        $this->expectStreamCollectionAttach();
-        $this->expectStreamCollectionWaitRead()->setReturn(function ($params, $default, $instance) {
-            return $instance->getReadable();
-        });
-        $this->expectStreamCollectionGetReadable();
+        $this->expectWsServerSetup(schema: 'tcp', port: 8000);
+        $this->expectWsSelectConnections(['@server']);
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
