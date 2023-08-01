@@ -85,15 +85,15 @@ trait MockStreamTrait
 
     /* ---------- WebSocket Server combinded asserts --------------------------------------------------------------- */
 
-    private function expectWsServerSetup(string $schema = 'tcp', int $port = 8000): void
+    private function expectWsServerSetup(string $scheme = 'tcp', int $port = 8000): void
     {
-        $this->expectStreamFactoryCreateSockerServer()->addAssert(function ($method, $params) use ($schema, $port) {
+        $this->expectStreamFactoryCreateSockerServer()->addAssert(function ($method, $params) use ($scheme, $port) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
-            $this->assertEquals("{$schema}://0.0.0.0:{$port}", "{$params[0]}");
+            $this->assertEquals("{$scheme}://0.0.0.0:{$port}", "{$params[0]}");
         });
-        $this->expectSocketServer()->addAssert(function ($method, $params) use ($schema, $port) {
+        $this->expectSocketServer()->addAssert(function ($method, $params) use ($scheme, $port) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
-            $this->assertEquals("{$schema}://0.0.0.0:{$port}", "{$params[0]}");
+            $this->assertEquals("{$scheme}://0.0.0.0:{$port}", "{$params[0]}");
         });
         $this->expectSocketServerGetTransports();
         $this->expectSocketServerGetMetadata();

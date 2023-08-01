@@ -21,6 +21,7 @@ use Phrity\Net\Mock\Stack\{
 };
 use Psr\Log\NullLogger;
 use WebSocket\Server;
+use WebSocket\Middleware\Callback;
 use WebSocket\Test\{
     MockStreamTrait,
     MockUri
@@ -52,8 +53,9 @@ class ConfigTest extends TestCase
     {
         $this->expectStreamFactory();
         $server = new Server();
-        $server->setStreamFactory(new StreamFactory());
+        $this->assertSame($server, $server->setStreamFactory(new StreamFactory()));
 
+        $this->assertEquals('Server(tcp://0.0.0.0:8000)', "{$server}");
         $this->assertEquals(60, $server->getTimeout());
         $this->assertEquals(4096, $server->getFrameSize());
         $this->assertEquals(8000, $server->getPort());
@@ -61,7 +63,7 @@ class ConfigTest extends TestCase
         $this->assertFalse($server->isRunning());
         $this->assertEquals(0, $server->getConnectionCount());
 
-        $this->expectWsServerSetup(schema: 'tcp', port: 8000);
+        $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
         $this->expectStreamCollectionWaitRead()->addAssert(function ($method, $params) {
             $this->assertEquals(60, $params[0]);
         });
@@ -79,32 +81,47 @@ class ConfigTest extends TestCase
     public function testServerConfiguration(): void
     {
         $this->expectStreamFactory();
-        $server = new Server(9000, 'ssl');
-        $server->setStreamFactory(new StreamFactory());
+        $server = new Server(9000, true);
+        $this->assertSame($server, $server->setStreamFactory(new StreamFactory()));
 
-        $server->setLogger(new NullLogger());
-        $server->setTimeout(300);
-        $server->setFrameSize(64);
+        $this->expectWsServerSetup(scheme: 'ssl', port: 9000);
+        $this->expectWsSelectConnections(['@server']);
+        // Accept connection
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
+            return 'fake-connection-1';
+        });
+        $this->expectStreamCollectionAttach();
+        $this->expectSocketStreamGetLocalName()->setReturn(function () {
+            return 'fake-connection-1';
+        });
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($server) {
+            $server->stop();
+        });
+        $this->expectWsServerPerformHandshake();
+        $server->start();
 
+        $this->assertSame($server, $server->setLogger(new NullLogger()));
+        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($server) {
+            $this->assertEquals(300, $params[0]);
+        });
+        $this->assertSame($server, $server->setTimeout(300));
+        $this->assertSame($server, $server->setFrameSize(64));
+        $this->assertSame($server, $server->addMiddleware(new Callback()));
+
+        $this->assertEquals('Server(ssl://0.0.0.0:9000)', "{$server}");
         $this->assertEquals(300, $server->getTimeout());
         $this->assertEquals(64, $server->getFrameSize());
         $this->assertEquals(9000, $server->getPort());
         $this->assertEquals('ssl', $server->getScheme());
         $this->assertFalse($server->isRunning());
-        $this->assertEquals(0, $server->getConnectionCount());
+        $this->assertEquals(1, $server->getConnectionCount());
 
-        $this->expectWsServerSetup(schema: 'ssl', port: 9000);
-        $this->expectStreamCollectionWaitRead()->addAssert(function ($method, $params) {
-            $this->assertEquals(300, $params[0]);
-        });
-        $this->expectStreamCollection()->addAssert(function ($method, $params) use ($server) {
-            $this->assertTrue($server->isRunning());
-            $this->assertEquals(0, $server->getConnectionCount());
-            $server->stop();
-        });
-        $server->start();
-        $this->assertFalse($server->isRunning());
-
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
         unset($server);
     }
 }

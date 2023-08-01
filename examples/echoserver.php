@@ -20,13 +20,17 @@ echo "# Echo server! [phrity/websocket]\n";
 
 // Server options specified or default
 $options = array_merge([
-    'port'      => 8000,
-    'scheme'    => 'tcp',
-], getopt('', ['port:', 'scheme:', 'timeout:', 'framesize:', 'debug']));
+    'port'  => 8000,
+], getopt('', ['port:', 'ssl', 'timeout:', 'framesize:', 'debug']));
 
 // Initiate server.
 try {
-    $server = new Server($options['port'], $options['scheme']);
+    $server = new Server($options['port'], isset($options['ssl']));
+    $server
+        ->addMiddleware(new \WebSocket\Middleware\CloseHandler())
+        ->addMiddleware(new \WebSocket\Middleware\PingResponder())
+        ;
+
     // If debug mode and logger is available
     if (isset($options['debug']) && class_exists('WebSocket\Test\EchoLog')) {
         $server->setLogger(new \WebSocket\Test\EchoLog());

@@ -8,11 +8,7 @@
       <directory suffix=".php">tests/suites/http</directory>
       <directory suffix=".php">tests/suites/message</directory>
       <directory suffix=".php">tests/suites/middleware</directory>
-      <file>tests/suites/client/ConfigErrorTest.php</file>
-      <file>tests/suites/server/ConfigTest.php</file>
-      <file>tests/suites/server/ConfigErrorTest.php</file>
-      <file>tests/suites/server/HandshakeTest.php</file>
-      <file>tests/suites/server/ListenerTest.php</file>
+      <directory suffix=".php">tests/suites/server</directory>
     </testsuite>
   </testsuites>
   <source>

@@ -25,14 +25,6 @@ class ConfigErrorTest extends TestCase
         error_reporting(-1);
     }
 
-    public function testSchemeInvalid(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionCode(0);
-        $this->expectExceptionMessage("Invalid scheme 'invalid' provided");
-        $server = new Server(8000, 'invalid');
-    }
-
     public function testPortTooLow(): void
     {
         $this->expectException(InvalidArgumentException::class);

@@ -68,16 +68,13 @@ class Server implements LoggerAwareInterface
      * @param int $port Socket port to listen to
      * @param string $scheme Scheme (tcp or ssl)
      */
-    public function __construct(int $port = 8000, string $scheme = 'tcp')
+    public function __construct(int $port = 8000, bool $ssl = false)
     {
         if ($port < 0 || $port > 65535) {
             throw new InvalidArgumentException("Invalid port '{$port}' provided");
         }
-        if (!in_array($scheme, ['tcp', 'ssl'])) {
-            throw new InvalidArgumentException("Invalid scheme '{$scheme}' provided");
-        }
         $this->port = $port;
-        $this->scheme = $scheme;
+        $this->scheme = $ssl ? 'ssl' : 'tcp';
         $this->logger = new NullLogger();
         $this->setStreamFactory(new StreamFactory());
     }
@@ -98,9 +95,10 @@ class Server implements LoggerAwareInterface
      * Set stream factory to use.
      * @param StreamFactory $streamFactory.
      */
-    public function setStreamFactory(StreamFactory $streamFactory)
+    public function setStreamFactory(StreamFactory $streamFactory): self
     {
         $this->streamFactory = $streamFactory;
+        return $this;
     }
 
     /**
@@ -121,7 +119,7 @@ class Server implements LoggerAwareInterface
      * Set timeout.
      * @param int $timeout Timeout in seconds.
      */
-    public function setTimeout(int $timeout): void
+    public function setTimeout(int $timeout): self
     {
         if ($timeout < 0) {
             throw new InvalidArgumentException("Invalid timeout '{$timeout}' provided");
@@ -130,6 +128,7 @@ class Server implements LoggerAwareInterface
         foreach ($this->connections as $connection) {
             $connection->setTimeout($timeout);
         }
+        return $this;
     }
 
     /**
