@@ -11,7 +11,7 @@ namespace WebSocket\Exception;
 
 /**
  * WebSocket\Exception\MessageFailureInterface interface.
- * Indicates issue reading/writing message
+ * Indicates issue reading/writing message.
  */
 interface MessageLevelInterface
 {
