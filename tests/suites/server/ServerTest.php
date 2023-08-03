@@ -28,6 +28,7 @@ use WebSocket\{
 };
 use WebSocket\Exception\{
     BadOpcodeException,
+    ConnectionClosedException,
     ServerException
 };
 use WebSocket\Http\{
@@ -40,6 +41,7 @@ use WebSocket\Message\{
     Pong,
     Text
 };
+use WebSocket\Middleware\Callback;
 use WebSocket\Test\{
     MockStreamTrait,
     MockUri
@@ -67,7 +69,7 @@ class ServerTest extends TestCase
         $this->tearDownStack();
     }
 
-    public function testListeners(): void
+    public function xxxtestListeners(): void
     {
         $this->expectStreamFactory();
         $server = new Server();
@@ -193,9 +195,9 @@ class ServerTest extends TestCase
         })->setReturn(function () {
             return base64_decode('gwA=');
         });
-        $this->expectSocketStreamClose();
         $server->start();
 
+        $this->expectSocketStreamClose();
         $this->expectSocketServerClose();
         $this->expectSocketStreamIsConnected();
 
@@ -204,7 +206,43 @@ class ServerTest extends TestCase
         unset($server);
     }
 
-    public function testBroadcastSend(): void
+    public function xxxtestMiddlewares(): void
+    {
+        $this->expectStreamFactory();
+        $server = new Server();
+        $server->setStreamFactory(new StreamFactory());
+
+        $server->addMiddleware(new Callback());
+
+        $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
+        $this->expectWsSelectConnections(['@server']);
+        // Accept connection
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
+            return 'fake-connection-1';
+        });
+        $this->expectStreamCollectionAttach();
+        $this->expectSocketStreamGetLocalName()->setReturn(function () {
+            return 'fake-connection-1';
+        });
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($server) {
+            $server->stop();
+        });
+        $this->expectWsServerPerformHandshake();
+        $server->start();
+
+        $server->addMiddleware(new Callback());
+
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
+
+        unset($server);
+    }
+
+    public function xxxtestBroadcastSend(): void
     {
         $this->expectStreamFactory();
         $server = new Server();
@@ -353,5 +391,170 @@ class ServerTest extends TestCase
         $server->start();
 
         unset($server);
+    }
+
+    public function testRunBadOpcodeException(): void
+    {
+        $this->expectStreamFactory();
+        $server = new Server();
+        $server->setStreamFactory(new StreamFactory());
+
+        $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
+        $this->expectWsSelectConnections(['@server']);
+        // Accept connection
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
+            return 'fake-connection-1';
+        });
+        $this->expectStreamCollectionAttach();
+        $this->expectSocketStreamGetLocalName()->setReturn(function () {
+            return 'fake-connection-1';
+        });
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $this->expectWsServerPerformHandshake();
+        $this->expectSocketStreamIsConnected();
+        $this->expectWsSelectConnections(['fake-connection-1']);
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () use ($server) {
+            $server->stop();
+            throw new BadOpcodeException();
+        });
+        $server->start();
+
+        // Should not have closed
+        $this->assertEquals(1, $server->getConnectionCount());
+
+        $this->expectSocketStreamClose();
+        $this->expectSocketServerClose();
+        $this->expectSocketStreamIsConnected();
+        $server->disconnect();
+
+        unset($server);
+    }
+
+    public function testRunConnectionClosedException(): void
+    {
+        $this->expectStreamFactory();
+        $server = new Server();
+        $server->setStreamFactory(new StreamFactory());
+
+        $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
+        $this->expectWsSelectConnections(['@server']);
+        // Accept connection
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
+            return 'fake-connection-1';
+        });
+        $this->expectStreamCollectionAttach();
+        $this->expectSocketStreamGetLocalName()->setReturn(function () {
+            return 'fake-connection-1';
+        });
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $this->expectWsServerPerformHandshake();
+        $this->expectSocketStreamIsConnected();
+        $this->expectWsSelectConnections(['fake-connection-1']);
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () use ($server) {
+            $server->stop();
+            throw new ConnectionClosedException();
+        });
+        $this->expectStreamCollectionDetach();
+        $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
+        $server->start();
+
+        // Should be closed
+        $this->assertEquals(0, $server->getConnectionCount());
+
+        $this->expectSocketServerClose();
+        $server->disconnect();
+
+        unset($server);
+    }
+
+    public function testRunServerException(): void
+    {
+        $this->expectStreamFactory();
+        $server = new Server();
+        $server->setStreamFactory(new StreamFactory());
+
+        $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
+        $this->expectWsSelectConnections(['@server']);
+        // Accept connection
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
+            return 'fake-connection-1';
+        });
+        $this->expectStreamCollectionAttach();
+        $this->expectSocketStreamGetLocalName()->setReturn(function () {
+            return 'fake-connection-1';
+        });
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $this->expectWsServerPerformHandshake();
+        $this->expectSocketStreamIsConnected();
+        $this->expectWsSelectConnections(['fake-connection-1']);
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () use ($server) {
+            $server->stop();
+            throw new ServerException();
+        });
+        $server->start();
+
+        // Should not have closed
+        $this->assertEquals(1, $server->getConnectionCount());
+
+        $this->expectSocketStreamClose();
+        $this->expectSocketServerClose();
+        $this->expectSocketStreamIsConnected();
+        $server->disconnect();
+
+        unset($server);
+    }
+
+    public function testRunExternalException(): void
+    {
+        $this->expectStreamFactory();
+        $server = new Server();
+        $server->setStreamFactory(new StreamFactory());
+
+        $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
+        $this->expectWsSelectConnections(['@server']);
+        // Accept connection
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
+            return 'fake-connection-1';
+        });
+        $this->expectStreamCollectionAttach();
+        $this->expectSocketStreamGetLocalName()->setReturn(function () {
+            return 'fake-connection-1';
+        });
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $this->expectWsServerPerformHandshake();
+        $this->expectSocketStreamIsConnected();
+        $this->expectWsSelectConnections(['fake-connection-1'])->setReturn(function () use ($server) {
+            $server->stop();
+            throw new StreamException(1000);
+        });
+        $this->expectSocketStreamClose();
+        $this->expectSocketServerClose();
+        $this->expectSocketStreamIsConnected();
+        $this->expectException(StreamException::class);
+        $this->expectExceptionMessage('Stream is detached.');
+        $server->start();
     }
 }

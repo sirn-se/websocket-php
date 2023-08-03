@@ -26,7 +26,8 @@ use WebSocket\Exception\{
     ConnectionLevelInterface,
     HandshakeException,
     ServerException,
-    Exception
+    Exception,
+    MessageLevelInterface
 };
 use WebSocket\Http\{
     ServerRequest,
@@ -281,19 +282,32 @@ class Server implements LoggerAwareInterface
                         if ($message = $connection->pullMessage()) {
                             $this->dispatch($message->getOpcode(), [$this, $connection, $message]);
                         }
-                    } catch (ConnectionLevelInterface $t) {
-                        $this->logger->error("[server] {$t->getMessage()}");
-                        $this->dispatch('error', [$this, $connection, $t]);
+                    } catch (MessageLevelInterface $e) {
+                        // Error, but keep connection open
+                        $this->logger->error("[server] {$e->getMessage()}");
+                        $this->dispatch('error', [$this, $connection, $e]);
+                    } catch (ConnectionLevelInterface $e) {
+                        // Error, disconnect connection
+                        if ($connection) {
+                            $this->streams->detach($key);
+                            unset($this->connections[$key]);
+                            $connection->disconnect();
+                        }
+                        $this->logger->error("[server] {$e->getMessage()}");
+                        $this->dispatch('error', [$this, $connection, $e]);
                     }
                 }
                 $this->dispatch('tick', [$this]);
-            } catch (Exception $t) {
-                $this->logger->error("[server] {$t->getMessage()}");
-                $this->dispatch('error', [$this, null, $t]);
-            } catch (Throwable $t) {
-                $this->logger->error("[server] {$t->getMessage()}");
+            } catch (Exception $e) {
+                // Low-level error
+                $this->logger->error("[server] {$e->getMessage()}");
+                $this->dispatch('error', [$this, null, $e]);
+            } catch (Throwable $e) {
+                // Crash it
+                $this->logger->error("[server] {$e->getMessage()}");
+                $this->dispatch('error', [$this, null, $e]);
                 $this->disconnect();
-                throw $t;
+                throw $e;
             }
             gc_collect_cycles(); // Collect garbage
         }
@@ -336,8 +350,8 @@ class Server implements LoggerAwareInterface
             $this->streams = $this->streamFactory->createStreamCollection();
             $this->streams->attach($this->server, '@server');
             $this->logger->info("[server] Starting server on {$uri}.");
-        } catch (Throwable $t) {
-            $error = "Server failed to start: {$t->getMessage()}";
+        } catch (Throwable $e) {
+            $error = "Server failed to start: {$e->getMessage()}";
             throw new ServerException($error);
         }
     }
@@ -368,12 +382,6 @@ class Server implements LoggerAwareInterface
             }
             $error = "Server failed to accept: {$e->getMessage()}";
             throw $e;
-        } catch (Throwable $t) {
-            if ($connection) {
-                $connection->disconnect();
-            }
-            $error = "Server failed to accept: {$t->getMessage()}";
-            throw new ServerException($error);
         }
     }
 

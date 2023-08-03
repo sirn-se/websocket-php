@@ -7,6 +7,7 @@
 namespace WebSocket\Test;
 
 use Phrity\Net\Mock\StreamCollection;
+use Phrity\Net\Mock\Stack\StackItem;
 
 trait MockStreamTrait
 {
@@ -104,7 +105,7 @@ trait MockStreamTrait
         });
     }
 
-    private function expectWsSelectConnections(array $keys = []): void
+    private function expectWsSelectConnections(array $keys = []): StackItem
     {
         $this->expectStreamCollectionWaitRead()->setReturn(function ($params, $default, $collection) use ($keys) {
             $keys = array_flip($keys);
@@ -116,10 +117,11 @@ trait MockStreamTrait
             }
             return $selected;
         });
-        $this->expectStreamCollection();
+        $last = $this->expectStreamCollection();
         foreach ($keys as $key) {
-            $this->expectStreamCollectionAttach();
+            $last = $this->expectStreamCollectionAttach();
         }
+        return $last;
     }
 
     private function expectWsServerPerformHandshake(
