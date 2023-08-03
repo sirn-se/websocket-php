@@ -10,7 +10,7 @@
 namespace WebSocket\Exception;
 
 /**
- * WebSocket\Exception\MessageFailureInterface interface.
+ * WebSocket\Exception\MessageLevelInterface interface.
  * Indicates issue reading/writing message.
  */
 interface MessageLevelInterface
