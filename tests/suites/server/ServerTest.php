@@ -69,7 +69,7 @@ class ServerTest extends TestCase
         $this->tearDownStack();
     }
 
-    public function xxxtestListeners(): void
+    public function testListeners(): void
     {
         $this->expectStreamFactory();
         $server = new Server();
@@ -206,7 +206,7 @@ class ServerTest extends TestCase
         unset($server);
     }
 
-    public function xxxtestMiddlewares(): void
+    public function testMiddlewares(): void
     {
         $this->expectStreamFactory();
         $server = new Server();
@@ -242,7 +242,7 @@ class ServerTest extends TestCase
         unset($server);
     }
 
-    public function xxxtestBroadcastSend(): void
+    public function testBroadcastSend(): void
     {
         $this->expectStreamFactory();
         $server = new Server();
