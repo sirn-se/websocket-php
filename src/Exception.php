@@ -13,7 +13,7 @@ namespace WebSocket;
  * WebSocket\Exception class.
  * Abstract base class for WebSocket exceptions.
  */
-abstract class Exception extends \Exception
+abstract class Exception extends \WebSocket\Exception\Exception
 {
     // General error codes
     public const TIMED_OUT = 1024;

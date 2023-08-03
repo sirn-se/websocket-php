@@ -53,6 +53,7 @@ class PingResponderTest extends TestCase
         $this->expectSocketStreamRead()->setReturn(function () {
             return base64_decode('iQA=');
         });
+        $this->expectSocketStreamIsWritable();
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(base64_decode('igA='), $params[0]);
         });

@@ -15,9 +15,13 @@ use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\SocketStream;
 use Phrity\Net\Mock\Stack\ExpectSocketStreamTrait;
 use Psr\Log\NullLogger;
-use WebSocket\{
-    Connection,
-    ConnectionException
+use WebSocket\Connection;
+use WebSocket\Exception\{
+    BadOpcodeException,
+    BadUriException,
+    ConnectionClosedException,
+    ConnectionFailureException,
+    ConnectionTimeoutException
 };
 use WebSocket\Http\{
     Request,
@@ -97,7 +101,7 @@ class ConnectionTest extends TestCase
         $this->expectSocketStreamIsConnected();
         $this->assertFalse($connection->isConnected());
 
-        unset($stream);
+        unset($connection);
     }
 
     public function testDestruct(): void
@@ -118,7 +122,7 @@ class ConnectionTest extends TestCase
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
 
-        unset($stream);
+        unset($connection);
     }
 
     public function testHttpMessages(): void
@@ -154,7 +158,7 @@ class ConnectionTest extends TestCase
         $this->expectSocketStreamIsConnected();
         $this->assertSame($connection, $connection->disconnect());
 
-        unset($stream);
+        unset($connection);
     }
 
     public function testWebSocketMessages(): void
@@ -189,7 +193,55 @@ class ConnectionTest extends TestCase
         $this->expectSocketStreamIsConnected();
         $this->assertSame($connection, $connection->disconnect());
 
-        unset($stream);
+        unset($connection);
+    }
+
+    public function testSendHttpError(): void
+    {
+        $temp = tmpfile();
+
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $stream = new SocketStream($temp);
+
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $connection = new Connection($stream, false, false);
+
+        $this->expectSocketStreamWrite()->setReturn(function () {
+            throw new ConnectionClosedException();
+        });
+        $this->expectException(ConnectionClosedException::class);
+        $this->expectExceptionMessage('Connection has unexpectedly closed');
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
+        $connection->pushHttp(new Request());
+
+        unset($connection);
+    }
+
+    public function testPullHttpError(): void
+    {
+        $temp = tmpfile();
+
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $stream = new SocketStream($temp);
+
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $connection = new Connection($stream, false, false);
+
+        $this->expectSocketStreamReadLine()->setReturn(function () {
+            throw new ConnectionClosedException();
+        });
+        $this->expectException(ConnectionClosedException::class);
+        $this->expectExceptionMessage('Connection has unexpectedly closed');
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
+        $connection->pullHttp();
+
+        unset($connection);
     }
 
     public function testSendMessageError(): void
@@ -205,15 +257,15 @@ class ConnectionTest extends TestCase
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
-            throw new ConnectionException('Connection error');
+            throw new ConnectionClosedException();
         });
-        $this->expectSocketStreamClose();
+        $this->expectException(ConnectionClosedException::class);
+        $this->expectExceptionMessage('Connection has unexpectedly closed');
         $this->expectSocketStreamIsConnected();
-        $this->expectException(ConnectionException::class);
-        $this->expectExceptionMessage('Connection error');
+        $this->expectSocketStreamClose();
         $connection->send(new Text('Connection error'));
 
-        unset($stream);
+        unset($connection);
     }
 
     public function testPullMessageError(): void
@@ -227,17 +279,16 @@ class ConnectionTest extends TestCase
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
         $connection = new Connection($stream, false, false);
-        $message = new Text('Test message');
 
         $this->expectSocketStreamRead()->setReturn(function () {
-            throw new ConnectionException('Connection error');
+            throw new ConnectionClosedException();
         });
-        $this->expectSocketStreamClose();
+        $this->expectException(ConnectionClosedException::class);
+        $this->expectExceptionMessage('Connection has unexpectedly closed');
         $this->expectSocketStreamIsConnected();
-        $this->expectException(ConnectionException::class);
-        $this->expectExceptionMessage('Connection error');
+        $this->expectSocketStreamClose();
         $connection->pullMessage();
 
-        unset($stream);
+        unset($connection);
     }
 }

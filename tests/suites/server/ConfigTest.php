@@ -54,6 +54,7 @@ class ConfigTest extends TestCase
         $this->expectStreamFactory();
         $server = new Server();
         $this->assertSame($server, $server->setStreamFactory(new StreamFactory()));
+        $this->assertSame($server, $server->addMiddleware(new Callback()));
 
         $this->assertEquals('Server(tcp://0.0.0.0:8000)', "{$server}");
         $this->assertEquals(60, $server->getTimeout());

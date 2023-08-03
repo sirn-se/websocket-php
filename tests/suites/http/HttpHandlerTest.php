@@ -64,8 +64,8 @@ class HttpHandlerTest extends TestCase
             $expect = "GET /a/path?a=b HTTP/1.1\r\nHost: test.com:123\r\n\r\n";
             $this->assertEquals($expect, $params[0]);
         });
-        $written = $handler->push($request);
-        $this->assertEquals(48, $written);
+        $sent = $handler->push($request);
+        $this->assertSame($request, $sent);
 
         fclose($temp);
     }
@@ -86,8 +86,8 @@ class HttpHandlerTest extends TestCase
             $expect = "GET /a/path?a=b HTTP/1.1\r\nHost: test.com:123\r\n\r\n";
             $this->assertEquals($expect, $params[0]);
         });
-        $written = $handler->push($request);
-        $this->assertEquals(48, $written);
+        $sent = $handler->push($request);
+        $this->assertSame($request, $sent);
 
         fclose($temp);
     }
@@ -139,8 +139,8 @@ class HttpHandlerTest extends TestCase
             $expect = "HTTP/1.1 200 OK\r\nHost: test.com:123\r\n\r\n";
             $this->assertEquals($expect, $params[0]);
         });
-        $written = $handler->push($response);
-        $this->assertEquals(39, $written);
+        $sent = $handler->push($response);
+        $this->assertSame($response, $sent);
 
         fclose($temp);
     }
@@ -181,7 +181,6 @@ class HttpHandlerTest extends TestCase
             return "This is not a valid HTTP header\r\n\r\n";
         });
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionCode(0);
         $this->expectExceptionMessage("Invalid Http request.");
 
         $handler->pull();

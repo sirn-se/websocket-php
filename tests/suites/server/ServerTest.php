@@ -23,10 +23,12 @@ use Phrity\Net\Mock\Stack\{
 use Phrity\Net\StreamException;
 use Psr\Log\NullLogger;
 use WebSocket\{
-    BadOpcodeException,
     Connection,
-    ConnectionException,
     Server
+};
+use WebSocket\Exception\{
+    BadOpcodeException,
+    ServerException
 };
 use WebSocket\Http\{
     ServerRequest
@@ -194,7 +196,6 @@ class ServerTest extends TestCase
         $this->expectSocketStreamClose();
         $server->start();
 
-        $this->expectSocketStreamClose();
         $this->expectSocketServerClose();
         $this->expectSocketStreamIsConnected();
 
@@ -347,8 +348,7 @@ class ServerTest extends TestCase
         $this->expectStreamFactoryCreateSockerServer()->addAssert(function ($method, $params) {
             throw new StreamException(StreamException::SERVER_SOCKET_ERR, ['uri' => 'test']);
         });
-        $this->expectException(ConnectionException::class);
-        $this->expectExceptionCode(ConnectionException::SERVER_SOCKET_ERR);
+        $this->expectException(ServerException::class);
         $this->expectExceptionMessage('Server failed to start:');
         $server->start();
 

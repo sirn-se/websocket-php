@@ -25,8 +25,8 @@ class PingResponder implements ProcessIncomingInterface
     public function processIncoming(ProcessStack $stack, Connection $connection): Message
     {
         $message = $stack->handleIncoming();
-        if ($message instanceof Ping) {
-            $connection->pushMessage(new Pong($message->getContent()));
+        if ($message instanceof Ping && $connection->isWritable()) {
+            $connection->send(new Pong($message->getContent()));
         }
         return $message;
     }

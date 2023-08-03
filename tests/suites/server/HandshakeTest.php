@@ -103,12 +103,13 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($server) {
             $server->stop();
         });
-
         $this->expectSocketStreamReadLine()->setReturn(function () {
             throw new StreamException(StreamException::FAIL_READ);
         });
         $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamGetMetadata();
         $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
         $server->start();
 
         unset($server);
@@ -139,8 +140,11 @@ class HandshakeTest extends TestCase
             . "Connection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Key: cktLWXhUdDQ2OXF0ZCFqOQ==\r\n"
             . "Sec-WebSocket-Version: 13\r\n\r\n";
         });
-        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals("HTTP/1.1 405 Method Not Allowed\r\n\r\n", $params[0]);
+        });
         $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
         $server->start();
 
         unset($server);
@@ -171,8 +175,11 @@ class HandshakeTest extends TestCase
             . "Connection: Invalid\r\nUpgrade: websocket\r\nSec-WebSocket-Key: cktLWXhUdDQ2OXF0ZCFqOQ==\r\n"
             . "Sec-WebSocket-Version: 13\r\n\r\n";
         });
-        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals("HTTP/1.1 426 Upgrade Required\r\n\r\n", $params[0]);
+        });
         $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
         $server->start();
 
         unset($server);
@@ -203,8 +210,46 @@ class HandshakeTest extends TestCase
             . "Connection: Upgrade\r\nUpgrade: Invalid\r\nSec-WebSocket-Key: cktLWXhUdDQ2OXF0ZCFqOQ==\r\n"
             . "Sec-WebSocket-Version: 13\r\n\r\n";
         });
-        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals("HTTP/1.1 426 Upgrade Required\r\n\r\n", $params[0]);
+        });
         $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
+        $server->start();
+
+        unset($server);
+    }
+
+    public function testHandshakeVersionHeaderFailure(): void
+    {
+        $this->expectStreamFactory();
+        $server = new Server();
+        $server->setStreamFactory(new StreamFactory());
+
+        $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
+        $this->expectWsSelectConnections(['@server']);
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
+            return "fake-connection";
+        });
+        $this->expectStreamCollectionAttach();
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($server) {
+            $server->stop();
+        });
+        $this->expectSocketStreamReadLine()->setReturn(function () {
+            return "GET / HTTP/1.1\r\nHost: localhost\r\n"
+            . "Connection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Key: cktLWXhUdDQ2OXF0ZCFqOQ==\r\n"
+            . "Sec-WebSocket-Version: 12\r\n\r\n";
+        });
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals("HTTP/1.1 426 Upgrade Required\r\nSec-WebSocket-Version: 13\r\n\r\n", $params[0]);
+        });
+        $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
         $server->start();
 
         unset($server);
@@ -235,8 +280,11 @@ class HandshakeTest extends TestCase
             . "Connection: Upgrade\r\nUpgrade: websocket\r\n"
             . "Sec-WebSocket-Version: 13\r\n\r\n";
         });
-        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals("HTTP/1.1 426 Upgrade Required\r\n\r\n", $params[0]);
+        });
         $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
         $server->start();
 
         unset($server);
@@ -267,8 +315,11 @@ class HandshakeTest extends TestCase
             . "Connection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Key: jww=\r\n"
             . "Sec-WebSocket-Version: 13\r\n\r\n";
         });
-        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals("HTTP/1.1 426 Upgrade Required\r\n\r\n", $params[0]);
+        });
         $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
         $server->start();
 
         unset($server);
@@ -303,7 +354,9 @@ class HandshakeTest extends TestCase
             throw new StreamException(StreamException::FAIL_WRITE);
         });
         $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamGetMetadata();
         $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
         $server->start();
 
         unset($server);

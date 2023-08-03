@@ -14,7 +14,7 @@ namespace WebSocket\Test\Message;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\SocketStream;
 use Phrity\Net\Mock\Stack\ExpectSocketStreamTrait;
-use WebSocket\BadOpcodeException;
+use WebSocket\Exception\BadOpcodeException;
 use WebSocket\Frame\{
     Frame,
     FrameHandler
@@ -282,8 +282,7 @@ class MessageHandlerTest extends TestCase
             return base64_decode('gwA=');
         });
         $this->expectException(BadOpcodeException::class);
-        $this->expectExceptionCode(BadOpcodeException::BAD_OPCODE);
-        $this->expectExceptionMEssage("Invalid opcode '3' provided");
+        $this->expectExceptionMessage("Invalid opcode '3' provided");
         $message = $handler->pull();
 
         fclose($temp);

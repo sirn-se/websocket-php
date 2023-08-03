@@ -29,7 +29,7 @@ $server
 ## Configuration
 
 The Server takes two arguments; port (default is 8000) and if it should use secure connection (default is no).
-Other options are avialble runtime by calling configuration methods.
+Other options are available runtime by calling configuration methods.
 
 ```php
 // Secure server on port 8080
@@ -86,15 +86,19 @@ $server
     ->onText(function (WebSocket\Server $server, WebSocket\Connection $connection, WebSocket\Message\Text $message) {
         // Act on incoming message
     })
+    // Listen to incoming Binary messages
     ->onBinary(function (WebSocket\Server $server, WebSocket\Connection $connection, WebSocket\Message\Binary $message) {
         // Act on incoming message
     })
+    // Listen to incoming Ping messages
     ->onPing(function (WebSocket\Server $server, WebSocket\Connection $connection, WebSocket\Message\Ping $message) {
         // Act on incoming message
     })
+    // Listen to incoming Pong messages
     ->onPong(function (WebSocket\Server $server, WebSocket\Connection $connection, WebSocket\Message\Pong $message) {
         // Act on incoming message
     })
+    // Listen to incoming Close messages
     ->onClose(function (WebSocket\Server $server, WebSocket\Connection $connection, WebSocket\Message\Close $message) {
         // Act on incoming message
     })
@@ -107,7 +111,7 @@ WebSocket messages comes as any of five types; Text, Binary, Ping, Pong and Clos
 The type is defined as opcode in WebSocket standard, and each classname corresponds to current message opcode.
 
 Text and Binary are the main content message. The others are used for internal communication and typically do not contain content.
-All provide the same metods, excpet Close that have an additional methods not present on other types of messages.
+All provide the same methods, excpet Close that have an additional method not present on other types of messages.
 
 ```php
 echo "opcode:       {$message->getOpcode()}\n";
@@ -132,7 +136,7 @@ $connection->send(new WebSocket\Message\Ping("My ping"));
 $connection->send(new WebSocket\Message\Text("My pong"));
 $connection->send(new WebSocket\Message\Close(1000, "Closing now"));
 ```
-The are also convenience methods available for for all types.
+The are also convenience methods available for all types.
 ```php
 $connection->text("Server sends a message");
 $connection->binary($binary);
@@ -153,6 +157,7 @@ $server->send(new WebSocket\Message\Ping("My ping"));
 $server->send(new WebSocket\Message\Text("My pong"));
 $server->send(new WebSocket\Message\Close(1000, "Closing now"));
 ```
+Convenience methods available for all types.
 ```php
 $server->text("Server sends a message");
 $server->binary($binary);
@@ -180,6 +185,8 @@ Disconnect server - Server will immediately stop and disconnect all clients with
 ```php
 $server->disconnect();
 ```
+
+To shut down server in an orderly fashion, you should first close all connected clients.
 
 ## Connection control
 
@@ -217,7 +224,7 @@ $server = new WebSocket\Server();
 $server
     // Called when a client is connected
     ->onConnect(function (WebSocket\Server $server, WebSocket\Connection $connection, Psr\Http\Message\ServerRequestInterface $request) {
-        // Act on incoming message
+        // Act on connect
     })
     // Called when a client is disconnected
     ->onDisconnect(function (WebSocket\Server $server, WebSocket\Connection $connection) {
@@ -244,7 +251,7 @@ Depending on workload and timeout configuration, the Tick listener will be calle
 ```php
 $server = new WebSocket\Server();
 $server
-    // Called when a client is connected
+    // Regulary called, regardless of WebSocket connections
     ->onTick(function (WebSocket\Server $server) {
         // Do anything
     })

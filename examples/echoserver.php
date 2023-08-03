@@ -6,7 +6,9 @@
  *
  * Console options:
  *  --port <int> : The port to listen to, default 8000
+ *  --ssl : Use SSL, default false
  *  --timeout <int> : Timeout in seconds, default 200 seconds
+ *  --framesize <int> : Frame size in bytes, default 4096 bytes
  *  --debug : Output log data (if logger is available)
  */
 

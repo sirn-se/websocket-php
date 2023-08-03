@@ -14,7 +14,7 @@ use Psr\Log\{
     LoggerAwareInterface,
     NullLogger
 };
-use WebSocket\BadOpcodeException;
+use WebSocket\Exception\BadOpcodeException;
 use WebSocket\Frame\FrameHandler;
 
 /**

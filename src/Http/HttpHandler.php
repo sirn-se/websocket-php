@@ -92,9 +92,10 @@ class HttpHandler implements LoggerAwareInterface
         return $message;
     }
 
-    public function push(MessageInterface $message): int
+    public function push(MessageInterface $message): MessageInterface
     {
         $data = implode("\r\n", $message->getAsArray()) . "\r\n\r\n";
-        return $this->stream->write($data);
+        $this->stream->write($data);
+        return $message;
     }
 }

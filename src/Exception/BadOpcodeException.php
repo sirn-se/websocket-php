@@ -7,16 +7,16 @@
  * License text: https://raw.githubusercontent.com/sirn-se/websocket-php/master/COPYING.md
  */
 
-namespace WebSocket;
+namespace WebSocket\Exception;
 
 /**
- * WebSocket\BadOpcodeException class.
+ * WebSocket\Exception\BadOpcodeException class.
  * Thrown when bad opcode is sent or received.
  */
-class BadOpcodeException extends Exception
+class BadOpcodeException extends Exception implements MessageLevelInterface
 {
-    public function __construct(string $message, int $code = self::BAD_OPCODE, Throwable $prev = null)
+    public function __construct(string $message = '')
     {
-        parent::__construct($message, $code, $prev);
+        parent::__construct($message ?: 'Bad Opcode');
     }
 }

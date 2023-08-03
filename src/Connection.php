@@ -273,14 +273,22 @@ class Connection implements LoggerAwareInterface
 
     /* ---------- HTTP Message methods ----------------------------------------------------------------------------- */
 
-    public function pushHttp(HttpMessage $message): void
+    public function pushHttp(HttpMessage $message): HttpMessage
     {
-        $this->httpHandler->push($message);
+        try {
+            return $this->httpHandler->push($message);
+        } catch (Throwable $e) {
+            $this->throwException($e);
+        }
     }
 
     public function pullHttp(): HttpMessage
     {
-        return $this->httpHandler->pull();
+        try {
+            return $this->httpHandler->pull();
+        } catch (Throwable $e) {
+            $this->throwException($e);
+        }
     }
 
     public function setHandshakeRequest(Request $request): self
@@ -311,31 +319,26 @@ class Connection implements LoggerAwareInterface
     protected function throwException(Throwable $e): void
     {
         // Internal exceptions are handled and re-thrown
-        if ($e instanceof Exception) {
-            $this->logger->error("[connection] {$e->getMessage()} ({$e->getCode()})");
-            $this->disconnect();
+        if ($e instanceof \WebSocket\Exception\Exception) {
+            $this->logger->error("[connection] {$e->getMessage()}");
             throw $e;
         }
         // External exceptions are converted to internal
         $exception = get_class($e);
+        $json = '';
         if ($this->isConnected()) {
             $meta = $this->stream->getMetadata();
+            $json = json_encode($meta);
             if (!empty($meta['timed_out'])) {
-                $message = "Connection timeout: {$e->getMessage()}";
-                $this->logger->error("[connection] {$e->getMessage()} ({$e->getCode()}) original: {$exception}");
-                $this->disconnect();
-                throw new TimeoutException($message, Exception::TIMED_OUT, $meta);
+                $this->logger->error("[connection] {$e->getMessage()} original: {$exception} {$json}");
+                throw new \WebSocket\Exception\ConnectionTimeoutException();
             }
             if (!empty($meta['eof'])) {
-                $message = "Connection closed: {$e->getMessage()}";
-                $this->logger->error("[connection] {$e->getMessage()} ({$e->getCode()}) original: {$exception}");
-                $this->disconnect();
-                throw new ConnectionException($message, Exception::EOF, $meta);
+                $this->logger->error("[connection] {$e->getMessage()} original: {$exception} {$json}");
+                throw new \WebSocket\Exception\ConnectionClosedException();
             }
         }
-        $this->disconnect();
-        $message = "Connection error: {$e->getMessage()}";
-        $this->logger->error("[connection] {$message}  original: {$exception}");
-        throw new ConnectionException($message, 0);
+        $this->logger->error("[connection] {$e->getMessage()} original: {$exception} {$json}");
+        throw new \WebSocket\Exception\ConnectionFailureException();
     }
 }
