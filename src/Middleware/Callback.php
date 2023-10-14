@@ -12,6 +12,7 @@ namespace WebSocket\Middleware;
 use Closure;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
+use Stringable;
 use WebSocket\Connection;
 use WebSocket\Message\Message;
 
@@ -19,14 +20,14 @@ use WebSocket\Message\Message;
  * WebSocket\Middleware\Callback class.
  * Generic middleware using callbacks.
  */
-class Callback implements LoggerAwareInterface, ProcessIncomingInterface, ProcessOutgoingInterface
+class Callback implements LoggerAwareInterface, ProcessIncomingInterface, ProcessOutgoingInterface, Stringable
 {
     use LoggerAwareTrait;
 
     private $incoming;
     private $outgoing;
 
-    public function __construct(?Closure $incoming = null, ?Closure $outgoing = null)
+    public function __construct(Closure|null $incoming = null, Closure|null $outgoing = null)
     {
         $this->incoming = $incoming;
         $this->outgoing = $outgoing;

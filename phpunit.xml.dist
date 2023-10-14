@@ -1,8 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" bootstrap="tests/bootstrap.php" colors="true" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.2/phpunit.xsd">
+<phpunit
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    bootstrap="tests/bootstrap.php"
+    colors="true"
+    xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.2/phpunit.xsd"
+    displayDetailsOnIncompleteTests="true"
+    displayDetailsOnSkippedTests="true"
+    displayDetailsOnTestsThatTriggerDeprecations="true"
+    displayDetailsOnTestsThatTriggerErrors="true"
+    displayDetailsOnTestsThatTriggerNotices="true"
+    displayDetailsOnTestsThatTriggerWarnings="true"
+>
   <coverage/>
   <testsuites>
     <testsuite name="Unit tests">
+      <directory suffix=".php">tests/suites/client</directory>
       <directory suffix=".php">tests/suites/connection</directory>
       <directory suffix=".php">tests/suites/frame</directory>
       <directory suffix=".php">tests/suites/http</directory>

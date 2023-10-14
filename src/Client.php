@@ -20,71 +20,61 @@ use Psr\Log\{
     LoggerInterface,
     NullLogger
 };
+use Stringable;
 use Throwable;
+use WebSocket\Exception\{
+    BadUriException,
+    ClientException,
+    HandshakeException
+};
 use WebSocket\Http\{
     Request,
     Response
 };
-use WebSocket\Message\{
-    Message,
-    Binary,
-    Close,
-    Ping,
-    Pong,
-    Text
-};
-use WebSocket\Middleware\{
-    CloseHandler,
-    PingResponder
-};
+use WebSocket\Message\Message;
+use WebSocket\Middleware\MiddlewareInterface;
 use WebSocket\Trait\{
-    OpcodeTrait
+    ListenerTrait,
+    OpcodeTrait,
+    SendMethodsTrait
 };
 
 /**
  * WebSocket\Client class.
  * Entry class for WebSocket client.
  */
-class Client implements LoggerAwareInterface
+class Client implements LoggerAwareInterface, Stringable
 {
+    use ListenerTrait;
     use OpcodeTrait;
+    use SendMethodsTrait;
 
-    // Default options
-    protected static $default_options = [
-        'context'       => null,
-        'fragment_size' => 4096,
-        'headers'       => [],
-        'logger'        => null,
-        'persistent'    => false,
-        'timeout'       => 5,
-    ];
-
-    private $socket_uri;
-    private $connection;
-    private $options = [];
-    private $streamFactory;
-    private $handshakeResponse;
+    // Settings
     private $logger;
+    private $timeout = 60;
+    private $frameSize = 4096;
+    private $persistent = false;
+    private $context = [];
+    private $headers = [];
+
+    // Internal resources
+    private $streamFactory;
+    private $socketUri;
+    private $connection;
+    private $middlewares = [];
+    private $streams;
+    private $running = false;
 
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
 
     /**
      * @param UriInterface|string $uri A ws/wss-URI
-     * @param array $options
-     *   Associative array containing:
-     *   - context:       Set the stream context.  Default: empty context
-     *   - fragment_size: Set framgemnt size.  Default: 4096
-     *   - headers:       Associative array of headers to set/override
-     *   - logger:        PSR-3 compatible logger.  Default NullLogger
-     *   - persistent:    True for persistent connection.  Default false
-     *   - timeout:       Set the socket timeout in seconds.  Default: 5
      */
-    public function __construct($uri, array $options = [])
+    public function __construct(UriInterface|string $uri)
     {
-        $this->socket_uri = $this->parseUri($uri);
-        $this->options = array_merge(self::$default_options, $options);
-        $this->setLogger($this->options['logger'] ?: new NullLogger());
+        $this->socketUri = $this->parseUri($uri);
+        $this->logger = new NullLogger();
         $this->setStreamFactory(new StreamFactory());
     }
 
@@ -94,15 +84,21 @@ class Client implements LoggerAwareInterface
      */
     public function __toString(): string
     {
-        return sprintf(
-            "%s(%s)",
-            get_class($this),
-            $this->getName() ?: 'closed'
-        );
+        return sprintf("Client(%s)", $this->connection ? $this->socketUri->__toString() : 'closed');
     }
 
 
     /* ---------- Configuration ------------------------------------------------------------------------------------ */
+
+    /**
+     * Set stream factory to use.
+     * @param StreamFactory $streamFactory.
+     */
+    public function setStreamFactory(StreamFactory $streamFactory): self
+    {
+        $this->streamFactory = $streamFactory;
+        return $this;
+    }
 
     /**
      * Set logger.
@@ -119,104 +115,106 @@ class Client implements LoggerAwareInterface
     }
 
     /**
-     * Set stream factory to use.
-     * @param StreamFactory $streamFactory.
-     */
-    public function setStreamFactory(StreamFactory $streamFactory): void
-    {
-        $this->streamFactory = $streamFactory;
-    }
-
-    /**
      * Set timeout.
      * @param int $timeout Timeout in seconds.
      */
-    public function setTimeout(int $timeout): void
+    public function setTimeout(int $timeout): self
     {
-        $this->options['timeout'] = $timeout;
-        if (!$this->isConnected()) {
-            return;
+        if ($timeout < 0) {
+            throw new InvalidArgumentException("Invalid timeout '{$timeout}' provided");
         }
-        $this->connection->setTimeout($timeout);
-    }
-
-    /**
-     * Set fragmentation size.
-     * @param int $fragment_size Fragment size in bytes.
-     * @return self.
-     */
-    public function setFragmentSize(int $fragment_size): self
-    {
-        $this->options['fragment_size'] = $fragment_size;
-        if (!$this->connection) {
-            return $this;
+        $this->timeout = $timeout;
+        if ($this->connection) {
+            $this->connection->setTimeout($timeout);
         }
-        $this->connection->setFrameSize($fragment_size);
         return $this;
     }
 
     /**
-     * Get fragmentation size.
-     * @return int $fragment_size Fragment size in bytes.
+     * Get timeout.
+     * @return int Timeout in seconds.
      */
-    public function getFragmentSize(): int
+    public function getTimeout(): int
     {
-        return $this->options['fragment_size'];
+        return $this->timeout;
+    }
+
+    /**
+     * Set frame size.
+     * @param int $frameSize Frame size in bytes.
+     * @return self.
+     */
+    public function setFrameSize(int $frameSize): self
+    {
+        if ($frameSize < 1) {
+            throw new InvalidArgumentException("Invalid frameSize '{$frameSize}' provided");
+        }
+        $this->frameSize = $frameSize;
+        if ($this->connection) {
+            $this->connection->setFrameSize($frameSize);
+        }
+        return $this;
+    }
+
+    /**
+     * Get frame size.
+     * @return int Frame size in bytes.
+     */
+    public function getFrameSize(): int
+    {
+        return $this->frameSize;
+    }
+
+    /**
+     * Set connection persistence.
+     * @param bool $persistent True for persistent connection.
+     * @return self.
+     */
+    public function setPersistent(bool $persistent): self
+    {
+        $this->persistent = $persistent;
+        return $this;
+    }
+
+    /**
+     * Set connection context.
+     * @param array $context Context as array, see https://www.php.net/manual/en/context.php.
+     * @return self.
+     */
+    public function setContext(array $context): self
+    {
+        $this->context = $context;
+        return $this;
+    }
+
+    /**
+     * Add header for handshake.
+     * @param string $name Header name
+     * @param string $content Header content
+     * @return self.
+     */
+    public function addHeader(string $name, string $content): self
+    {
+        $this->headers[$name] = $content;
+        return $this;
+    }
+
+    /**
+     * Add a middleware.
+     * @param MiddlewareInterface $middleware
+     * @return self.
+     */
+    public function addMiddleware(MiddlewareInterface $middleware): self
+    {
+        $this->middlewares[] = $middleware;
+        if ($this->connection) {
+            $this->connection->addMiddleware($middleware);
+        }
+        return $this;
     }
 
 
     /* ---------- Messaging operations ----------------------------------------------------------------------------- */
-
-    /**
-     * Send text message.
-     * @param string $message Content as string.
-     * @return Message Sent message
-     */
-    public function text(string $message): Message
-    {
-        return $this->send(new Text($message));
-    }
-
-    /**
-     * Send binary message.
-     * @param string $message Content as binary string.
-     * @return Message Sent message
-     */
-    public function binary(string $message): Message
-    {
-        return $this->send(new Binary($message));
-    }
-
-    /**
-     * Send ping.
-     * @param string $message Optional text as string.
-     * @return Message Sent message
-     */
-    public function ping(string $message = ''): Message
-    {
-        return $this->send(new Ping($message));
-    }
-
-    /**
-     * Send unsolicited pong.
-     * @param string $message Optional text as string.
-     * @return Message Sent message
-     */
-    public function pong(string $message = ''): Message
-    {
-        return $this->send(new Pong($message));
-    }
-
-    /**
-     * Tell the socket to close.
-     * @param integer $status  http://tools.ietf.org/html/rfc6455#section-7.4
-     * @param string  $message A closing message, max 125 bytes.
-     * @return Message Sent message
-     */
-    public function close(int $status = 1000, string $message = 'ttfn'): Message
-    {
-        return $this->send(new Close($status, $message));
-    }
 
     /**
      * Send message.
@@ -236,12 +234,93 @@ class Client implements LoggerAwareInterface
      * Note that this operation will block reading.
      * @return Message|null
      */
-    public function receive(): ?Message
+    public function receive(): Message|null
     {
         if (!$this->isConnected()) {
             $this->connect();
         }
         return $this->connection->pullMessage();
+    }
+
+
+    /* ---------- Listener operations ------------------------------------------------------------------------------ */
+
+    /**
+     * Start client listener.
+     */
+    public function start(): void
+    {
+        if (!$this->isConnected()) {
+            $this->connect();
+        }
+
+        // Check if running
+        if ($this->running) {
+            $this->logger->warning("[client] Client is already running");
+            return;
+        }
+        $this->running = true;
+        $this->logger->info("[client] Client is running");
+
+        // Run handler
+        while ($this->running) {
+            try {
+                // Get streams with readable content
+                $readables = $this->streams->waitRead($this->timeout);
+                foreach ($readables as $key => $readable) {
+                    try {
+                        // Read from connection
+                        if ($message = $this->connection->pullMessage()) {
+                            $this->dispatch($message->getOpcode(), [$this, $this->connection, $message]);
+                        }
+                    } catch (MessageLevelInterface $e) {
+                        // Error, but keep connection open
+                        $this->logger->error("[client] {$e->getMessage()}");
+                        $this->dispatch('error', [$this, $this->connection, $e]);
+                    } catch (ConnectionLevelInterface $e) {
+                        // Error, disconnect connection
+                        if ($this->connection) {
+                            $this->connection->disconnect();
+                        }
+                        $this->logger->error("[client] {$e->getMessage()}");
+                        $this->dispatch('error', [$this, $this->connection, $e]);
+                    }
+                }
+                if (!$this->connection->isConnected()) {
+                    $this->running = false;
+                }
+                $this->dispatch('tick', [$this]);
+            } catch (Exception $e) {
+                // Low-level error
+                $this->logger->error("[client] {$e->getMessage()}");
+                $this->dispatch('error', [$this, null, $e]);
+            } catch (Throwable $e) {
+                // Crash it
+                $this->logger->error("[client] {$e->getMessage()}");
+                $this->dispatch('error', [$this, null, $e]);
+                $this->disconnect();
+                throw $e;
+            }
+            gc_collect_cycles(); // Collect garbage
+        }
+    }
+
+    /**
+     * Stop client listener (resumable).
+     */
+    public function stop(): void
+    {
+        $this->running = false;
+        $this->logger->info("[client] Client is stopped");
+    }
+
+    /**
+     * If client is running (accepting messages).
+     * @return bool.
+     */
+    public function isRunning(): bool
+    {
+        return $this->running;
     }
 
 
@@ -257,51 +336,73 @@ class Client implements LoggerAwareInterface
     }
 
     /**
+     * If Client is readable.
+     * @return bool
+     */
+    public function isReadable(): bool
+    {
+        return $this->connection && $this->connection->isReadable();
+    }
+
+    /**
+     * If Client is writable.
+     * @return bool
+     */
+    public function isWritable(): bool
+    {
+        return $this->connection && $this->connection->isWritable();
+    }
+
+
+    /**
      * Connect to server and perform upgrade.
-     * @throws ConnectionException On failed connection
+     * @throws ClientException On failed connection
      */
     public function connect(): void
     {
         $this->disconnect();
+        $this->streams = $this->streamFactory->createStreamCollection();
 
         $host_uri = (new Uri())
-            ->withScheme($this->socket_uri->getScheme() == 'wss' ? 'ssl' : 'tcp')
-            ->withHost($this->socket_uri->getHost(Uri::IDNA))
-            ->withPort($this->socket_uri->getPort(Uri::REQUIRE_PORT));
+            ->withScheme($this->socketUri->getScheme() == 'wss' ? 'ssl' : 'tcp')
+            ->withHost($this->socketUri->getHost(Uri::IDNA))
+            ->withPort($this->socketUri->getPort(Uri::REQUIRE_PORT));
 
-        $context = $this->parseContext();
-        $persistent = $this->options['persistent'] === true;
         $stream = null;
 
         try {
             $client = $this->streamFactory->createSocketClient($host_uri);
-            $client->setPersistent($persistent);
-            $client->setTimeout($this->options['timeout']);
-            $client->setContext($context);
+            $client->setPersistent($this->persistent);
+            $client->setTimeout($this->timeout);
+            $client->setContext($this->context);
             $stream = $client->connect();
         } catch (Throwable $e) {
-            $error = "Could not open socket to \"{$host_uri}\": Server is closed.";
+            $error = "Could not open socket to \"{$host_uri}\": {$e->getMessage()}";
             $this->logger->error("[client] {$error}", []);
-            throw new ConnectionException($error, ConnectionException::CLIENT_CONNECT_ERR, [], $e);
+            throw new ClientException($error);
         }
+        $name = $stream->getRemoteName();
+        $this->streams->attach($stream, $name);
         $this->connection = new Connection($stream, true, false);
-        $this->connection->setFrameSize($this->options['fragment_size']);
-        $this->connection->setTimeout($this->options['timeout']);
+        $this->connection->setFrameSize($this->frameSize);
+        $this->connection->setTimeout($this->timeout);
         $this->connection->setLogger($this->logger);
-        $this->connection->addMiddleware(new CloseHandler());
-        $this->connection->addMiddleware(new PingResponder());
+        foreach ($this->middlewares as $middleware) {
+            $this->connection->addMiddleware($middleware);
+        }
 
         if (!$this->isConnected()) {
             $error = "Invalid stream on \"{$host_uri}\".";
             $this->logger->error("[client] {$error}");
-            throw new ConnectionException($error, ConnectionException::CLIENT_CONNECT_ERR);
+            throw new ClientException($error);
         }
 
-        if (!$persistent || $stream->tell() == 0) {
-            $this->handshakeResponse = $this->performHandshake($host_uri);
+        if (!$this->persistent || $stream->tell() == 0) {
+            $response = $this->performHandshake($host_uri);
         }
 
-        $this->logger->info("[client] Client connected to {$this->socket_uri}");
+        $this->dispatch('connect', [$this, $this->connection, $response]);
+        $this->logger->info("[client] Client connected to {$this->socketUri}");
     }
 
     /**
@@ -311,12 +412,13 @@ class Client implements LoggerAwareInterface
     {
         if ($this->isConnected()) {
             $this->connection->disconnect();
+            $this->dispatch('disconnect', [$this, $this->connection]);
             $this->logger->info('[client] Client disconnected');
         }
     }
 
 
-    /* ---------- Connection state --------------------------------------------------------------------------------- */
+    /* ---------- Connection wrapper methods ----------------------------------------------------------------------- */
 
     /**
      * Get name of local socket, or null if not connected.
@@ -342,7 +444,7 @@ class Client implements LoggerAwareInterface
      */
     public function getHandshakeResponse(): ?Response
     {
-        return $this->connection ? $this->handshakeResponse : null;
+        return $this->connection ? $this->connection->getHandshakeResponse() : null;
     }
 
 
@@ -350,13 +452,13 @@ class Client implements LoggerAwareInterface
 
     /**
      * Perform upgrade handshake on new connections.
-     * @throws ConnectionException On failed handshake
+     * @throws HandshakeException On failed handshake
      */
-    protected function performHandshake($host_uri): Response
+    protected function performHandshake(Uri $host_uri): Response
     {
         $http_uri = (new Uri())
-            ->withPath($this->socket_uri->getPath(), Uri::ABSOLUTE_PATH)
-            ->withQuery($this->socket_uri->getQuery());
+            ->withPath($this->socketUri->getPath(), Uri::ABSOLUTE_PATH)
+            ->withQuery($this->socketUri->getQuery());
 
         // Generate the WebSocket key.
         $key = $this->generateKey();
@@ -372,49 +474,47 @@ class Client implements LoggerAwareInterface
             ->withHeader('Sec-WebSocket-Version', '13');
 
         // Handle basic authentication.
-        if ($userinfo = $this->socket_uri->getUserInfo()) {
+        if ($userinfo = $this->socketUri->getUserInfo()) {
             $request = $request->withHeader('authorization', 'Basic ' . base64_encode($userinfo));
         }
 
-        // Add and override with headers from options.
-        foreach ($this->options['headers'] as $name => $content) {
+        // Add and override with headers.
+        foreach ($this->headers as $name => $content) {
             $request = $request->withHeader($name, $content);
         }
 
+        $this->connection->pushHttp($request);
+        $response = $this->connection->pullHttp();
+
         try {
-            $this->connection->pushHttp($request);
-            $response = $this->connection->pullHttp();
-        } catch (Throwable $e) {
-            $error = 'Client handshake error';
-            $this->logger->error("[client] {$error}");
-            throw new ConnectionException($error, ConnectionException::CLIENT_HANDSHAKE_ERR);
-        }
+            if ($response->getStatusCode() != 101) {
+                throw new HandshakeException("Invalid status code {$response->getStatusCode()}.", $response);
+            }
 
-        if ($response->getStatusCode() != 101) {
-            $error = "Invalid status code {$response->getStatusCode()}.";
-            $this->logger->error("[client] {$error}");
-            throw new ConnectionException($error, ConnectionException::CLIENT_HANDSHAKE_ERR);
-        }
+            if (empty($response->getHeaderLine('Sec-WebSocket-Accept'))) {
+                throw new HandshakeException(
+                    "Connection to '{$this->socketUri}' failed: Server sent invalid upgrade response.",
+                    $response
+                );
+            }
 
-        if (empty($response->getHeaderLine('Sec-WebSocket-Accept'))) {
-            $error = sprintf(
-                "Connection to '%s' failed: Server sent invalid upgrade response.",
-                (string)$this->socket_uri
+            $response_key = trim($response->getHeaderLine('Sec-WebSocket-Accept'));
+            $expected_key = base64_encode(
+                pack('H*', sha1($key . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'))
             );
-            $this->logger->error("[client] {$error}");
-            throw new ConnectionException($error, ConnectionException::CLIENT_HANDSHAKE_ERR);
+
+            if ($response_key !== $expected_key) {
+                throw new HandshakeException("Server sent bad upgrade response.", $response);
+            }
+        } catch (HandshakeException $e) {
+            $this->logger->error("[client] {$e->getMessage()}");
+            throw $e;
         }
 
-        $response_key = trim($response->getHeaderLine('Sec-WebSocket-Accept'));
-        $expected_key = base64_encode(
-            pack('H*', sha1($key . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'))
-        );
+        $this->logger->debug("[server] Handshake on {$http_uri->getPath()}");
+        $this->connection->setHandshakeRequest($request);
+        $this->connection->setHandshakeResponse($response);
 
-        if ($response_key !== $expected_key) {
-            $error = 'Server sent bad upgrade response.';
-            $this->logger->error("[client] {$error}");
-            throw new ConnectionException($error, ConnectionException::CLIENT_HANDSHAKE_ERR);
-        }
         return $response;
     }
 
@@ -459,23 +559,5 @@ class Client implements LoggerAwareInterface
             throw new BadUriException("Invalid URI host.");
         }
         return $uri_instance;
-    }
-
-    /**
-     * Ensure context in correct format.
-     * @return array
-     * @throws InvalidArgumentException On invalid context
-     */
-    protected function parseContext(): array
-    {
-        if (empty($this->options['context'])) {
-            return [];
-        }
-        if (is_array($this->options['context'])) {
-            return $this->options['context'];
-        }
-        $error = "Stream context option is invalid.";
-        $this->logger->error("[client] {$error}");
-        throw new InvalidArgumentException($error);
     }
 }

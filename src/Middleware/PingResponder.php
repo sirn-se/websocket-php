@@ -9,6 +9,7 @@
 
 namespace WebSocket\Middleware;
 
+use Stringable;
 use WebSocket\Connection;
 use WebSocket\Message\{
     Ping,
@@ -20,7 +21,7 @@ use WebSocket\Message\{
  * WebSocket\Middleware\PingResponder class.
  * Responds on incoming ping messages.
  */
-class PingResponder implements ProcessIncomingInterface
+class PingResponder implements ProcessIncomingInterface, Stringable
 {
     public function processIncoming(ProcessStack $stack, Connection $connection): Message
     {

@@ -9,8 +9,6 @@
 
 namespace WebSocket\Exception;
 
-use WebSocket\Http\Response;
-
 /**
  * WebSocket\Exception\ServerException class.
  * Fatal exception during server start

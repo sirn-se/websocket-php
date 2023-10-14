@@ -5,7 +5,7 @@
  * Run in console: php examples/echoserver.php
  *
  * Console options:
- *  --port <int> : The port to listen to, default 8000
+ *  --port <int> : The port to listen to, default 80
  *  --ssl : Use SSL, default false
  *  --timeout <int> : Timeout in seconds, default 200 seconds
  *  --framesize <int> : Frame size in bytes, default 4096 bytes
@@ -22,7 +22,7 @@ echo "# Echo server! [phrity/websocket]\n";
 
 // Server options specified or default
 $options = array_merge([
-    'port'  => 8000,
+    'port'  => 80,
 ], getopt('', ['port:', 'ssl', 'timeout:', 'framesize:', 'debug']));
 
 // Initiate server.
@@ -110,11 +110,13 @@ try {
 
             // Echo received message
             default:
-                $connection->pushMessage($message); // Echo
+                $connection->send($message); // Echo
+                echo "< [{$connection->getRemoteName()}] Sent [{$message->getOpcode()}] {$message->getContent()}\n";
         }
     })->onBinary(function ($server, $connection, $message) {
         echo "> [{$connection->getRemoteName()}] Received [{$message->getOpcode()}]\n";
-        $connection->pushMessage($message); // Echo
+        $connection->send($message); // Echo
+        echo "< [{$connection->getRemoteName()}] Sent [{$message->getOpcode()}] {$message->getContent()}\n";
     })->onPing(function ($server, $connection, $message) {
         echo "> [{$connection->getRemoteName()}] Received [{$message->getOpcode()}] {$message->getContent()}\n";
     })->onPong(function ($server, $connection, $message) {
@@ -124,9 +126,7 @@ try {
             . "{$message->getCloseStatus()} {$message->getContent()}\n";
     })->onError(function ($server, $connection, $exception) {
         echo "> Error: {$exception->getMessage()}\n";
-    })->onTick(function ($server) {
-        echo "-\n";
     })->start();
 } catch (Throwable $e) {
-    echo "> ERROR: {$e->getMessage()}\n";
+    echo "# ERROR: {$e->getMessage()}\n";
 }

@@ -76,13 +76,13 @@ class WebSocket\Server implements Psr\Log\LoggerAwareInterface
 
     // Messaging operations
 
-    public function text(string $payload): void;
-    public function binary(string $payload): void;
-    public function ping(string $payload = ''): void;
-    public function pong(string $payload = ''): void;
+    public function text(string $payload): WebSocket\Message\Text;
+    public function binary(string $payload): WebSocket\Message\Binary;
+    public function ping(string $payload = ''): WebSocket\Message\Ping;
+    public function pong(string $payload = ''): WebSocket\Message\Pong;
+    public function close(int $status = 1000, string $message = 'ttfn'): WebSocket\Message\Close;
     public function close(int $status = 1000, string $message = 'ttfn'): void;
-    public function send(WebSocket\Message\Message|string, string $opcode = 'text', bool|null $masked = null): void;
-    public function receive(): WebSocket\Message\Message|string|null;
+    public function send(WebSocket\Message\Message): WebSocket\Message\Message;
 
     // Connection management
 
@@ -124,13 +124,13 @@ class WebSocket\Connection implements Psr\Log\LoggerAwareInterface
 
     // Messaging operations
 
-    public function text(string $payload): void;
-    public function binary(string $payload): void;
-    public function ping(string $payload = ''): void;
-    public function pong(string $payload = ''): void;
-    public function close(int $status = 1000, string $message = 'ttfn'): void;
-    public function send(WebSocket\Message\Message|string, string $opcode = 'text', bool|null $masked = null): void;
-    public function receive(): WebSocket\Message\Message|null;
+    public function text(string $payload): WebSocket\Message\Text;
+    public function binary(string $payload): WebSocket\Message\Binary;
+    public function ping(string $payload = ''): WebSocket\Message\Ping;
+    public function pong(string $payload = ''): WebSocket\Message\Pong;
+    public function close(int $status = 1000, string $message = 'ttfn'): WebSocket\Message\Close;
+    public function send(WebSocket\Message\Message): WebSocket\Message\Message;
+    public function receive(): WebSocket\Message\Message;
 
     // Connection management
 

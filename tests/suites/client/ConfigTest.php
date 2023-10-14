@@ -16,6 +16,7 @@ use Phrity\Net\Mock\StreamFactory;
 use Phrity\Net\Mock\Stack\{
     ExpectSocketClientTrait,
     ExpectSocketStreamTrait,
+    ExpectStreamCollectionTrait,
     ExpectStreamFactoryTrait
 };
 use Phrity\Net\Uri;
@@ -33,6 +34,7 @@ class ConfigTest extends TestCase
 {
     use ExpectSocketClientTrait;
     use ExpectSocketStreamTrait;
+    use ExpectStreamCollectionTrait;
     use ExpectStreamFactoryTrait;
     use MockStreamTrait;
 
@@ -164,8 +166,9 @@ class ConfigTest extends TestCase
     public function testTimeoutOption(): void
     {
         $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path', ['timeout' => 300]);
+        $client = new Client('ws://localhost:8000/my/mock/path');
         $client->setStreamFactory(new StreamFactory());
+        $client->setTimeout(300);
 
         $this->expectWsClientConnect(timeout: 300);
         $this->expectWsClientPerformHandshake('localhost:8000', '/my/mock/path');
@@ -179,8 +182,9 @@ class ConfigTest extends TestCase
     public function testContextOption(): void
     {
         $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path', ['context' => ['ssl' => ['verify_peer' => false]]]);
+        $client = new Client('ws://localhost:8000/my/mock/path');
         $client->setStreamFactory(new StreamFactory());
+        $client->setContext(['ssl' => ['verify_peer' => false]]);
 
         $this->expectWsClientConnect(context: ['ssl' => ['verify_peer' => false]]);
         $this->expectWsClientPerformHandshake('localhost:8000', '/my/mock/path');
@@ -194,10 +198,9 @@ class ConfigTest extends TestCase
     public function testHeadersOption(): void
     {
         $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path', [
-            'headers' => ['Generic-header' => 'Generic content'],
-        ]);
+        $client = new Client('ws://localhost:8000/my/mock/path');
         $client->setStreamFactory(new StreamFactory());
+        $client->addHeader('Generic-header', 'Generic content');
 
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake(
@@ -215,8 +218,9 @@ class ConfigTest extends TestCase
     public function testPersistentOption(): void
     {
         $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path', ['persistent' => true]);
+        $client = new Client('ws://localhost:8000/my/mock/path');
         $client->setStreamFactory(new StreamFactory());
+        $client->setPersistent(true);
 
         $this->expectWsClientConnect(persistent: true);
         $this->expectWsClientPerformHandshake();
@@ -230,14 +234,15 @@ class ConfigTest extends TestCase
     public function testConfigUnconnectedClient(): void
     {
         $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path', ['masked' => false]);
+        $client = new Client('ws://localhost:8000/my/mock/path');
         $client->setStreamFactory(new StreamFactory());
 
         $this->assertFalse($client->isConnected());
         $client->setLogger(new NullLogger());
         $client->setTimeout(300);
-        $client->setFragmentSize(64);
-        $this->assertEquals(64, $client->getFragmentSize());
+        $this->assertEquals(300, $client->getTimeout());
+        $client->setFrameSize(64);
+        $this->assertEquals(64, $client->getFrameSize());
     }
 
     public function testConfigConnectedClient(): void
@@ -252,17 +257,16 @@ class ConfigTest extends TestCase
 
         $client->setLogger(new NullLogger());
 
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(300, $params[0]);
             $this->assertEquals(0, $params[1]);
         });
         $client->setTimeout(300);
 
-        $client->setFragmentSize(64);
-        $this->assertEquals(64, $client->getFragmentSize());
-
         $this->expectSocketStreamIsConnected();
+        $client->setFrameSize(64);
+        $this->assertEquals(64, $client->getFrameSize());
+
         $this->expectSocketStreamClose();
         unset($client);
     }

@@ -15,14 +15,20 @@ use Psr\Log\{
     LoggerInterface,
     NullLogger
 };
+use Stringable;
 use Throwable;
-use WebSocket\Exception;
 use WebSocket\Frame\FrameHandler;
 use WebSocket\Http\{
     HttpHandler,
     Message as HttpMessage,
     Request,
     Response
+};
+use WebSocket\Exception\{
+    ConnectionClosedException,
+    ConnectionFailureException,
+    ConnectionTimeoutException,
+    Exception
 };
 use WebSocket\Message\{
     Message,
@@ -41,9 +47,10 @@ use WebSocket\Trait\{
  * WebSocket\Connection class.
  * A client/server connection, wrapping socket stream.
  */
-class Connection implements LoggerAwareInterface
+class Connection implements LoggerAwareInterface, Stringable
 {
     use OpcodeTrait;
+    use SendMethodsTrait;
 
     private $stream;
     private $httpHandler;
@@ -168,7 +175,7 @@ class Connection implements LoggerAwareInterface
     }
 
     /**
-     * If connecttion is readable.
+     * If connection is readable.
      * @return bool
      */
     public function isReadable(): bool
@@ -177,7 +184,7 @@ class Connection implements LoggerAwareInterface
     }
 
     /**
-     * If connecttion is writable.
+     * If connection is writable.
      * @return bool
      */
     public function isWritable(): bool
@@ -197,7 +204,7 @@ class Connection implements LoggerAwareInterface
     }
 
     /**
-     * Close connection stream eading.
+     * Close connection stream reading.
      * @return self.
      */
     public function closeRead(): self
@@ -225,7 +232,7 @@ class Connection implements LoggerAwareInterface
      * Get name of local socket, or null if not connected.
      * @return string|null
      */
-    public function getName(): ?string
+    public function getName(): string|null
     {
         return $this->localName;
     }
@@ -234,7 +241,7 @@ class Connection implements LoggerAwareInterface
      * Get name of remote socket, or null if not connected.
      * @return string|null
      */
-    public function getRemoteName(): ?string
+    public function getRemoteName(): string|null
     {
         return $this->remoteName;
     }
@@ -247,8 +254,10 @@ class Connection implements LoggerAwareInterface
         return $this->pushMessage($message);
     }
 
-
-
+    public function receive(): Message
+    {
+        return $this->pullMessage();
+    }
 
     // Push a message to stream
     public function pushMessage(Message $message): Message
@@ -297,7 +306,7 @@ class Connection implements LoggerAwareInterface
         return $this;
     }
 
-    public function getHandshakeRequest(): ?Request
+    public function getHandshakeRequest(): Request|null
     {
         return $this->handshakeRequest;
     }
@@ -308,7 +317,7 @@ class Connection implements LoggerAwareInterface
         return $this;
     }
 
-    public function getHandshakeResponse(): ?Response
+    public function getHandshakeResponse(): Response|null
     {
         return $this->handshakeResponse;
     }
@@ -319,7 +328,7 @@ class Connection implements LoggerAwareInterface
     protected function throwException(Throwable $e): void
     {
         // Internal exceptions are handled and re-thrown
-        if ($e instanceof \WebSocket\Exception\Exception) {
+        if ($e instanceof Exception) {
             $this->logger->error("[connection] {$e->getMessage()}");
             throw $e;
         }
@@ -331,14 +340,14 @@ class Connection implements LoggerAwareInterface
             $json = json_encode($meta);
             if (!empty($meta['timed_out'])) {
                 $this->logger->error("[connection] {$e->getMessage()} original: {$exception} {$json}");
-                throw new \WebSocket\Exception\ConnectionTimeoutException();
+                throw new ConnectionTimeoutException();
             }
             if (!empty($meta['eof'])) {
                 $this->logger->error("[connection] {$e->getMessage()} original: {$exception} {$json}");
-                throw new \WebSocket\Exception\ConnectionClosedException();
+                throw new ConnectionClosedException();
             }
         }
         $this->logger->error("[connection] {$e->getMessage()} original: {$exception} {$json}");
-        throw new \WebSocket\Exception\ConnectionFailureException();
+        throw new ConnectionFailureException();
     }
 }

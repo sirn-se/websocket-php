@@ -160,7 +160,7 @@ abstract class Message implements MessageInterface
         return $lines;
     }
 
-    private function handleHeader(string $name, $value): void
+    private function handleHeader(string $name, string|array $value): void
     {
         // @todo: Add all available characters, these are just some of them.
         if (!preg_match('|^[0-9a-zA-Z#_-]+$|', $name)) {

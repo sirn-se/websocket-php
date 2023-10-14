@@ -28,18 +28,19 @@ $server
 
 ## Configuration
 
-The Server takes two arguments; port (default is 8000) and if it should use secure connection (default is no).
+The Server takes two arguments; port and ssl.
+By default ssl is false. If port is not specified, it will use 80 for non-secure and 443 for secure server.
 Other options are available runtime by calling configuration methods.
 
 ```php
 // Secure server on port 8080
-$server = new WebSocket\Server(8080, true);
+$server = new WebSocket\Server(ssl: true, port: 8080);
 $server
     // Use a PSR-3 compatible logger
     ->setLogger(Psr\Log\LoggerInterface $logger)
-    // Specify timeout in seconds (default 60s)
+    // Specify timeout in seconds (default 60 seconds)
     ->setTimeout(300)
-    // Specify frame size in bytes (default 4096b)
+    // Specify frame size in bytes (default 4096 bytes)
     ->setFrameSize(1024)
     ;
 
@@ -101,6 +102,49 @@ $server
     // Listen to incoming Close messages
     ->onClose(function (WebSocket\Server $server, WebSocket\Connection $connection, WebSocket\Message\Close $message) {
         // Act on incoming message
+    })
+    ;
+```
+
+## Connect, Disconnect and Error listeners
+
+Some additional listeners are available for more advanced features.
+
+```php
+$server = new WebSocket\Server();
+$server
+    // Called when a client is connected
+    ->onConnect(function (WebSocket\Server $server, WebSocket\Connection $connection, Psr\Http\Message\ServerRequestInterface $request) {
+        // Act on connect
+    })
+    // Called when a client is disconnected
+    ->onDisconnect(function (WebSocket\Server $server, WebSocket\Connection $connection) {
+        // Act on disconnect
+    })
+    // When resolvable error occurs, this listener will be called
+    ->onError(function (WebSocket\Server $server, WebSocket\Connection|null $connection, Exception $exception) {
+        // Act on exception
+    })
+    ;
+```
+
+## Coroutine - The Tick listener
+
+Using above functions, your server will be able to receive incoming messages and take action accordingly.
+
+But what if your server need to process other data, and send unsolicited message to connected clients?
+This is where coroutine pattern enters the picture.
+The server might not be able to do things in parallell,
+but it can give you space to run additional code not necessarily triggered by an incoming message.
+
+Depending on workload and timeout configuration, the Tick listener will be called every now and then.
+
+```php
+$server = new WebSocket\Server();
+$server
+    // Regulary called, regardless of WebSocket connections
+    ->onTick(function (WebSocket\Server $server) {
+        // Do anything
     })
     ;
 ```
@@ -213,50 +257,6 @@ $connection->getHandshakeResponse();
 ```
 
 Read more on [Connection](Connection.md).
-
-
-## Connect, Disconnect and Error listeners
-
-Some additional listeners are available for more advanced features.
-
-```php
-$server = new WebSocket\Server();
-$server
-    // Called when a client is connected
-    ->onConnect(function (WebSocket\Server $server, WebSocket\Connection $connection, Psr\Http\Message\ServerRequestInterface $request) {
-        // Act on connect
-    })
-    // Called when a client is disconnected
-    ->onDisconnect(function (WebSocket\Server $server, WebSocket\Connection $connection) {
-        // Act on disconnect
-    })
-    // When resolvable error occurs, this listener will be called
-    ->onError(function (WebSocket\Server $server, WebSocket\Connection|null $connection, Exception $exception) {
-        // Act on exception
-    })
-    ;
-```
-
-## Coroutine - The Tick listener
-
-Using above functions, your server will be able to receive incoming messages and take action accordingly.
-
-But what if your server need to process other data, and send unsolicited message to connected clients?
-This is where coroutine pattern enters the picture.
-The server might not be able to do things in parallell,
-but it can give you space to run additional code not necessarily triggered by an incoming message.
-
-Depending on workload and timeout configuration, the Tick listener will be called every now and then.
-
-```php
-$server = new WebSocket\Server();
-$server
-    // Regulary called, regardless of WebSocket connections
-    ->onTick(function (WebSocket\Server $server) {
-        // Do anything
-    })
-    ;
-```
 
 
 ## Exceptions

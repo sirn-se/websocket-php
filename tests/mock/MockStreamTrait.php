@@ -21,11 +21,14 @@ trait MockStreamTrait
         string $scheme = 'tcp',
         string $host = 'localhost',
         int $port = 8000,
-        int $timeout = 5,
+        int $timeout = 60,
         array $context = [],
         bool $persistent = false
     ): void {
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(
+
+        $this->expectStreamFactoryCreateStreamCollection();
+        $this->expectStreamCollection();
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(
             function ($method, $params) use ($scheme, $host, $port) {
                 $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
                 $this->assertEquals("{$scheme}://{$host}:{$port}", "{$params[0]}");
@@ -47,6 +50,15 @@ trait MockStreamTrait
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectStreamCollectionAttach();
+        $this->expectSocketStreamGetLocalName()->setReturn(function () {
+            return "127.0.0.1:12345";
+        });
+        $this->expectSocketStreamGetRemoteName()->setReturn(function () use ($host, $port) {
+            return "{$host}:{$port}";
+        });
+
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($timeout) {
             $this->assertEquals($timeout, $params[0]);
             $this->assertEquals(0, $params[1]);
@@ -88,7 +100,7 @@ trait MockStreamTrait
 
     private function expectWsServerSetup(string $scheme = 'tcp', int $port = 8000): void
     {
-        $this->expectStreamFactoryCreateSockerServer()->addAssert(function ($method, $params) use ($scheme, $port) {
+        $this->expectStreamFactoryCreateSocketServer()->addAssert(function ($method, $params) use ($scheme, $port) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals("{$scheme}://0.0.0.0:{$port}", "{$params[0]}");
         });

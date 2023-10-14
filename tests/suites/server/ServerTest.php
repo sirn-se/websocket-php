@@ -72,7 +72,7 @@ class ServerTest extends TestCase
     public function testListeners(): void
     {
         $this->expectStreamFactory();
-        $server = new Server();
+        $server = new Server(8000);
         $server->setStreamFactory(new StreamFactory());
 
         $server->onConnect(function ($server, $connection, $request) {
@@ -209,7 +209,7 @@ class ServerTest extends TestCase
     public function testMiddlewares(): void
     {
         $this->expectStreamFactory();
-        $server = new Server();
+        $server = new Server(8000);
         $server->setStreamFactory(new StreamFactory());
 
         $server->addMiddleware(new Callback());
@@ -245,7 +245,7 @@ class ServerTest extends TestCase
     public function testBroadcastSend(): void
     {
         $this->expectStreamFactory();
-        $server = new Server();
+        $server = new Server(8000);
         $server->setStreamFactory(new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
@@ -302,7 +302,7 @@ class ServerTest extends TestCase
     public function testDetachConnection(): void
     {
         $this->expectStreamFactory();
-        $server = new Server();
+        $server = new Server(8000);
         $server->setStreamFactory(new StreamFactory());
 
         $server->onConnect(function ($server, $connection, $request) {
@@ -344,7 +344,7 @@ class ServerTest extends TestCase
     public function testAlreadyStarted(): void
     {
         $this->expectStreamFactory();
-        $server = new Server();
+        $server = new Server(8000);
         $server->setStreamFactory(new StreamFactory());
 
         $server->onConnect(function ($server, $connection, $request) {
@@ -380,10 +380,10 @@ class ServerTest extends TestCase
     public function testCreateServerError(): void
     {
         $this->expectStreamFactory();
-        $server = new Server();
+        $server = new Server(8000);
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectStreamFactoryCreateSockerServer()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketServer()->addAssert(function ($method, $params) {
             throw new StreamException(StreamException::SERVER_SOCKET_ERR, ['uri' => 'test']);
         });
         $this->expectException(ServerException::class);
@@ -396,7 +396,7 @@ class ServerTest extends TestCase
     public function testRunBadOpcodeException(): void
     {
         $this->expectStreamFactory();
-        $server = new Server();
+        $server = new Server(8000);
         $server->setStreamFactory(new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
@@ -439,7 +439,7 @@ class ServerTest extends TestCase
     public function testRunConnectionClosedException(): void
     {
         $this->expectStreamFactory();
-        $server = new Server();
+        $server = new Server(8000);
         $server->setStreamFactory(new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
@@ -483,7 +483,7 @@ class ServerTest extends TestCase
     public function testRunServerException(): void
     {
         $this->expectStreamFactory();
-        $server = new Server();
+        $server = new Server(8000);
         $server->setStreamFactory(new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
@@ -526,7 +526,7 @@ class ServerTest extends TestCase
     public function testRunExternalException(): void
     {
         $this->expectStreamFactory();
-        $server = new Server();
+        $server = new Server(8000);
         $server->setStreamFactory(new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);

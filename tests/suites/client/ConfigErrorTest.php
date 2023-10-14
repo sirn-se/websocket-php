@@ -17,11 +17,17 @@ use Phrity\Net\Mock\StreamFactory;
 use Phrity\Net\Mock\Stack\{
     ExpectSocketClientTrait,
     ExpectSocketStreamTrait,
+    ExpectStreamCollectionTrait,
     ExpectStreamFactoryTrait
 };
-use WebSocket\{
-    Client,
-    BadUriException
+use WebSocket\Client;
+use WebSocket\Exception\{
+    BadOpcodeException,
+    BadUriException,
+    ClientException,
+    ConnectionClosedException,
+    ConnectionTimeoutException,
+    HandshakeException
 };
 use WebSocket\Test\MockStreamTrait;
 
@@ -32,6 +38,7 @@ class ConfigErrorTest extends TestCase
 {
     use ExpectSocketClientTrait;
     use ExpectSocketStreamTrait;
+    use ExpectStreamCollectionTrait;
     use ExpectStreamFactoryTrait;
     use MockStreamTrait;
 
@@ -49,7 +56,6 @@ class ConfigErrorTest extends TestCase
     public function testUriInvalid(): void
     {
         $this->expectException(BadUriException::class);
-        $this->expectExceptionCode(0);
         $this->expectExceptionMessage("Invalid URI '--:this is not an uri:--' provided.");
         $client = new Client('--:this is not an uri:--');
     }
@@ -57,39 +63,14 @@ class ConfigErrorTest extends TestCase
     public function testUriInvalidScheme(): void
     {
         $this->expectException(BadUriException::class);
-        $this->expectExceptionCode(0);
         $this->expectExceptionMessage("Invalid URI scheme, must be 'ws' or 'wss'.");
         $client = new Client('bad://localhost:8000/my/mock/path');
-    }
-
-    public function testUriInvalidType(): void
-    {
-        $this->expectException(BadUriException::class);
-        $this->expectExceptionCode(0);
-        $this->expectExceptionMessage("Provided URI must be a UriInterface or string.");
-        $client = new Client([]);
     }
 
     public function testUriInvalidHost(): void
     {
         $this->expectException(BadUriException::class);
-        $this->expectExceptionCode(0);
         $this->expectExceptionMessage("Invalid URI host.");
         $client = new Client('ws:///my/mock/path');
-    }
-
-    public function testContextOptionInvald(): void
-    {
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path', ['context' => 'BAD']);
-        $client->setStreamFactory(new StreamFactory());
-
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionCode(0);
-        $this->expectExceptionMessage('Stream context option is invalid.');
-        $client->connect();
-
-        $this->expectSocketStreamClose();
-        unset($client);
     }
 }

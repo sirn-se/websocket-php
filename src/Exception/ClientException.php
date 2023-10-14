@@ -7,12 +7,12 @@
  * License text: https://raw.githubusercontent.com/sirn-se/websocket-php/master/COPYING.md
  */
 
-namespace WebSocket;
+namespace WebSocket\Exception;
 
 /**
- * WebSocket\TimeoutException class.
- * Thrown when connection has timed out.
+ * WebSocket\Exception\ClientException class.
+ * Fatal exception during server start
  */
-class TimeoutException extends ConnectionException
+class ClientException extends Exception
 {
 }

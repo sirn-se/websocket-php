@@ -9,7 +9,6 @@
 
 namespace WebSocket\Frame;
 
-use WebSocket\BadOpcodeException;
 use WebSocket\Trait\OpcodeTrait;
 
 /**

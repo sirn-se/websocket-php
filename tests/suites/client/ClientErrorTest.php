@@ -17,6 +17,7 @@ use Phrity\Net\Mock\StreamFactory;
 use Phrity\Net\Mock\Stack\{
     ExpectSocketClientTrait,
     ExpectSocketStreamTrait,
+    ExpectStreamCollectionTrait,
     ExpectStreamFactoryTrait,
     StackItem
 };
@@ -24,12 +25,14 @@ use Phrity\Net\{
     StreamException,
     Uri
 };
-use WebSocket\{
-    Client,
+use WebSocket\Client;
+use WebSocket\Exception\{
     BadOpcodeException,
     BadUriException,
-    ConnectionException,
-    TimeoutException
+    ClientException,
+    ConnectionClosedException,
+    ConnectionTimeoutException,
+    HandshakeException
 };
 use WebSocket\Test\MockStreamTrait;
 use WebSocket\Message\Text;
@@ -38,6 +41,7 @@ class ClientErrorTest extends TestCase
 {
     use ExpectSocketClientTrait;
     use ExpectSocketStreamTrait;
+    use ExpectStreamCollectionTrait;
     use ExpectStreamFactoryTrait;
     use MockStreamTrait;
 
@@ -58,7 +62,9 @@ class ClientErrorTest extends TestCase
         $client = new Client('ws://localhost:8000/my/mock/path');
         $client->setStreamFactory(new StreamFactory());
 
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateStreamCollection();
+        $this->expectStreamCollection();
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf(Uri::class, $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -70,15 +76,15 @@ class ClientErrorTest extends TestCase
             $this->assertFalse($params[0]);
         });
         $this->expectSocketClientSetTimeout()->addAssert(function ($method, $params) {
-            $this->assertEquals(5, $params[0]);
+            $this->assertEquals(60, $params[0]);
         });
         $this->expectSocketClientSetContext();
         $this->expectSocketClientConnect()->setReturn(function () {
             throw new StreamException(StreamException::CLIENT_CONNECT_ERR, ['uri' => 'tcp://localhost:8000']);
         });
-        $this->expectException(ConnectionException::class);
-        $this->expectExceptionCode(ConnectionException::CLIENT_CONNECT_ERR);
-        $this->expectExceptionMessage('Could not open socket to "tcp://localhost:8000": Server is closed.');
+        $this->expectException(ClientException::class);
+        $this->expectExceptionMessage('Could not open socket to "tcp://localhost:8000": Client could not connect');
+
         $client->connect();
 
         unset($client);
@@ -90,7 +96,9 @@ class ClientErrorTest extends TestCase
         $client = new Client('ws://localhost:8000/my/mock/path');
         $client->setStreamFactory(new StreamFactory());
 
-        $this->expectStreamFactoryCreateSockerClient();
+        $this->expectStreamFactoryCreateStreamCollection();
+        $this->expectStreamCollection();
+        $this->expectStreamFactoryCreateSocketClient();
         $this->expectSocketClient();
         $this->expectSocketClientSetPersistent();
         $this->expectSocketClientSetTimeout();
@@ -98,6 +106,10 @@ class ClientErrorTest extends TestCase
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectStreamCollectionAttach();
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
         $this->expectSocketStreamSetTimeout();
         $this->expectSocketStreamIsConnected()->setReturn(function () {
             return false;
@@ -105,8 +117,7 @@ class ClientErrorTest extends TestCase
         $this->expectSocketStreamIsConnected()->setReturn(function () {
             return false;
         });
-        $this->expectException(ConnectionException::class);
-        $this->expectExceptionCode(ConnectionException::CLIENT_CONNECT_ERR);
+        $this->expectException(ClientException::class);
         $this->expectExceptionMessage('Invalid stream on "tcp://localhost:8000".');
         $client->connect();
 
@@ -132,10 +143,9 @@ class ClientErrorTest extends TestCase
         $this->expectSocketStreamRead()->setReturn(function () {
             return 'Test message';
         });
-        $this->expectSocketStreamClose();
         $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
         $this->expectException(BadOpcodeException::class);
-        $this->expectExceptionCode(BadOpcodeException::BAD_OPCODE);
         $this->expectExceptionMessage("Invalid opcode '15' provided");
         $message = $client->receive();
 
@@ -160,11 +170,10 @@ class ClientErrorTest extends TestCase
         $this->expectSocketStreamGetMetadata()->setReturn(function () {
             return ['eof' => true, 'mode' => 'rw', 'seekable' => false];
         });
-        $this->expectException(ConnectionException::class);
-        $this->expectExceptionCode(ConnectionException::EOF);
-        $this->expectExceptionMessage('Could only write 18 out of 22 bytes.');
-        $this->expectSocketStreamClose();
+        $this->expectException(ConnectionClosedException::class);
+        $this->expectExceptionMessage('Connection has unexpectedly closed');
         $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
         $client->text('Failing to write');
 
         unset($client);
@@ -188,11 +197,10 @@ class ClientErrorTest extends TestCase
         $this->expectSocketStreamGetMetadata()->setReturn(function () {
             return ['timed_out' => true, 'mode' => 'rw', 'seekable' => false];
         });
-        $this->expectException(TimeoutException::class);
-        $this->expectExceptionCode(ConnectionException::TIMED_OUT);
-        $this->expectExceptionMessage('Connection timeout');
-        $this->expectSocketStreamClose();
+        $this->expectException(ConnectionTimeoutException::class);
+        $this->expectExceptionMessage('Connection operation timeout');
         $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
         $client->receive();
 
         unset($client);
@@ -216,11 +224,10 @@ class ClientErrorTest extends TestCase
         $this->expectSocketStreamGetMetadata()->setReturn(function () {
             return ['timed_out' => true, 'mode' => 'rw', 'seekable' => false];
         });
-        $this->expectException(TimeoutException::class);
-        $this->expectExceptionCode(TimeoutException::TIMED_OUT);
-        $this->expectExceptionMessage('Empty read; connection dead?');
-        $this->expectSocketStreamClose();
+        $this->expectException(ConnectionTimeoutException::class);
+        $this->expectExceptionMessage('Connection operation timeout');
         $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
         $client->receive();
 
         $this->expectSocketStreamClose();

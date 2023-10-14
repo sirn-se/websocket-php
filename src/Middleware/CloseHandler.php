@@ -11,6 +11,7 @@ namespace WebSocket\Middleware;
 
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
+use Stringable;
 use WebSocket\Connection;
 use WebSocket\Message\{
     Close,
@@ -21,7 +22,7 @@ use WebSocket\Message\{
  * WebSocket\Middleware\CloseHandler class.
  * Handles close procedure.
  */
-class CloseHandler implements LoggerAwareInterface, ProcessIncomingInterface, ProcessOutgoingInterface
+class CloseHandler implements LoggerAwareInterface, ProcessIncomingInterface, ProcessOutgoingInterface, Stringable
 {
     use LoggerAwareTrait;
 
@@ -36,7 +37,7 @@ class CloseHandler implements LoggerAwareInterface, ProcessIncomingInterface, Pr
             $this->logger->debug("[close-handler] Received 'close', status: {$message->getCloseStatus()}");
             $ack =  "Close acknowledged: {$message->getCloseStatus()}";
             $connection->closeRead();
-            $connection->pushMessage(new Close($message->getCloseStatus(), $ack));
+            $connection->send(new Close($message->getCloseStatus(), $ack));
         } else {
             // Remote sent Close/Ack: disconnect
             $this->logger->debug("[close-handler] Received 'close' ackowledge, disconnecting");

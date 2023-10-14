@@ -132,7 +132,7 @@ class ProcessStackTest extends TestCase
         $connection->setLogger(new NullLogger());
 
         $this->expectSocketStreamWrite();
-        $connection->pushMessage(new Text('Test message'));
+        $connection->send(new Text('Test message'));
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();

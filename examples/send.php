@@ -16,42 +16,67 @@ require __DIR__ . '/../vendor/autoload.php';
 
 error_reporting(-1);
 
-echo "> Send client\n";
 
-// Server options specified or random
+echo "# Send client! [phrity/websocket]\n";
+
+// Client options specified or default
 $options = array_merge([
-    'filter'        => ['text'],
-    'uri'           => 'ws://localhost:8000',
-    'opcode'        => 'text',
-    'return_obj'    => true,
-], getopt('', ['uri:', 'opcode:', 'debug']));
+    'uri'       => 'ws://localhost:80',
+    'opcode'    => 'text',
+], getopt('', ['uri:', 'opcode:', 'timeout:', 'framesize:', 'debug']));
+
 $message = array_pop($argv);
 
-// If debug mode and logger is available
-if (isset($options['debug']) && class_exists('WebSocket\Test\EchoLog')) {
-    $logger = new \WebSocket\Test\EchoLog();
-    $options['logger'] = $logger;
-    echo "> Using logger\n";
-}
-
+// Initiate client.
 try {
-    // Create client, send and recevie
-    $client = new Client($options['uri'], $options);
+    $client = new Client($options['uri']);
+    $client
+        ->addMiddleware(new \WebSocket\Middleware\CloseHandler())
+        ->addMiddleware(new \WebSocket\Middleware\PingResponder())
+        ->onText(function ($client, $connection, $message) {
+            echo "> Received '{$message->getContent()}' [opcode: {$message->getOpcode()}]\n";
+            echo "< Closing client\n";
+            $client->close();
+        })
+        ->onBinary(function ($client, $connection, $message) {
+            echo "> Received '{$message->getContent()}' [opcode: {$message->getOpcode()}]\n";
+            echo "< Closing client\n";
+            $client->close();
+        })
+        ->onPing(function ($client, $connection, $message) {
+            echo "> Received '{$message->getContent()}' [opcode: {$message->getOpcode()}]\n";
+            echo "< Closing client\n";
+            $client->close();
+        })
+        ->onPong(function ($client, $connection, $message) {
+            echo "> Received '{$message->getContent()}' [opcode: {$message->getOpcode()}]\n";
+            echo "< Closing client\n";
+            $client->close();
+        })
+        ->onClose(function ($client, $connection, $message) {
+            echo "> Received '{$message->getContent()}' [opcode: {$message->getOpcode()}]\n";
+        })
+        ;
+
+    // If debug mode and logger is available
+    if (isset($options['debug']) && class_exists('WebSocket\Test\EchoLog')) {
+        $client->setLogger(new \WebSocket\Test\EchoLog());
+        echo "# Using logger\n";
+    }
+    if (isset($options['timeout'])) {
+        $client->setTimeout($options['timeout']);
+        echo "# Set timeout: {$options['timeout']}\n";
+    }
+    if (isset($options['framesize'])) {
+        $client->setFrameSize($options['framesize']);
+        echo "# Set frame size: {$options['framesize']}\n";
+    }
+
     $type = $options['opcode'];
-    $client->$type($message);
-    echo "> Sent '{$message}' [opcode: {$options['opcode']}]\n";
+    $message = $client->$type($message);
+    echo "< Sent '{$message->getContent()}' [opcode: {$message->getOpcode()}]\n";
 
-    $message = $client->receive();
-    if (!is_null($message)) {
-        echo "> Got '{$message->getContent()}' [opcode: {$message->getOpcode()}]\n";
-    }
-
-    $client->close();
-    echo "> Closing client\n";
-    $message = $client->receive();
-    if (!is_null($message)) {
-        echo "> Got '{$message->getContent()}' [opcode: {$message->getOpcode()}]\n";
-    }
+    $client->start(); // Wait for close confirmation
 } catch (\Throwable $e) {
-    echo "> ERROR: {$e->getMessage()} [{$e->getCode()}]\n";
+    echo "# ERROR: {$e->getMessage()} [{$e->getCode()}]\n";
 }

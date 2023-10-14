@@ -106,7 +106,7 @@ class FrameHandler implements LoggerAwareInterface
     }
 
     // Push frame to stream
-    public function push(Frame $frame, bool $masked = null): int
+    public function push(Frame $frame, bool|null $masked = null): int
     {
         $final = $frame->isFinal();
         $payload = $frame->getPayload();

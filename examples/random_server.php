@@ -5,9 +5,9 @@
  * Run in console: php examples/random_server.php
  *
  * Console options:
- *  --port <int> : The port to listen to, default 8000
+ *  --port <int> : The port to listen to, default 80
  *  --timeout <int> : Timeout in seconds, random default
- *  --fragment_size <int> : Fragment size as bytes, random default
+ *  --framesize <int> : Frame size as bytes, random default
  *  --debug : Output log data (if logger is available)
  */
 
@@ -30,7 +30,7 @@ echo "# Random server\n";
 
 // Server options specified or default
 $options = array_merge([
-    'port'      => 8000,
+    'port'      => 80,
     'timeout'   => rand(1, 60),
     'framesize' => rand(1, 4096) * 8,
 ], getopt('', ['port:', 'ssl', 'timeout:', 'framesize:', 'debug']));

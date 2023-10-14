@@ -55,7 +55,7 @@ class CloseHandlerTest extends TestCase
         $this->expectSocketStreamIsReadable();
         $this->expectSocketStreamCloseWrite();
         $this->expectSocketStreamGetMetadata();
-        $connection->pushMessage(new Close(1000, 'ttfn'));
+        $connection->send(new Close(1000, 'ttfn'));
 
         $this->expectSocketStreamRead()->setReturn(function () {
             return base64_decode('iAY==');

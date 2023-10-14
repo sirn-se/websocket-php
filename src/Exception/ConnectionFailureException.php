@@ -17,6 +17,6 @@ class ConnectionFailureException extends Exception implements ConnectionLevelInt
 {
     public function __construct()
     {
-        parent::__construct('Unknown connection error');
+        parent::__construct('Connection error');
     }
 }

@@ -128,10 +128,10 @@ class ExceptionTest extends TestCase
             throw new ConnectionFailureException();
         });
         $this->expectException(ConnectionFailureException::class);
-        $this->expectExceptionMessage('Unknown connection error');
+        $this->expectExceptionMessage('Connection error');
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        $connection->send(new Text('Unknown connection error'));
+        $connection->send(new Text('Connection error'));
 
         unset($connection);
     }
@@ -231,7 +231,7 @@ class ExceptionTest extends TestCase
             return false;
         });
         $this->expectException(ConnectionFailureException::class);
-        $this->expectExceptionMessage('Unknown connection error');
+        $this->expectExceptionMessage('Connection error');
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
         $connection->send(new Text('Generic'));
@@ -258,7 +258,7 @@ class ExceptionTest extends TestCase
             return ['timed_out' => false, 'eof' => false];
         });
         $this->expectException(ConnectionFailureException::class);
-        $this->expectExceptionMessage('Unknown connection error');
+        $this->expectExceptionMessage('Connection error');
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
         $connection->send(new Text('Generic'));

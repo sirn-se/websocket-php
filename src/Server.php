@@ -12,7 +12,6 @@ namespace WebSocket;
 use InvalidArgumentException;
 use Phrity\Net\{
     SocketServer,
-    SocketStream,
     StreamFactory,
     Uri
 };
@@ -21,17 +20,18 @@ use Psr\Log\{
     LoggerInterface,
     NullLogger
 };
+use Stringable;
 use Throwable;
 use WebSocket\Exception\{
     ConnectionLevelInterface,
-    HandshakeException,
-    ServerException,
     Exception,
-    MessageLevelInterface
+    HandshakeException,
+    MessageLevelInterface,
+    ServerException
 };
 use WebSocket\Http\{
-    ServerRequest,
-    Response
+    Response,
+    ServerRequest
 };
 use WebSocket\Message\Message;
 use WebSocket\Middleware\MiddlewareInterface;
@@ -45,7 +45,7 @@ use WebSocket\Trait\{
  * WebSocket\Server class.
  * Entry class for WebSocket server.
  */
-class Server implements LoggerAwareInterface
+class Server implements LoggerAwareInterface, Stringable
 {
     use ListenerTrait;
     use OpcodeTrait;
@@ -75,7 +75,7 @@ class Server implements LoggerAwareInterface
      * @param int $port Socket port to listen to
      * @param string $scheme Scheme (tcp or ssl)
      */
-    public function __construct(int $port = 8000, bool $ssl = false)
+    public function __construct(int $port = 80, bool $ssl = false)
     {
         if ($port < 0 || $port > 65535) {
             throw new InvalidArgumentException("Invalid port '{$port}' provided");
@@ -92,7 +92,7 @@ class Server implements LoggerAwareInterface
      */
     public function __toString(): string
     {
-        return sprintf("Server(%s)", "{$this->scheme}://0.0.0.0:{$this->port}" ?: 'closed');
+        return sprintf("Server(%s)", $this->server ? "{$this->scheme}://0.0.0.0:{$this->port}" : 'closed');
     }
 
 
@@ -192,15 +192,6 @@ class Server implements LoggerAwareInterface
     }
 
     /**
-     * If server is running (accepting connections and messages).
-     * @return bool.
-     */
-    public function isRunning(): bool
-    {
-        return $this->running;
-    }
-
-    /**
      * Number of currently connected clients.
      * @return int Connection count.
      */
@@ -241,7 +232,7 @@ class Server implements LoggerAwareInterface
     }
 
 
-    /* ---------- Server operations -------------------------------------------------------------------------------- */
+    /* ---------- Listener operations ------------------------------------------------------------------------------ */
 
     /**
      * Start server listener.
@@ -321,6 +312,18 @@ class Server implements LoggerAwareInterface
         $this->running = false;
         $this->logger->info("[server] Server is stopped");
     }
+
+    /**
+     * If server is running (accepting connections and messages).
+     * @return bool.
+     */
+    public function isRunning(): bool
+    {
+        return $this->running;
+    }
+
+
+    /* ---------- Connection management ---------------------------------------------------------------------------- */
 
     /**
      * Disconnect all connections and stop server.
@@ -469,6 +472,7 @@ class Server implements LoggerAwareInterface
         $this->logger->debug("[server] Handshake on {$request->getUri()->getPath()}");
         $connection->setHandshakeRequest($request);
         $connection->setHandshakeResponse($response);
+
         return $request;
     }
 }

@@ -91,7 +91,7 @@ class CallbackTest extends TestCase
         }));
 
         $this->expectSocketStreamWrite();
-        $connection->pushMessage(new Text('Test message'));
+        $connection->send(new Text('Test message'));
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();

@@ -52,11 +52,11 @@ class ConfigTest extends TestCase
     public function testServerDefaults(): void
     {
         $this->expectStreamFactory();
-        $server = new Server();
+        $server = new Server(8000);
         $this->assertSame($server, $server->setStreamFactory(new StreamFactory()));
         $this->assertSame($server, $server->addMiddleware(new Callback()));
 
-        $this->assertEquals('Server(tcp://0.0.0.0:8000)', "{$server}");
+        $this->assertEquals('Server(closed)', "{$server}");
         $this->assertEquals(60, $server->getTimeout());
         $this->assertEquals(4096, $server->getFrameSize());
         $this->assertEquals(8000, $server->getPort());
@@ -74,6 +74,7 @@ class ConfigTest extends TestCase
             $server->stop();
         });
         $server->start();
+        $this->assertEquals('Server(tcp://0.0.0.0:8000)', "{$server}");
         $this->assertFalse($server->isRunning());
 
         unset($server);

@@ -18,18 +18,18 @@ class Close extends Message
     protected $opcode = 'close';
     protected $status = null;
 
-    public function __construct(?int $status = null, string $content = '')
+    public function __construct(int|null $status = null, string $content = '')
     {
         $this->status = $status;
         parent::__construct($content);
     }
 
-    public function getCloseStatus(): ?int
+    public function getCloseStatus(): int|null
     {
         return $this->status;
     }
 
-    public function setCloseStatus(?int $status): void
+    public function setCloseStatus(int|null $status): void
     {
         $this->status = $status;
     }

@@ -16,12 +16,19 @@ use Phrity\Net\Mock\StreamFactory;
 use Phrity\Net\Mock\Stack\{
     ExpectSocketClientTrait,
     ExpectSocketStreamTrait,
+    ExpectStreamCollectionTrait,
     ExpectStreamFactoryTrait
 };
 use Phrity\Net\StreamException;
-use WebSocket\{
-    Client,
-    ConnectionException
+use WebSocket\Client;
+use WebSocket\Exception\{
+    BadOpcodeException,
+    BadUriException,
+    ClientException,
+    ConnectionClosedException,
+    ConnectionFailureException,
+    ConnectionTimeoutException,
+    HandshakeException
 };
 use WebSocket\Http\Response;
 use WebSocket\Test\MockStreamTrait;
@@ -33,6 +40,7 @@ class HandshakeTest extends TestCase
 {
     use ExpectSocketClientTrait;
     use ExpectSocketStreamTrait;
+    use ExpectStreamCollectionTrait;
     use ExpectStreamFactoryTrait;
     use MockStreamTrait;
 
@@ -55,7 +63,7 @@ class HandshakeTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         $this->assertFalse($client->isConnected());
-        $this->assertEquals(4096, $client->getFragmentSize());
+        $this->assertEquals(4096, $client->getFrameSize());
 
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake();
@@ -82,11 +90,12 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamReadLine()->setReturn(function () {
             throw new StreamException(StreamException::FAIL_READ);
         });
-        $this->expectException(ConnectionException::class);
-        $this->expectExceptionCode(ConnectionException::CLIENT_HANDSHAKE_ERR);
-        $this->expectExceptionMessage('Client handshake error');
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamGetMetadata();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
+        $this->expectException(ConnectionFailureException::class);
+        $this->expectExceptionMessage('Connection error');
         $client->connect();
 
         unset($client);
@@ -103,8 +112,7 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "HTTP/1.1 200 OK\r\n\r\n";
         });
-        $this->expectException(ConnectionException::class);
-        $this->expectExceptionCode(ConnectionException::CLIENT_HANDSHAKE_ERR);
+        $this->expectException(HandshakeException::class);
         $this->expectExceptionMessage('Invalid status code 200.');
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
@@ -124,8 +132,7 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nInvalid upgrade\r\n\r\n";
         });
-        $this->expectException(ConnectionException::class);
-        $this->expectExceptionCode(ConnectionException::CLIENT_HANDSHAKE_ERR);
+        $this->expectException(HandshakeException::class);
         $this->expectExceptionMessage('Connection to \'ws://localhost:8000/my/mock/path\' failed');
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
@@ -146,8 +153,7 @@ class HandshakeTest extends TestCase
             return "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
                 . "Sec-WebSocket-Accept: BAD_KEY\r\n\r\n";
         });
-        $this->expectException(ConnectionException::class);
-        $this->expectExceptionCode(ConnectionException::CLIENT_HANDSHAKE_ERR);
+        $this->expectException(HandshakeException::class);
         $this->expectExceptionMessage('Server sent bad upgrade response');
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();

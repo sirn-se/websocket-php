@@ -26,7 +26,7 @@ class Request extends Message implements RequestInterface
     private $method;
     private $uri;
 
-    public function __construct(string $method = 'GET', $uri = null)
+    public function __construct(string $method = 'GET', UriInterface|string|null $uri = null)
     {
         $this->uri = $uri instanceof Uri ? $uri : new Uri((string)$uri);
         $this->method = $method;
@@ -53,7 +53,7 @@ class Request extends Message implements RequestInterface
      * @param mixed $requestTarget
      * @return static
      */
-    public function withRequestTarget($requestTarget): self
+    public function withRequestTarget(mixed $requestTarget): self
     {
         $new = clone $this;
         $new->target = $requestTarget;

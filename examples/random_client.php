@@ -7,7 +7,7 @@
  * Console options:
  *  --uri <uri> : The URI to connect to, default ws://localhost:8000
  *  --timeout <int> : Timeout in seconds, random default
- *  --fragment_size <int> : Fragment size as bytes, random default
+ *  --framesize <int> : Frame size as bytes, random default
  *  --debug : Output log data (if logger is available)
  */
 
@@ -26,70 +26,85 @@ $randStr = function (int $maxlength = 4096) {
     return $string;
 };
 
-echo "> Random client\n";
+echo "# Random client\n";
 
-// Server options specified or random
-$options = array_merge([
-    'uri'           => 'ws://localhost:8000',
-    'timeout'       => rand(1, 60),
-    'fragment_size' => rand(1, 4096) * 8,
-    'return_obj'    => true,
-], getopt('', ['uri:', 'timeout:', 'fragment_size:', 'debug']));
-
-// If debug mode and logger is available
-if (isset($options['debug']) && class_exists('WebSocket\Test\EchoLog')) {
-    $logger = new \WebSocket\Test\EchoLog();
-    $options['logger'] = $logger;
-    echo "> Using logger\n";
-}
-
-// Main loop
+// Initiate client.
 while (true) {
-    try {
-        $client = new Client($options['uri'], $options);
-        $info = json_encode([
-            'uri'           => $options['uri'],
-            'timeout'       => $options['timeout'],
-            'framgemt_size' => $client->getFragmentSize(),
-        ]);
-        echo "> Creating client {$info}\n";
+    // Server options specified or random
+    $options = array_merge([
+        'uri'       => 'ws://localhost:80',
+        'timeout'   => rand(1, 60),
+        'framesize' => rand(1, 4096) * 8,
+    ], getopt('', ['uri:', 'timeout:', 'framesize:', 'debug']));
 
-        try {
-            while (true) {
-                // Random actions
-                switch (rand(1, 10)) {
-                    case 1:
-                        echo "> Sending text\n";
-                        $client->text("Text message {$randStr()}");
-                        break;
-                    case 2:
-                        echo "> Sending binary\n";
-                        $client->binary("Binary message {$randStr()}");
-                        break;
-                    case 3:
-                        echo "> Sending close\n";
-                        $client->close(rand(1000, 2000), "Close message {$randStr(8)}");
-                        break;
-                    case 4:
-                        echo "> Sending ping\n";
-                        $client->ping("Ping message  {$randStr(8)}");
-                        break;
-                    case 5:
-                        echo "> Sending pong\n";
-                        $client->pong("Pong message  {$randStr(8)}");
-                        break;
-                    default:
-                        echo "> Receiving\n";
-                        $received = $client->receive();
-                        echo "> Received {$received->getOpcode()}: {$received->getContent()}\n";
-                }
-                sleep(rand(1, 5));
-            }
-        } catch (\Throwable $e) {
-            echo "> ERROR I/O: {$e->getMessage()} [{$e->getCode()}]\n";
+    try {
+        $client = new Client($options['uri']);
+        $client
+            ->addMiddleware(new \WebSocket\Middleware\CloseHandler())
+            ->addMiddleware(new \WebSocket\Middleware\PingResponder())
+            ;
+
+        // If debug mode and logger is available
+        if (isset($options['debug']) && class_exists('WebSocket\Test\EchoLog')) {
+            $client->setLogger(new \WebSocket\Test\EchoLog());
+            echo "# Using logger\n";
         }
-    } catch (\Throwable $e) {
-        echo "> ERROR: {$e->getMessage()} [{$e->getCode()}]\n";
+        if (isset($options['timeout'])) {
+            $client->setTimeout($options['timeout']);
+            echo "# Set timeout: {$options['timeout']}\n";
+        }
+        if (isset($options['framesize'])) {
+            $client->setFrameSize($options['framesize']);
+            echo "# Set frame size: {$options['framesize']}\n";
+        }
+
+        echo "# Listening on {$options['uri']}\n";
+        $client->onConnect(function ($client, $connection, $handshake) {
+            echo "> [{$connection->getRemoteName()}] Server connected {$handshake->getStatusCode()}\n";
+        })->onDisconnect(function ($client, $connection) {
+            echo "> [{$connection->getRemoteName()}] Server disconnected\n";
+        })->onText(function ($client, $connection, $message) {
+            echo "> [{$connection->getRemoteName()}] Received [{$message->getOpcode()}]\n";
+        })->onBinary(function ($client, $connection, $message) {
+            echo "> [{$connection->getRemoteName()}] Received [{$message->getOpcode()}]\n";
+        })->onPing(function ($client, $connection, $message) {
+            echo "> [{$connection->getRemoteName()}] Received [{$message->getOpcode()}]\n";
+        })->onPong(function ($client, $connection, $message) {
+            echo "> [{$connection->getRemoteName()}] Received [{$message->getOpcode()}]\n";
+        })->onClose(function ($client, $connection, $message) {
+            echo "> [{$connection->getRemoteName()}] Received [{$message->getOpcode()}] {$message->getCloseStatus()}\n";
+        })->onError(function ($client, $connection, $exception) {
+            $name = $connection ? "[{$connection->getRemoteName()}]" : "[-]";
+            echo "> {$name} Error: {$exception->getMessage()}\n";
+        })->onTick(function ($client) use ($randStr) {
+            if (!$client->isWritable()) {
+                return;
+            }
+            // Random actions
+            switch (rand(1, 5)) {
+                case 1:
+                    echo "< Sending text\n";
+                    $client->text("Text message {$randStr()}");
+                    break;
+                case 2:
+                    echo "< Sending binary\n";
+                    $client->binary("Binary message {$randStr()}");
+                    break;
+                case 3:
+                    echo "< Sending close\n";
+                    $client->close(rand(1000, 2000), "Close message {$randStr(8)}");
+                    break;
+                case 4:
+                    echo "< Sending ping\n";
+                    $client->ping("Ping message {$randStr(8)}");
+                    break;
+                case 5:
+                    echo "< Sending pong\n";
+                    $client->pong("Pong message {$randStr(8)}");
+                    break;
+            }
+        })->start();
+    } catch (Throwable $e) {
+        echo "> ERROR: {$e->getMessage()}\n";
     }
-    sleep(rand(1, 5));
 }
