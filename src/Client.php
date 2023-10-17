@@ -25,6 +25,8 @@ use Throwable;
 use WebSocket\Exception\{
     BadUriException,
     ClientException,
+    ConnectionLevelInterface,
+    MessageLevelInterface,
     HandshakeException
 };
 use WebSocket\Http\{
@@ -537,7 +539,7 @@ class Client implements LoggerAwareInterface, Stringable
      * @return Uri
      * @throws BadUriException On invalid URI
      */
-    protected function parseUri($uri): UriInterface
+    protected function parseUri(UriInterface|string $uri): UriInterface
     {
         if ($uri instanceof Uri) {
             $uri_instance = $uri;
@@ -549,8 +551,6 @@ class Client implements LoggerAwareInterface, Stringable
             } catch (InvalidArgumentException $e) {
                 throw new BadUriException("Invalid URI '{$uri}' provided.");
             }
-        } else {
-            throw new BadUriException("Provided URI must be a UriInterface or string.");
         }
         if (!in_array($uri_instance->getScheme(), ['ws', 'wss'])) {
             throw new BadUriException("Invalid URI scheme, must be 'ws' or 'wss'.");

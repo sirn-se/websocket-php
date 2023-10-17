@@ -50,7 +50,9 @@ trait MockStreamTrait
         $this->expectSocketClientConnect();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamGetRemoteName()->setReturn(function () use ($host, $port) {
+            return "{$host}:{$port}";
+        });
         $this->expectStreamCollectionAttach();
         $this->expectSocketStreamGetLocalName()->setReturn(function () {
             return "127.0.0.1:12345";

@@ -254,11 +254,6 @@ class Connection implements LoggerAwareInterface, Stringable
         return $this->pushMessage($message);
     }
 
-    public function receive(): Message
-    {
-        return $this->pullMessage();
-    }
-
     // Push a message to stream
     public function pushMessage(Message $message): Message
     {

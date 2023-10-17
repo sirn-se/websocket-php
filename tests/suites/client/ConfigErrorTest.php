@@ -73,4 +73,20 @@ class ConfigErrorTest extends TestCase
         $this->expectExceptionMessage("Invalid URI host.");
         $client = new Client('ws:///my/mock/path');
     }
+
+    public function testInvalidTimeout(): void
+    {
+        $client = new Client('ws://localhost:8000/my/mock/path');
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid timeout '-10' provided");
+        $client->setTimeout(-10);
+    }
+
+    public function testInvalidFrameSize(): void
+    {
+        $client = new Client('ws://localhost:8000/my/mock/path');
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid frameSize '-10' provided");
+        $client->setFrameSize(-10);
+    }
 }

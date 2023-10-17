@@ -256,6 +256,7 @@ class ConfigTest extends TestCase
         $client->connect();
 
         $client->setLogger(new NullLogger());
+        $client->addMiddleware(new \WebSocket\Middleware\CloseHandler());
 
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(300, $params[0]);
