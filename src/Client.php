@@ -26,6 +26,7 @@ use WebSocket\Exception\{
     BadUriException,
     ClientException,
     ConnectionLevelInterface,
+    Exception,
     MessageLevelInterface,
     HandshakeException
 };
@@ -252,10 +253,6 @@ class Client implements LoggerAwareInterface, Stringable
      */
     public function start(): void
     {
-        if (!$this->isConnected()) {
-            $this->connect();
-        }
-
         // Check if running
         if ($this->running) {
             $this->logger->warning("[client] Client is already running");
@@ -263,6 +260,10 @@ class Client implements LoggerAwareInterface, Stringable
         }
         $this->running = true;
         $this->logger->info("[client] Client is running");
+
+        if (!$this->isConnected()) {
+            $this->connect();
+        }
 
         // Run handler
         while ($this->running) {
@@ -281,9 +282,7 @@ class Client implements LoggerAwareInterface, Stringable
                         $this->dispatch('error', [$this, $this->connection, $e]);
                     } catch (ConnectionLevelInterface $e) {
                         // Error, disconnect connection
-                        if ($this->connection) {
-                            $this->connection->disconnect();
-                        }
+                        $this->disconnect();
                         $this->logger->error("[client] {$e->getMessage()}");
                         $this->dispatch('error', [$this, $this->connection, $e]);
                     }
@@ -293,14 +292,19 @@ class Client implements LoggerAwareInterface, Stringable
                 }
                 $this->dispatch('tick', [$this]);
             } catch (Exception $e) {
+                $this->disconnect();
+                $this->running = false;
+
                 // Low-level error
                 $this->logger->error("[client] {$e->getMessage()}");
                 $this->dispatch('error', [$this, null, $e]);
             } catch (Throwable $e) {
+                $this->disconnect();
+                $this->running = false;
+
                 // Crash it
                 $this->logger->error("[client] {$e->getMessage()}");
                 $this->dispatch('error', [$this, null, $e]);
-                $this->disconnect();
                 throw $e;
             }
             gc_collect_cycles(); // Collect garbage
@@ -403,8 +407,8 @@ class Client implements LoggerAwareInterface, Stringable
             $response = $this->performHandshake($host_uri);
         }
 
-        $this->dispatch('connect', [$this, $this->connection, $response]);
         $this->logger->info("[client] Client connected to {$this->socketUri}");
+        $this->dispatch('connect', [$this, $this->connection, $response]);
     }
 
     /**
@@ -414,8 +418,8 @@ class Client implements LoggerAwareInterface, Stringable
     {
         if ($this->isConnected()) {
             $this->connection->disconnect();
-            $this->dispatch('disconnect', [$this, $this->connection]);
             $this->logger->info('[client] Client disconnected');
+            $this->dispatch('disconnect', [$this, $this->connection]);
         }
     }
 
@@ -513,7 +517,7 @@ class Client implements LoggerAwareInterface, Stringable
             throw $e;
         }
 
-        $this->logger->debug("[server] Handshake on {$http_uri->getPath()}");
+        $this->logger->debug("[client] Handshake on {$http_uri->getPath()}");
         $this->connection->setHandshakeRequest($request);
         $this->connection->setHandshakeResponse($response);
 

@@ -21,6 +21,7 @@ use Phrity\Net\Mock\Stack\{
     ExpectStreamFactoryTrait,
     StackItem
 };
+use Phrity\Net\StreamException;
 use Phrity\Net\Uri;
 use WebSocket\{
     Client,
@@ -827,6 +828,7 @@ class ClientTest extends TestCase
             $this->assertInstanceOf(Client::class, $client);
             $this->assertInstanceOf(Connection::class, $connection);
             $this->assertInstanceOf(Response::class, $response);
+            $this->assertTrue($client->isRunning());
             $client->stop();
         });
         $client->onText(function ($client, $connection, $message) {
@@ -872,9 +874,14 @@ class ClientTest extends TestCase
         $client->onTick(function ($client) {
             $this->assertInstanceOf(Client::class, $client);
         });
+
+        $this->assertFalse($client->isRunning());
+
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake();
+        $client->start();
 
+        $this->expectSocketStreamIsConnected();
         $this->expectWsSelectConnections(['localhost:8000']);
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
@@ -946,6 +953,104 @@ class ClientTest extends TestCase
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
+        unset($client);
+    }
+
+    public function testAlreadyStarted(): void
+    {
+        $this->expectStreamFactory();
+        $client = new Client('ws://localhost:8000/my/mock/path');
+        $client->setStreamFactory(new StreamFactory());
+
+        $client->onConnect(function ($client, $connection, $request) {
+            $client->start();
+            $client->stop();
+        });
+        $this->expectWsClientConnect();
+        $this->expectWsClientPerformHandshake();
+        $this->expectSocketStreamIsConnected();
+        $client->start();
+
+        $this->expectSocketStreamClose();
+        unset($server);
+    }
+
+    public function testRunConnectionClosedException(): void
+    {
+        $this->expectStreamFactory();
+        $client = new Client('ws://localhost:8000/my/mock/path');
+        $client->setStreamFactory(new StreamFactory());
+
+        $client->onText(function ($client, $connection, $message) {
+            $this->assertInstanceOf(Client::class, $client);
+            $this->assertInstanceOf(Connection::class, $connection);
+            $this->assertInstanceOf(Text::class, $message);
+            $client->stop();
+        });
+
+        $this->expectWsClientConnect();
+        $this->expectWsClientPerformHandshake();
+        $this->expectWsSelectConnections(['localhost:8000']);
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () use ($client) {
+            throw new ConnectionClosedException();
+        });
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
+        $client->start();
+
+        $this->expectSocketStreamIsConnected();
+        unset($client);
+    }
+
+    public function testRunClientException(): void
+    {
+        $this->expectStreamFactory();
+        $client = new Client('ws://localhost:8000/my/mock/path');
+        $client->setStreamFactory(new StreamFactory());
+
+        $client->onText(function ($client, $connection, $message) {
+            $this->assertInstanceOf(Client::class, $client);
+            $this->assertInstanceOf(Connection::class, $connection);
+            $this->assertInstanceOf(Text::class, $message);
+            $client->stop();
+        });
+
+        $this->expectWsClientConnect();
+        $this->expectWsClientPerformHandshake();
+        $this->expectWsSelectConnections(['localhost:8000']);
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () use ($client) {
+            throw new ClientException();
+        });
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
+        $client->start();
+        unset($client);
+    }
+
+    public function testRunExternalException(): void
+    {
+        $this->expectStreamFactory();
+        $client = new Client('ws://localhost:8000/my/mock/path');
+        $client->setStreamFactory(new StreamFactory());
+
+        $this->expectWsClientConnect();
+        $this->expectWsClientPerformHandshake();
+        $this->expectWsSelectConnections(['localhost:8000'])->setReturn(function () {
+            throw new StreamException(1000);
+        });
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
+        $this->expectException(StreamException::class);
+        $this->expectExceptionMessage('Stream is detached.');
+        $client->start();
+
         unset($client);
     }
 }
