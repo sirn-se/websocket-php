@@ -27,8 +27,8 @@ use WebSocket\Exception\{
     ClientException,
     ConnectionLevelInterface,
     Exception,
-    MessageLevelInterface,
-    HandshakeException
+    HandshakeException,
+    MessageLevelInterface
 };
 use WebSocket\Http\{
     Request,
@@ -72,7 +72,7 @@ class Client implements LoggerAwareInterface, Stringable
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
 
     /**
-     * @param UriInterface|string $uri A ws/wss-URI
+     * @param Psr\Http\Message\UriInterface|string $uri A ws/wss-URI
      */
     public function __construct(UriInterface|string $uri)
     {
@@ -83,7 +83,7 @@ class Client implements LoggerAwareInterface, Stringable
 
     /**
      * Get string representation of instance.
-     * @return string String representation.
+     * @return string String representation
      */
     public function __toString(): string
     {
@@ -95,7 +95,8 @@ class Client implements LoggerAwareInterface, Stringable
 
     /**
      * Set stream factory to use.
-     * @param StreamFactory $streamFactory.
+     * @param Phrity\Net\StreamFactory $streamFactory
+     * @return self
      */
     public function setStreamFactory(StreamFactory $streamFactory): self
     {
@@ -119,7 +120,9 @@ class Client implements LoggerAwareInterface, Stringable
 
     /**
      * Set timeout.
-     * @param int $timeout Timeout in seconds.
+     * @param int $timeout Timeout in seconds
+     * @return self
+     * @throws InvalidArgumentException If invalid timeout provided
      */
     public function setTimeout(int $timeout): self
     {
@@ -135,7 +138,7 @@ class Client implements LoggerAwareInterface, Stringable
 
     /**
      * Get timeout.
-     * @return int Timeout in seconds.
+     * @return int Timeout in seconds
      */
     public function getTimeout(): int
     {
@@ -144,8 +147,9 @@ class Client implements LoggerAwareInterface, Stringable
 
     /**
      * Set frame size.
-     * @param int $frameSize Frame size in bytes.
-     * @return self.
+     * @param int $frameSize Frame size in bytes
+     * @return self
+     * @throws InvalidArgumentException If invalid frameSize provided
      */
     public function setFrameSize(int $frameSize): self
     {
@@ -161,7 +165,7 @@ class Client implements LoggerAwareInterface, Stringable
 
     /**
      * Get frame size.
-     * @return int Frame size in bytes.
+     * @return int Frame size in bytes
      */
     public function getFrameSize(): int
     {
@@ -181,8 +185,8 @@ class Client implements LoggerAwareInterface, Stringable
 
     /**
      * Set connection context.
-     * @param array $context Context as array, see https://www.php.net/manual/en/context.php.
-     * @return self.
+     * @param array $context Context as array, see https://www.php.net/manual/en/context.php
+     * @return self
      */
     public function setContext(array $context): self
     {
@@ -194,7 +198,7 @@ class Client implements LoggerAwareInterface, Stringable
      * Add header for handshake.
      * @param string $name Header name
      * @param string $content Header content
-     * @return self.
+     * @return self
      */
     public function addHeader(string $name, string $content): self
     {
@@ -204,8 +208,8 @@ class Client implements LoggerAwareInterface, Stringable
 
     /**
      * Add a middleware.
-     * @param MiddlewareInterface $middleware
-     * @return self.
+     * @param WebSocket\Middleware\MiddlewareInterface $middleware
+     * @return self
      */
     public function addMiddleware(MiddlewareInterface $middleware): self
     {
@@ -250,6 +254,7 @@ class Client implements LoggerAwareInterface, Stringable
 
     /**
      * Start client listener.
+     * @throws Throwable On low level error
      */
     public function start(): void
     {
@@ -322,7 +327,7 @@ class Client implements LoggerAwareInterface, Stringable
 
     /**
      * If client is running (accepting messages).
-     * @return bool.
+     * @return bool
      */
     public function isRunning(): bool
     {
@@ -430,7 +435,7 @@ class Client implements LoggerAwareInterface, Stringable
      * Get name of local socket, or null if not connected.
      * @return string|null
      */
-    public function getName(): ?string
+    public function getName(): string|null
     {
         return $this->isConnected() ? $this->connection->getName() : null;
     }
@@ -439,7 +444,7 @@ class Client implements LoggerAwareInterface, Stringable
      * Get name of remote socket, or null if not connected.
      * @return string|null
      */
-    public function getRemoteName(): ?string
+    public function getRemoteName(): string|null
     {
         return $this->isConnected() ? $this->connection->getRemoteName() : null;
     }
@@ -448,7 +453,7 @@ class Client implements LoggerAwareInterface, Stringable
      * Get Response for handshake procedure.
      * @return Response|null Handshake.
      */
-    public function getHandshakeResponse(): ?Response
+    public function getHandshakeResponse(): Response|null
     {
         return $this->connection ? $this->connection->getHandshakeResponse() : null;
     }
@@ -543,7 +548,7 @@ class Client implements LoggerAwareInterface, Stringable
      * @return Uri
      * @throws BadUriException On invalid URI
      */
-    protected function parseUri(UriInterface|string $uri): UriInterface
+    protected function parseUri(UriInterface|string $uri): Uri
     {
         if ($uri instanceof Uri) {
             $uri_instance = $uri;

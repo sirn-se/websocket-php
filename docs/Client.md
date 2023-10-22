@@ -3,118 +3,239 @@ Client • [Server](Server.md) • [Message](Message.md) • [Classes](Classes.m
 # Websocket: Client
 
 The client can read and write on a WebSocket stream.
-It internally supports Upgrade handshake and implicit close and ping/pong operations.
 
-## Examples
+## Basic operation
 
-### Simple send-receive operation
-
-This example send a single message to a server, and output the response.
+Set up a WebSocket client for request/response strategy.
 
 ```php
 $client = new WebSocket\Client("ws://echo.websocket.org/");
+$client
+    // Add standard middlewares
+    ->addMiddleware(new WebSocket\Middleware\CloseHandler())
+    ->addMiddleware(new WebSocket\Middleware\PingResponder())
+
+// Send a message
 $client->text("Hello WebSocket.org!");
+
+// Read response (this is blocking)
 echo $client->receive();
+
+// Close connection
 $client->close();
 ```
 
-### Listening to a server
+## Subscribe operation
 
-To continuously listen to incoming messages, you need to put the receive operation within a loop.
-Note that these functions **always** throw exception on any failure, including recoverable failures such as connection time out.
-By consuming exceptions, the code will re-connect the socket in next loop iteration.
+If you need to subscribe to messages sent by server at any point, use the listener functions.
 
 ```php
 $client = new WebSocket\Client("ws://echo.websocket.org/");
-while (true) {
-    try {
-        $message = $client->receive();
-        // Act on received message
-        // Break while loop to stop listening
-    } catch (\WebSocket\ConnectionException $e) {
-        // Possibly log errors
-    }
+$client
+    // Add standard middlewares
+    ->addMiddleware(new WebSocket\Middleware\CloseHandler())
+    ->addMiddleware(new WebSocket\Middleware\PingResponder())
+    // Listen to incoming Text messages
+    ->onText(function (WebSocket\Client $client, WebSocket\Connection $connection, WebSocket\Message\Message $message) {
+        // Act on incoming message
+        echo "Got message: {$message->getContent()} \n";
+        // Possibly respond to server
+        $client->text("I got your your message");
+    })
+    ->start();
+```
+
+## Configuration
+
+The Client takes one argument: url as a class implementing UriInterface or as string.
+The client support `ws` (`tcp`) and `wss` (`ssl`) schemas, depending on SSL configuration.
+Other options are available runtime by calling configuration methods.
+
+```php
+// Create client
+$client = new WebSocket\Client("ws://echo.websocket.org/");
+$client
+    // Use a PSR-3 compatible logger
+    ->setLogger(Psr\Log\LoggerInterface $logger)
+    // Specify timeout in seconds (default 60 seconds)
+    ->setTimeout(300)
+    // Specify frame size in bytes (default 4096 bytes)
+    ->setFrameSize(1024)
+    // If client should attempt persistent connection
+    ->setPersistent(true)
+    // Set context
+    ->setContext([
+        "ssl" => [
+            "verify_peer" => false,
+            "verify_peer_name" => false,
+        ],
+    ])
+    // Add header to handshake request
+    ->addHeader("Sec-WebSocket-Protocol", "soap")
+    ;
+
+echo "timeout:      {$client->getTimeout()}s\n";
+echo "frame size:   {$client->getFrameSize()}b\n";
+echo "running:      {$client->isRunning()}\n";
+```
+
+## Middlewares
+
+Middlewares provide additional functionality when sending or receiving messages.
+This repo comes with two middlewares that provide standard operability according to WebSocket protocol.
+
+* CloseHandler - Automatically acts on incoming and outgoing Close requests, as specified in WebSocket protocol
+* PingResponder - Responds with Pong message when receiving a Ping message, as specified in WebSocket protocol
+
+If not added, you need to handle close operation and respond to ping requests in your own implementation.
+
+```php
+$client = new WebSocket\Client("ws://echo.websocket.org/");
+$client
+    // Add CloseHandler middleware
+    ->addMiddleware(new WebSocket\Middleware\CloseHandler())
+    // Add PingResponder middleware
+    ->addMiddleware(new WebSocket\Middleware\PingResponder())
+    ;
+```
+
+Read more on [Middlewares](Middlewares.md).
+
+## Message listeners
+
+The message listeners are used by specifying a callback function that will be called
+whenever the server receives a method of the same type.
+All message listeners receive Client, Connection and Message as arguments.
+
+```php
+$client = new WebSocket\Client("ws://echo.websocket.org/");
+$client
+    // Listen to incoming Text messages
+    ->onText(function (WebSocket\Server $server, WebSocket\Connection $connection, WebSocket\Message\Text $message) {
+        // Act on incoming message
+    })
+    // Listen to incoming Binary messages
+    ->onBinary(function (WebSocket\Server $server, WebSocket\Connection $connection, WebSocket\Message\Binary $message) {
+        // Act on incoming message
+    })
+    // Listen to incoming Ping messages
+    ->onPing(function (WebSocket\Server $server, WebSocket\Connection $connection, WebSocket\Message\Ping $message) {
+        // Act on incoming message
+    })
+    // Listen to incoming Pong messages
+    ->onPong(function (WebSocket\Server $server, WebSocket\Connection $connection, WebSocket\Message\Pong $message) {
+        // Act on incoming message
+    })
+    // Listen to incoming Close messages
+    ->onClose(function (WebSocket\Server $server, WebSocket\Connection $connection, WebSocket\Message\Close $message) {
+        // Act on incoming message
+    })
+    ;
+```
+
+## Connect, Disconnect and Error listeners
+
+Some additional listeners are available for more advanced features.
+
+```php
+$client = new WebSocket\Client("ws://echo.websocket.org/");
+$client
+    // Called when a client connects
+    ->onConnect(function (WebSocket\Client $client, WebSocket\Connection $connection, Psr\Http\Message\ServerRequestInterface $request) {
+        // Act on connect
+    })
+    // Called when a client is disconnects
+    ->onDisconnect(function (WebSocket\Client $client, WebSocket\Connection $connection) {
+        // Act on disconnect
+    })
+    // When resolvable error occurs, this listener will be called
+    ->onError(function (WebSocket\Client $client, WebSocket\Connection|null $connection, Exception $exception) {
+        // Act on exception
+    })
+    ;
+```
+
+## Coroutine - The Tick listener
+
+Using above functions, your server will be able to receive incoming messages and take action accordingly.
+
+But what if your server need to process other data, and send unsolicited message to connected clients?
+This is where coroutine pattern enters the picture.
+The server might not be able to do things in parallell,
+but it can give you space to run additional code not necessarily triggered by an incoming message.
+
+Depending on workload and timeout configuration, the Tick listener will be called every now and then.
+
+```php
+$client = new WebSocket\Client("ws://echo.websocket.org/");
+$client
+    // Regulary called, regardless of WebSocket connections
+    ->onTick(function (WebSocket\Client $client) {
+        // Do anything
+    })
+    ;
+```
+
+## Messages
+
+WebSocket messages comes as any of five types; Text, Binary, Ping, Pong and Close.
+The type is defined as opcode in WebSocket standard, and each classname corresponds to current message opcode.
+
+Text and Binary are the main content message. The others are used for internal communication and typically do not contain content.
+All provide the same methods, excpet Close that have an additional method not present on other types of messages.
+
+```php
+echo "opcode:       {$message->getOpcode()}\n";
+echo "length:       {$message->getLength()}\n";
+echo "timestamp:    {$message->getTimestamp()}\n";
+echo "content:      {$message->getContent()}\n";
+echo "close status: {$close->getCloseStatus()}\n";
+```
+
+Read more on [Messages](Message.md).
+
+## Sending a message to connected server
+
+To send a message to a server, call the send() method with a Message instance.
+Any of the five message types can be sent this way.
+
+```php
+$client->send(new WebSocket\Message\Text("Server sends a message"));
+$client->send(new WebSocket\Message\Binary($binary));
+$client->send(new WebSocket\Message\Ping("My ping"));
+$client->send(new WebSocket\Message\Text("My pong"));
+$client->send(new WebSocket\Message\Close(1000, "Closing now"));
+```
+The are also convenience methods available for all types.
+```php
+$client->text("Server sends a message");
+$client->binary($binary);
+$client->ping("My ping");
+$client->pong("My pong");
+$client->close(1000, "Closing now");
+```
+
+## Connection control
+
+Client will automatically connect when sending a message or starting the listner.
+You may also connect and disconnect manually.
+
+```php
+if (!$client->isConnected()) {
+    $client->connect();
 }
-$client->close();
+$client->disconnect();
 ```
 
-### Receiving messages
-
-By default the `receive()` method return messages of 'text' and 'binary' opcode.
-The filter option allows you to specify which message types to return.
+When connected, there are addintional info to retrieve.
 
 ```php
-$client = new WebSocket\Client("ws://echo.websocket.org/", ['filter' => ['text']]);
-$client->receive(); // Only return 'text' messages
+// View client name
+echo "local:    {$client->getName()}\n";
 
-$client = new WebSocket\Client("ws://echo.websocket.org/", ['filter' => ['text', 'binary', 'ping', 'pong', 'close']]);
-$client->receive(); // Return all messages
+// View server name
+echo "remote:   {$client->getRemoteName()}\n";
+
+// Get response on handshake
+$response = $client->getHandshakeResponse();
 ```
-
-By setting an option, `receive()` will instead return a [Message](Message.md) instance.
-
-```php
-$server = new WebSocket\Server(['return_obj' => true]);
-$message = $server->receive();
-$message->getOpcode();
-$message->getContent();
-```
-
-### Sending messages
-
-There are convenience methods to send messages with different opcodes.
-```php
-$client = new WebSocket\Client("ws://echo.websocket.org/");
-
-// Convenience methods
-$client->text('A plain text message'); // Send an opcode=text message
-$client->binary($binary_string); // Send an opcode=binary message
-$client->ping(); // Send an opcode=ping frame
-$client->pong(); // Send an unsolicited opcode=pong frame
-
-// Generic send method
-$client->send($payload); // Sent as opcode=text
-$client->send($payload, 'binary'); // Sent as opcode=binary
-
-// Message send method
-$server->send(new WebSocket\Message\Text($payload)); // Sent as opcode=text
-$server->send(new WebSocket\Message\Binary($payload)); // Sent as opcode=text
-```
-
-## Constructor options
-
-The `$options` parameter in constructor accepts an associative array of options.
-
-* `context` - A stream context created using [stream_context_create](https://www.php.net/manual/en/function.stream-context-create).
-* `filter` - Array of opcodes to return on receive, default `['text', 'binary']`
-* `fragment_size` - Maximum payload size. Default 4096 chars.
-* `headers` - Additional headers as associative array name => content.
-* `logger` - A [PSR-3](https://www.php-fig.org/psr/psr-3/) compatible logger.
-* `persistent` - Connection is re-used between requests until time out is reached. Default false.
-* `return_obj` - Return a [Message](Message.md) instance on receive, default false
-* `timeout` - Time out in seconds. Default 5 seconds.
-
-```php
-$context = stream_context_create();
-stream_context_set_option($context, 'ssl', 'verify_peer', false);
-stream_context_set_option($context, 'ssl', 'verify_peer_name', false);
-
-$client = new WebSocket\Client("ws://echo.websocket.org/", [
-    'context' => $context, // Attach stream context created above
-    'filter' => ['text', 'binary', 'ping'], // Specify message types for receive() to return
-    'headers' => [ // Additional headers, used to specify subprotocol
-        'Sec-WebSocket-Protocol' => 'soap',
-        'origin' => 'localhost',
-    ],
-    'logger' => $my_psr3_logger, // Attach a PSR3 compatible logger
-    'return_obj' => true, // Return Message instance rather than just text
-    'timeout' => 60, // 1 minute time out
-]);
-```
-
-## Exceptions
-
-* `WebSocket\BadOpcodeException` - Thrown if provided opcode is invalid.
-* `WebSocket\BadUriException` - Thrown if provided URI is invalid.
-* `WebSocket\ConnectionException` - Thrown on any socket I/O failure.
-* `WebSocket\TimeoutException` - Thrown when the socket experiences a time out.

@@ -28,6 +28,7 @@ use WebSocket\{
 };
 use WebSocket\Exception\{
     BadOpcodeException,
+    CloseException,
     ConnectionClosedException,
     ServerException
 };
@@ -148,7 +149,12 @@ class ServerTest extends TestCase
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
-            return base64_decode('gQA=');
+            return base64_decode('gYA=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('48PpGQ==');
         });
         $server->start();
 
@@ -157,7 +163,12 @@ class ServerTest extends TestCase
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
-            return base64_decode('ggA=');
+            return base64_decode('goA=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('0NluFQ==');
         });
         $server->start();
 
@@ -166,7 +177,12 @@ class ServerTest extends TestCase
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
-            return base64_decode('iQA=');
+            return base64_decode('iIA=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('7DZDMQ==');
         });
         $server->start();
 
@@ -175,7 +191,12 @@ class ServerTest extends TestCase
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
-            return base64_decode('igA=');
+            return base64_decode('iYA=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('TlPnpA==');
         });
         $server->start();
 
@@ -184,7 +205,12 @@ class ServerTest extends TestCase
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
-            return base64_decode('iAA=');
+            return base64_decode('ioA=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('QKVFzg==');
         });
         $server->start();
 
@@ -193,7 +219,12 @@ class ServerTest extends TestCase
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
-            return base64_decode('gwA=');
+            return base64_decode('g4A=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('ff2Uag==');
         });
         $server->start();
 
@@ -556,5 +587,51 @@ class ServerTest extends TestCase
         $this->expectException(StreamException::class);
         $this->expectExceptionMessage('Stream is detached.');
         $server->start();
+    }
+
+    public function testUnmaskedException(): void
+    {
+        $this->expectStreamFactory();
+        $server = new Server(8000);
+        $server->setStreamFactory(new StreamFactory());
+
+        $server->onError(function ($server, $connection, $exception) {
+            $this->assertInstanceOf(Server::class, $server);
+            $this->assertInstanceOf(CloseException::class, $exception);
+            $this->assertEquals(1002, $exception->getCloseStatus());
+            $this->assertEquals('Masking required', $exception->getMessage());
+            $server->stop();
+        });
+
+        $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
+        $this->expectWsSelectConnections(['@server']);
+        // Accept connection
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
+            return 'fake-connection-1';
+        });
+        $this->expectStreamCollectionAttach();
+        $this->expectSocketStreamGetLocalName()->setReturn(function () {
+            return 'fake-connection-1';
+        });
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $this->expectWsServerPerformHandshake();
+
+        $this->expectSocketStreamIsConnected();
+        $this->expectWsSelectConnections(['fake-connection-1']);
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('gQA=');
+        });
+        $this->expectSocketStreamWrite();
+        $this->expectSocketStreamIsConnected();
+        $server->start();
+
+        $this->expectSocketStreamClose();
+        unset($server);
     }
 }

@@ -17,6 +17,7 @@ use Psr\Log\{
 };
 use RuntimeException;
 use WebSocket\Trait\OpcodeTrait;
+use WebSocket\Exception\CloseException;
 
 /**
  * WebSocket\Frame\FrameHandler class.
@@ -49,7 +50,6 @@ class FrameHandler implements LoggerAwareInterface
     {
         // Read the frame "header" first, two bytes.
         $data = $this->read(2);
-
         list ($byte_1, $byte_2) = array_values(unpack('C*', $data));
         $final = (bool)($byte_1 & 0b10000000); // Final fragment marker.
         $rsv = $byte_1 & 0b01110000; // Unused bits, ignore
@@ -82,8 +82,6 @@ class FrameHandler implements LoggerAwareInterface
             $masking_key = $this->stream->read(4);
         }
 
-        // @todo Throw exception if !masked && pullMaskedRequired
-
         // Get the actual payload, if any (might not be for e.g. close frames).
         if ($payload_length > 0) {
             $data = $this->read($payload_length);
@@ -96,12 +94,19 @@ class FrameHandler implements LoggerAwareInterface
                 $payload = $data;
             }
         }
+
         $frame = new Frame($opcode, $payload, $final);
         $this->logger->debug("[frame-handler] Pulled '{opcode}' frame", [
             'opcode' => $frame->getOpcode(),
             'final' => $frame->isFinal(),
             'content-length' => $frame->getPayloadLength(),
         ]);
+
+        if ($this->pullMaskedRequired && !$masked) {
+            $this->logger->error("[frame-handler] Masking required, but frame was unmasked");
+            throw new CloseException(1002, 'Masking required');
+        }
+
         return $frame;
     }
 

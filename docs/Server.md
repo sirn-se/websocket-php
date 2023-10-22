@@ -3,7 +3,7 @@
 # Websocket: Server
 
 The library contains a multi-connection listening server based on coroutine runtime.
-It does not, however, support full parallell processing through threads or separate processes.
+It does not support full parallell processing through threads or separate processes.
 
 ## Basic operation
 
@@ -60,7 +60,7 @@ This repo comes with two middlewares that provide standard operability according
 * CloseHandler - Automatically acts on incoming and outgoing Close requests, as specified in WebSocket protocol
 * PingResponder - Responds with Pong message when receiving a Ping message, as specified in WebSocket protocol
 
-If not present you would need to handle close operation and respond to ping requests in your own implementation.
+If not added, you need to handle close operation and respond to ping requests in your own implementation.
 
 ```php
 $server = new WebSocket\Server();
@@ -165,7 +165,7 @@ echo "content:      {$message->getContent()}\n";
 echo "close status: {$close->getCloseStatus()}\n";
 ```
 
-Read more on [Messages](Messages.md).
+Read more on [Messages](Message.md).
 
 ## Sending a message to connected client
 

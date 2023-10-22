@@ -23,6 +23,7 @@ use Psr\Log\{
 use Stringable;
 use Throwable;
 use WebSocket\Exception\{
+    CloseException,
     ConnectionLevelInterface,
     Exception,
     HandshakeException,
@@ -74,6 +75,7 @@ class Server implements LoggerAwareInterface, Stringable
     /**
      * @param int $port Socket port to listen to
      * @param string $scheme Scheme (tcp or ssl)
+     * @throws InvalidArgumentException If invalid port provided
      */
     public function __construct(int $port = 80, bool $ssl = false)
     {
@@ -88,7 +90,7 @@ class Server implements LoggerAwareInterface, Stringable
 
     /**
      * Get string representation of instance.
-     * @return string String representation.
+     * @return string String representation
      */
     public function __toString(): string
     {
@@ -100,7 +102,8 @@ class Server implements LoggerAwareInterface, Stringable
 
     /**
      * Set stream factory to use.
-     * @param StreamFactory $streamFactory.
+     * @param Phrity\Net\StreamFactory $streamFactory
+     * @return self
      */
     public function setStreamFactory(StreamFactory $streamFactory): self
     {
@@ -111,7 +114,7 @@ class Server implements LoggerAwareInterface, Stringable
     /**
      * Set logger.
      * @param Psr\Log\LoggerInterface $logger Logger implementation
-     * @return self.
+     * @return self
      */
     public function setLogger(LoggerInterface $logger): self
     {
@@ -124,7 +127,9 @@ class Server implements LoggerAwareInterface, Stringable
 
     /**
      * Set timeout.
-     * @param int $timeout Timeout in seconds.
+     * @param int $timeout Timeout in seconds
+     * @return self
+     * @throws InvalidArgumentException If invalid timeout provided
      */
     public function setTimeout(int $timeout): self
     {
@@ -140,7 +145,7 @@ class Server implements LoggerAwareInterface, Stringable
 
     /**
      * Get timeout.
-     * @return int Timeout in seconds.
+     * @return int Timeout in seconds
      */
     public function getTimeout(): int
     {
@@ -149,8 +154,9 @@ class Server implements LoggerAwareInterface, Stringable
 
     /**
      * Set frame size.
-     * @param int $frameSize Frame size in bytes.
-     * @return self.
+     * @param int $frameSize Frame size in bytes
+     * @return self
+     * @throws InvalidArgumentException If invalid frameSize provided
      */
     public function setFrameSize(int $frameSize): self
     {
@@ -166,7 +172,7 @@ class Server implements LoggerAwareInterface, Stringable
 
     /**
      * Get frame size.
-     * @return int Frame size in bytes.
+     * @return int Frame size in bytes
      */
     public function getFrameSize(): int
     {
@@ -175,7 +181,7 @@ class Server implements LoggerAwareInterface, Stringable
 
     /**
      * Get socket port number.
-     * @return int port.
+     * @return int port
      */
     public function getPort(): int
     {
@@ -184,7 +190,7 @@ class Server implements LoggerAwareInterface, Stringable
 
     /**
      * Get connection scheme.
-     * @return string scheme.
+     * @return string scheme
      */
     public function getScheme(): string
     {
@@ -193,7 +199,7 @@ class Server implements LoggerAwareInterface, Stringable
 
     /**
      * Number of currently connected clients.
-     * @return int Connection count.
+     * @return int Connection count
      */
     public function getConnectionCount(): int
     {
@@ -202,8 +208,8 @@ class Server implements LoggerAwareInterface, Stringable
 
     /**
      * Add a middleware.
-     * @param MiddlewareInterface $middleware
-     * @return self.
+     * @param WebSocket\Middleware\MiddlewareInterface $middleware
+     * @return self
      */
     public function addMiddleware(MiddlewareInterface $middleware): self
     {
@@ -219,7 +225,7 @@ class Server implements LoggerAwareInterface, Stringable
 
     /**
      * Send message (broadcast to all connected clients).
-     * @param Message $message Message to send.
+     * @param WebSocket\Message\Message $message Message to send
      */
     public function send(Message $message): Message
     {
@@ -236,6 +242,7 @@ class Server implements LoggerAwareInterface, Stringable
 
     /**
      * Start server listener.
+     * @throws Throwable On low level error
      */
     public function start(): void
     {
@@ -286,6 +293,13 @@ class Server implements LoggerAwareInterface, Stringable
                         }
                         $this->logger->error("[server] {$e->getMessage()}");
                         $this->dispatch('error', [$this, $connection, $e]);
+                    } catch (CloseException $e) {
+                        // Should close
+                        if ($connection) {
+                            $connection->close($e->getCloseStatus(), $e->getMessage());
+                        }
+                        $this->logger->error("[server] sss {$e->getMessage()}");
+                        $this->dispatch('error', [$this, $connection, $e]);
                     }
                 }
                 $this->dispatch('tick', [$this]);
@@ -315,7 +329,7 @@ class Server implements LoggerAwareInterface, Stringable
 
     /**
      * If server is running (accepting connections and messages).
-     * @return bool.
+     * @return bool
      */
     public function isRunning(): bool
     {
@@ -388,6 +402,7 @@ class Server implements LoggerAwareInterface, Stringable
         }
     }
 
+    // Detach connections no longer available
     protected function detachUnconnected(): void
     {
         foreach ($this->connections as $key => $connection) {
