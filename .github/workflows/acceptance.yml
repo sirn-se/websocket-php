@@ -17,6 +17,7 @@ jobs:
       uses: shivammathur/setup-php@v2
       with:
         php-version: ${{ matrix.php-versions }}
+        coverage: none
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: Get composer cache directory
@@ -31,7 +32,7 @@ jobs:
     - name: Install dependencies
       run: composer install --prefer-dist
     - name: Test
-      run: make test
+      run: vendor/bin/phpunit
 
   cs-check:
     runs-on: ubuntu-latest
@@ -43,6 +44,7 @@ jobs:
       uses: shivammathur/setup-php@v2
       with:
         php-version: "8.2"
+        coverage: none
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: Get composer cache directory
@@ -57,7 +59,7 @@ jobs:
     - name: Install dependencies
       run: composer install --prefer-dist
     - name: Code standard
-      run: make cs-check
+      run: vendor/bin/phpcs --standard=PSR1,PSR12 --encoding=UTF-8 --report=full --colors src tests examples
 
   coverage:
     runs-on: ubuntu-latest
@@ -69,7 +71,7 @@ jobs:
       uses: shivammathur/setup-php@v2
       with:
         php-version: "8.2"
-        extensions: xdebug
+        coverage: xdebug
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: Get composer cache directory
@@ -83,7 +85,9 @@ jobs:
         restore-keys: ${{ runner.os }}-composer-
     - name: Install dependencies
       run: composer install --prefer-dist
-    - name: Code coverage
+    - name: Code coverage build
+      run: XDEBUG_MODE=coverage vendor/bin/phpunit --coverage-clover build/logs/clover.xml
+    - name: Code coverage upload
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: make coverage
+      run: vendor/bin/php-coveralls -v
