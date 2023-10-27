@@ -39,7 +39,7 @@ class BinaryTest extends TestCase
         $this->assertEquals('binary', $message->getOpcode());
         $this->assertEquals(16, $message->getLength());
         $this->assertTrue($message->hasContent());
-        $this->assertInstanceOf('DateTime', $message->getTimestamp());
+        $this->assertInstanceOf('DateTimeImmutable', $message->getTimestamp());
         $message->setContent('');
         $this->assertEquals(0, $message->getLength());
         $this->assertFalse($message->hasContent());

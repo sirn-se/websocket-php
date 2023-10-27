@@ -1,4 +1,4 @@
-[Client](Client.md) • Server • [Message](Message.md) • [Classes](Classes.md) • [Examples](Examples.md) • [Changelog](Changelog.md) • [Contributing](Contributing.md)
+[Documentation](Index.md) > Sever
 
 # Websocket: Server
 
@@ -91,63 +91,10 @@ $server
     ->onBinary(function (WebSocket\Server $server, WebSocket\Connection $connection, WebSocket\Message\Binary $message) {
         // Act on incoming message
     })
-    // Listen to incoming Ping messages
-    ->onPing(function (WebSocket\Server $server, WebSocket\Connection $connection, WebSocket\Message\Ping $message) {
-        // Act on incoming message
-    })
-    // Listen to incoming Pong messages
-    ->onPong(function (WebSocket\Server $server, WebSocket\Connection $connection, WebSocket\Message\Pong $message) {
-        // Act on incoming message
-    })
-    // Listen to incoming Close messages
-    ->onClose(function (WebSocket\Server $server, WebSocket\Connection $connection, WebSocket\Message\Close $message) {
-        // Act on incoming message
-    })
     ;
 ```
 
-## Connect, Disconnect and Error listeners
-
-Some additional listeners are available for more advanced features.
-
-```php
-$server = new WebSocket\Server();
-$server
-    // Called when a client is connected
-    ->onConnect(function (WebSocket\Server $server, WebSocket\Connection $connection, Psr\Http\Message\ServerRequestInterface $request) {
-        // Act on connect
-    })
-    // Called when a client is disconnected
-    ->onDisconnect(function (WebSocket\Server $server, WebSocket\Connection $connection) {
-        // Act on disconnect
-    })
-    // When resolvable error occurs, this listener will be called
-    ->onError(function (WebSocket\Server $server, WebSocket\Connection|null $connection, Exception $exception) {
-        // Act on exception
-    })
-    ;
-```
-
-## Coroutine - The Tick listener
-
-Using above functions, your server will be able to receive incoming messages and take action accordingly.
-
-But what if your server need to process other data, and send unsolicited message to connected clients?
-This is where coroutine pattern enters the picture.
-The server might not be able to do things in parallell,
-but it can give you space to run additional code not necessarily triggered by an incoming message.
-
-Depending on workload and timeout configuration, the Tick listener will be called every now and then.
-
-```php
-$server = new WebSocket\Server();
-$server
-    // Regulary called, regardless of WebSocket connections
-    ->onTick(function (WebSocket\Server $server) {
-        // Do anything
-    })
-    ;
-```
+Read more on [Listeners](Listener.md).
 
 ## Messages
 
@@ -155,7 +102,7 @@ WebSocket messages comes as any of five types; Text, Binary, Ping, Pong and Clos
 The type is defined as opcode in WebSocket standard, and each classname corresponds to current message opcode.
 
 Text and Binary are the main content message. The others are used for internal communication and typically do not contain content.
-All provide the same methods, excpet Close that have an additional method not present on other types of messages.
+All provide the same methods, except Close that have an additional method not present on other types of messages.
 
 ```php
 echo "opcode:       {$message->getOpcode()}\n";
@@ -256,11 +203,3 @@ $connection->getHandshakeRequest();
 $connection->getHandshakeResponse();
 ```
 
-Read more on [Connection](Connection.md).
-
-
-## Exceptions
-
-* `WebSocket\BadOpcodeException` - Thrown if provided opcode is invalid.
-* `WebSocket\ConnectionException` - Thrown on any socket I/O failure.
-* `WebSocket\TimeoutException` - Thrown when the socket experiences a time out.

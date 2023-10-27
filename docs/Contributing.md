@@ -1,4 +1,4 @@
-[Client](Client.md) • [Server](Server.md) • [Message](Message.md) • [Classes](Classes.md) • [Examples](Examples.md) • [Changelog](Changelog.md) • Contributing
+[Documentation](Index.md) > Contributing
 
 # Websocket: Contributing
 
@@ -14,10 +14,17 @@ Requirements on pull requests;
 
 Base your patch on corresponding version branch, and target that version branch in your pull request.
 
-* `v2.0-main` current version
-* `v1.7-master` previous version, bug fixes only
-* `v1.6-master` previous version, bug fixes only
-* Older versions should not be target of pull requests
+| Version | Branch | PHP | Status |
+| --- | --- | --- | --- |
+| [`2.0`](https://github.com/sirn-se/websocket-php/tree/2.0.0) | `v2.0-main` | `^8.0` | Current version |
+| [`1.7`](https://github.com/sirn-se/websocket-php/tree/1.7.0) | `v1.7-master` | `^7.4[^8.0` | Bug fixes only |
+| [`1.6`](https://github.com/sirn-se/websocket-php/tree/1.6.0) | `v1.6-master` | `^7.4[^8.0` | - |
+| [`1.5`](https://github.com/sirn-se/websocket-php/tree/1.5.0) | `v1.5-master` | `^7.4[^8.0` | - |
+| [`1.4`](https://github.com/sirn-se/websocket-php/tree/1.4.0) | - | `^7.1` | - |
+| [`1.3`](https://github.com/sirn-se/websocket-php/tree/1.3.0) | - | `5.4|^7.0` | - |
+| [`1.2`](https://github.com/sirn-se/websocket-php/tree/1.2.0) | - | - | - |
+| [`1.1`](https://github.com/sirn-se/websocket-php/tree/1.1.0) | - | - | - |
+| [`1.0`](https://github.com/sirn-se/websocket-php/tree/1.0.0) | - | - | - |
 
 
 ## Dependency management
@@ -50,3 +57,30 @@ make test
 # Create coverage
 make coverage
 ```
+
+## Contributors
+
+* Sören Jensen (maintainer)
+* Fredrik Liljegren
+* Armen Baghumian Sankbarani
+* Ruslan Bekenev
+* Joshua Thijssen
+* Simon Lipp
+* Quentin Bellus
+* Patrick McCarren
+* swmcdonnell,
+* Ignas Bernotas
+* Mark Herhold
+* Andreas Palm
+* pmaasz
+* Alexey Stavrov
+* Michael Slezak
+* Pierre Seznec
+* rmeisler
+* Nickolay V
+* Shmyrev
+* Christoph Kempen,
+* Marc Roberts
+* Antonio Mora
+* Simon Podlipsky
+* etrinh

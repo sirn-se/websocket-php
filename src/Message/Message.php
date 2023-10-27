@@ -9,7 +9,8 @@
 
 namespace WebSocket\Message;
 
-use DateTime;
+use DateTimeImmutable;
+use DateTimeInterface;
 use WebSocket\Frame\Frame;
 
 /**
@@ -25,7 +26,7 @@ abstract class Message
     public function __construct(string $content = '')
     {
         $this->content = $content;
-        $this->timestamp = new DateTime();
+        $this->timestamp = new DateTimeImmutable();
     }
 
     public function getOpcode(): string
@@ -38,7 +39,7 @@ abstract class Message
         return strlen($this->content);
     }
 
-    public function getTimestamp(): DateTime
+    public function getTimestamp(): DateTimeInterface
     {
         return $this->timestamp;
     }

@@ -1,34 +1,96 @@
-[Client](Client.md) • [Server](Server.md) • Message • [Classes](Classes.md) • [Examples](Examples.md) • [Changelog](Changelog.md) • [Contributing](Contributing.md)
+[Documentation](Index.md) > Message
 
-# Websocket: Messages
+# Websocket: Message
 
-If option `return_obj` is set to `true` on [client](Client.md) or [server](Server.md),
-the `receive()` method will return a Message instance instead of a string.
-The `send()` method also accepts a Message instance.
+WebSocket messages comes as any of five types; Text, Binary, Ping, Pong and Close.
+The type is defined as opcode in WebSocket standard, and each classname corresponds to current message opcode.
 
-Available classes correspond to opcode;
-* WebSocket\Message\Text
-* WebSocket\Message\Binary
-* WebSocket\Message\Ping
-* WebSocket\Message\Pong
-* WebSocket\Message\Close
+Text and Binary are the main content message. The others are used for internal communication and typically do not contain content.
+All provide the same methods, except Close that have an additional method not present on other types of messages.
 
-## Example
-
-Sneding and eceving a Message and echo some methods.
+## Creating Message instance
 
 ```php
-$client = new WebSocket\Client('ws://echo.websocket.org/', ['return_obj' => true]);
+// Text and Binary message types
+$text = new WebSocket\Message\Text("Some text to be sent");
+$binary = new WebSocket\Message\Binary("<binary string here>");
 
-// Send messages
-$client->send(new WebSocket\Message\Text('Hello WebSocket.org!'));
+// Ping and Pong may optionally have content
+$ping = new WebSocket\Message\Ping();
+$ping = new WebSocket\Message\Ping("Some text");
+$pong = new WebSocket\Message\Pong();
+$pong = new WebSocket\Message\Pong("Some text");
 
-// Echo return same message as sent
+// Close may optionally have close status and content
+$close = new WebSocket\Message\Close();
+$close = new WebSocket\Message\Close(1000);
+$close = new WebSocket\Message\Close(1000, "Some text");
+```
+
+## General methods
+
+These methods are available on all Message types
+
+```php
+// Opcode as "text", "binary", "ping", "pong" or "close"
+echo $message->getOpcode();
+
+// Character length of message content
+echo $message->getLength();
+
+// Has message content
+echo $message->hasContent();
+
+// Get message content
+echo $message->getContent();
+
+// Set message content
+echo $message->setContent("Some text");
+
+// Get DateTime of message
+echo $message->getTimestamp()->format('H:i:s');
+```
+
+## Close methods
+
+The Close message has additional methods.
+
+```php
+// Get close status
+echo $message->getCloseStatus();
+
+// Set close status
+echo $message->setCloseStatus(1000);
+```
+
+## How Message instance is used
+
+```php
+// Client sending Message to server
+$client->send(new WebSocket\Message\Text("Some text to be sent"));
+
+// Client receiving Message from server
 $message = $client->receive();
-echo $message->getOpcode(); // -> "text"
-echo $message->getLength(); // -> 20
-echo $message->getContent(); // -> "Hello WebSocket.org!"
-echo $message->hasContent(); // -> true
-echo $message->getTimestamp()->format('H:i:s'); // -> 19:37:18
-$client->close();
+
+// Client listen to messages of Text type
+$client->onText(function ($client, $connection, $message) {
+
+    // Client sending Message to server
+    $client->send(new WebSocket\Message\Text("Some text to be sent"));
+});
+```
+
+```php
+// Server broadcasting Message to all connected clients
+$server->send(new WebSocket\Message\Text("Some text to be sent"));
+
+// Server listen to messages of Text type
+$server->onText(function ($server, $connection, $message) {
+
+    // Server sending Message to specific client
+    $connection->send(new WebSocket\Message\Text("Some text to be sent"));
+
+    // Server broadcasting Message to all connected clients
+    $server->send(new WebSocket\Message\Text("Some text to be sent"));
+});
 ```

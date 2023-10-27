@@ -1,25 +1,27 @@
 # Websocket Client and Server for PHP
 
 [![Build Status](https://github.com/sirn-se/websocket-php/actions/workflows/acceptance.yml/badge.svg)](https://github.com/sirn-se/websocket-php/actions)
-[![Coverage Status](https://coveralls.io/repos/github/sirn-se/websocket-php/badge.svg?branch=master)](https://coveralls.io/github/sirn-se/websocket-php)
+[![Coverage Status](https://coveralls.io/repos/github/sirn-se/websocket-php/badge.svg?branch=v2.0-main)](https://coveralls.io/github/sirn-se/websocket-php)
 
 This library contains WebSocket client and server for PHP.
 Replaces `textalk/websocket`.
 
 The client and server provides methods for reading and writing to WebSocket streams.
-It does not include convenience operations such as listeners and implicit error handling.
 
 This fork is maintained by Sören Jensen, who has been maintaining the original textalk/websocket
 repo since `v1.3`.
 
 ## Documentation
 
-- [Client](docs/Client.md)
-- [Server](docs/Server.md)
-- [Examples](docs/Examples.md)
-- [Classes](docs/Classes.md)
-- [Changelog](docs/Changelog.md)
-- [Contributing](docs/Contributing.md)
+* [Documentation](docs/Index.md)
+* [Client](Client.md) - The WebSocket client
+* [Server](Server.md) - The WebSocket server
+* [Listener](Listener.md) - Listeners allow callbacks when messages are received
+* [Message](Message.md) - The Message represents a WebSocket message being sent or received
+* [Middleware](Middleware.md) - Middlewares allow implementations to act incoming and outgoing messages
+* [Changelog](Changelog.md) - The changelog of this repo
+* [Contributing](Contributing.md) - Contributors and requirements
+* [Examples](Examples.md) - Contributors and requirements
 
 ## Installing
 
@@ -28,46 +30,70 @@ Preferred way to install is with [Composer](https://getcomposer.org/).
 composer require phrity/websocket
 ```
 
-* Current version support PHP versions `^8.0`.
-* For PHP `7.4` support use version [`1.7`](https://github.com/sirn-se/websocket-php/tree/1.7.0).
-* For PHP `7.2` and `7.3` support use version [`1.5`](https://github.com/sirn-se/websocket-php/tree/1.5.0).
-* For PHP `7.1` support use version [`1.4`](https://github.com/sirn-se/websocket-php/tree/1.4.0).
-* For PHP `^5.4` and `7.0` support use version [`1.3`](https://github.com/sirn-se/websocket-php/tree/1.3.0).
-
 ## Client
 
 The [client](docs/Client.md) can read and write on a WebSocket stream.
 It internally supports Upgrade handshake and implicit close and ping/pong operations.
 
+Set up a WebSocket Client for request/response strategy.
 ```php
 $client = new WebSocket\Client("ws://echo.websocket.org/");
+$client
+    // Add standard middlewares
+    ->addMiddleware(new WebSocket\Middleware\CloseHandler())
+    ->addMiddleware(new WebSocket\Middleware\PingResponder())
+
+// Send a message
 $client->text("Hello WebSocket.org!");
+
+// Read response (this is blocking)
 echo $client->receive();
+
+// Close connection
 $client->close();
 ```
 
-## Server
-
-The library contains a rudimentary single stream/single thread [server](docs/Server.md).
-It internally supports Upgrade handshake and implicit close and ping/pong operations.
-
-Note that it does **not** support threading or automatic association ot continuous client requests.
-If you require this kind of server behavior, you need to build it on top of provided server implementation.
-
+Set up a WebSocket Client for continuous subscription
 ```php
-$server = new WebSocket\Server();
-$server->accept();
-$message = $server->receive();
-$server->text($message);
-$server->close();
+$client = new WebSocket\Client("ws://echo.websocket.org/");
+$client
+    // Add standard middlewares
+    ->addMiddleware(new WebSocket\Middleware\CloseHandler())
+    ->addMiddleware(new WebSocket\Middleware\PingResponder())
+    // Listen to incoming Text messages
+    ->onText(function (WebSocket\Client $client, WebSocket\Connection $connection, WebSocket\Message\Message $message) {
+        // Act on incoming message
+        echo "Got message: {$message->getContent()} \n";
+        // Possibly respond to server
+        $client->text("I got your your message");
+    })
+    ->start();
 ```
 
-### License and Contributors
+
+## Server
+
+The [server](docs/Server.md) is a multi connection, listening server.
+It internally supports Upgrade handshake and implicit close and ping/pong operations.
+
+Set up a WebSocket Server for continuous listening
+```php
+$server = new WebSocket\Server();
+$server
+    // Add standard middlewares
+    ->addMiddleware(new WebSocket\Middleware\CloseHandler())
+    ->addMiddleware(new WebSocket\Middleware\PingResponder())
+    // Listen to incoming Text messages
+    ->onText(function (WebSocket\Server $server, WebSocket\Connection $connection, WebSocket\Message\Message $message) {
+        // Act on incoming message
+        echo "Got message: {$message->getContent()} \n";
+        // Possibly respond to client
+        $connection->text("I got your your message");
+    })
+    ->start();
+```
+
+### License
 
 [ISC License](COPYING.md)
 
-Fredrik Liljegren, Armen Baghumian Sankbarani, Ruslan Bekenev,
-Joshua Thijssen, Simon Lipp, Quentin Bellus, Patrick McCarren, swmcdonnell,
-Ignas Bernotas, Mark Herhold, Andreas Palm, Sören Jensen, pmaasz, Alexey Stavrov,
-Michael Slezak, Pierre Seznec, rmeisler, Nickolay V. Shmyrev, Christoph Kempen,
-Marc Roberts, Antonio Mora, Simon Podlipsky, etrinh.

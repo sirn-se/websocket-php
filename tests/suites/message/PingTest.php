@@ -38,7 +38,7 @@ class PingTest extends TestCase
         $this->assertEquals('ping', $message->getOpcode());
         $this->assertEquals(12, $message->getLength());
         $this->assertTrue($message->hasContent());
-        $this->assertInstanceOf('DateTime', $message->getTimestamp());
+        $this->assertInstanceOf('DateTimeImmutable', $message->getTimestamp());
         $message->setContent('');
         $this->assertEquals(0, $message->getLength());
         $this->assertFalse($message->hasContent());

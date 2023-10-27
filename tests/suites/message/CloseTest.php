@@ -39,7 +39,7 @@ class CloseTest extends TestCase
         $this->assertEquals(1000, $message->getCloseStatus());
         $this->assertEquals(12, $message->getLength());
         $this->assertTrue($message->hasContent());
-        $this->assertInstanceOf('DateTime', $message->getTimestamp());
+        $this->assertInstanceOf('DateTimeImmutable', $message->getTimestamp());
         $message->setContent('');
         $message->setCloseStatus(1020);
         $this->assertEquals(0, $message->getLength());
