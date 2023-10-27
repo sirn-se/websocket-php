@@ -14,14 +14,11 @@ repo since `v1.3`.
 ## Documentation
 
 * [Documentation](docs/Index.md)
-* [Client](Client.md) - The WebSocket client
-* [Server](Server.md) - The WebSocket server
-* [Listener](Listener.md) - Listeners allow callbacks when messages are received
-* [Message](Message.md) - The Message represents a WebSocket message being sent or received
-* [Middleware](Middleware.md) - Middlewares allow implementations to act incoming and outgoing messages
-* [Changelog](Changelog.md) - The changelog of this repo
-* [Contributing](Contributing.md) - Contributors and requirements
-* [Examples](Examples.md) - Contributors and requirements
+* [Client](docs/Client.md) - The WebSocket client
+* [Server](docs/Server.md) - The WebSocket server
+* [Changelog](docs/Changelog.md) - The changelog of this repo
+* [Contributing](docs/Contributing.md) - Contributors and requirements
+* [Examples](docs/Examples.md) - Contributors and requirements
 
 ## Installing
 
