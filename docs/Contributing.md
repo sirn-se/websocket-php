@@ -17,11 +17,11 @@ Base your patch on corresponding version branch, and target that version branch 
 | Version | Branch | PHP | Status |
 | --- | --- | --- | --- |
 | [`2.0`](https://github.com/sirn-se/websocket-php/tree/2.0.0) | `v2.0-main` | `^8.0` | Current version |
-| [`1.7`](https://github.com/sirn-se/websocket-php/tree/1.7.0) | `v1.7-master` | `^7.4[^8.0` | Bug fixes only |
-| [`1.6`](https://github.com/sirn-se/websocket-php/tree/1.6.0) | `v1.6-master` | `^7.4[^8.0` | - |
-| [`1.5`](https://github.com/sirn-se/websocket-php/tree/1.5.0) | `v1.5-master` | `^7.4[^8.0` | - |
+| [`1.7`](https://github.com/sirn-se/websocket-php/tree/1.7.0) | `v1.7-master` | `^7.4\\^8.0` | Bug fixes only |
+| [`1.6`](https://github.com/sirn-se/websocket-php/tree/1.6.0) | `v1.6-master` | `^7.4\\^8.0` | - |
+| [`1.5`](https://github.com/sirn-se/websocket-php/tree/1.5.0) | `v1.5-master` | `^7.4\\^8.0` | - |
 | [`1.4`](https://github.com/sirn-se/websocket-php/tree/1.4.0) | - | `^7.1` | - |
-| [`1.3`](https://github.com/sirn-se/websocket-php/tree/1.3.0) | - | `5.4|^7.0` | - |
+| [`1.3`](https://github.com/sirn-se/websocket-php/tree/1.3.0) | - | `^5.4\\^7.0` | - |
 | [`1.2`](https://github.com/sirn-se/websocket-php/tree/1.2.0) | - | - | - |
 | [`1.1`](https://github.com/sirn-se/websocket-php/tree/1.1.0) | - | - | - |
 | [`1.0`](https://github.com/sirn-se/websocket-php/tree/1.0.0) | - | - | - |

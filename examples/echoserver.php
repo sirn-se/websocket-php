@@ -69,16 +69,18 @@ try {
                 $connection->disconnect();
                 break;
             case '@info':
-                echo "< [{$connection->getRemoteName()}] Connection info:\n";
-                echo "  - Local:       {$connection->getName()}\n";
-                echo "  - Remote:      {$connection->getRemoteName()}\n";
-                echo "  - Request:     {$connection->getHandshakeRequest()->getUri()}\n";
-                echo "  - Response:    {$connection->getHandshakeResponse()->getStatusCode()}\n";
-                echo "  - Connected:   " . json_encode($connection->isConnected()) . "\n";
-                echo "  - Readable:    " . json_encode($connection->isReadable()) . "\n";
-                echo "  - Writable:    " . json_encode($connection->isWritable()) . "\n";
-                echo "  - Timeout:     {$connection->getTimeout()}s\n";
-                echo "  - Frame size:  {$connection->getFrameSize()}b\n";
+                $msg = "Connection info:\n";
+                $msg .= "  - Local:       {$connection->getName()}\n";
+                $msg .= "  - Remote:      {$connection->getRemoteName()}\n";
+                $msg .= "  - Request:     {$connection->getHandshakeRequest()->getUri()}\n";
+                $msg .= "  - Response:    {$connection->getHandshakeResponse()->getStatusCode()}\n";
+                $msg .= "  - Connected:   " . json_encode($connection->isConnected()) . "\n";
+                $msg .= "  - Readable:    " . json_encode($connection->isReadable()) . "\n";
+                $msg .= "  - Writable:    " . json_encode($connection->isWritable()) . "\n";
+                $msg .= "  - Timeout:     {$connection->getTimeout()}s\n";
+                $msg .= "  - Frame size:  {$connection->getFrameSize()}b\n";
+                echo "< [{$connection->getRemoteName()}] {$msg}";
+                $server->send(new \WebSocket\Message\Text($msg));
                 break;
 
             // Server commands
@@ -99,13 +101,15 @@ try {
                 $server->disconnect();
                 break;
             case '@server-info':
-                echo "< [{$connection->getRemoteName()}] Server info:\n";
-                echo "  - Running:     " . json_encode($server->isRunning()) . "\n";
-                echo "  - Connections: {$server->getConnectionCount()}\n";
-                echo "  - Port:        {$server->getPort()}\n";
-                echo "  - Scheme:      {$server->getScheme()}\n";
-                echo "  - Timeout:     {$server->getTimeout()}s\n";
-                echo "  - Frame size:  {$server->getFrameSize()}b\n";
+                $msg = "Server info:\n";
+                $msg .= "  - Running:     " . json_encode($server->isRunning()) . "\n";
+                $msg .= "  - Connections: {$server->getConnectionCount()}\n";
+                $msg .= "  - Port:        {$server->getPort()}\n";
+                $msg .= "  - Scheme:      {$server->getScheme()}\n";
+                $msg .= "  - Timeout:     {$server->getTimeout()}s\n";
+                $msg .= "  - Frame size:  {$server->getFrameSize()}b\n";
+                echo "< [{$connection->getRemoteName()}] {$msg}";
+                $server->send(new \WebSocket\Message\Text($msg));
                 break;
 
             // Echo received message

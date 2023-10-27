@@ -23,9 +23,9 @@ $server->setLogger($logger);
 
 An example of server output;
 ```
-info     | Server listening to port 8000 []
+info     | Server listening to port 80 []
 debug    | Wrote 129 of 129 bytes. []
-info     | Server connected to port 8000 []
+info     | Server connected to port 80 []
 info     | Received 'text' message []
 debug    | Wrote 9 of 9 bytes. []
 info     | Sent 'text' message []
@@ -63,12 +63,15 @@ php examples/echoserver.php --debug //  Use runtime debugging
 ```
 
 These strings can be sent as message to trigger server to perform actions;
-* `auth` -  Server will respond with auth header if provided by client
-* `close` -  Server will close current connection
-* `exit` - Server will close all active connections
-* `headers` - Server will respond with all headers provided by client
-* `ping` - Server will send a ping message
-* `pong` - Server will send a pong message
+* `@close` -  Server will close current connection
+* `@ping` - Server will send a ping message on current connection
+* `@disconnect` - Server will disconnect current connection
+* `@info` - Server will respond with connection info
+* `@server-stop` - Server will stop listening
+* `@server-close` - Server will close all connections
+* `@server-ping` - Server will send a ping message on all connections
+* `@server-disconnect` - Server will disconnect all connections
+* `@server-info` - Server will respond with server info
 * For other sent strings, server will respond with the same strings
 
 ## The `random` client
