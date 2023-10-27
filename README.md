@@ -18,7 +18,7 @@ repo since `v1.3`.
 * [Server](docs/Server.md) - The WebSocket server
 * [Changelog](docs/Changelog.md) - The changelog of this repo
 * [Contributing](docs/Contributing.md) - Contributors and requirements
-* [Examples](docs/Examples.md) - Contributors and requirements
+* [Examples](docs/Examples.md) - Examples
 
 ## Installing
 
