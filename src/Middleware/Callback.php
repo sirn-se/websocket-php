@@ -10,8 +10,10 @@
 namespace WebSocket\Middleware;
 
 use Closure;
-use Psr\Log\LoggerAwareInterface;
-use Psr\Log\LoggerAwareTrait;
+use Psr\Log\{
+    LoggerAwareInterface,
+    LoggerAwareTrait
+};
 use Stringable;
 use WebSocket\Connection;
 use WebSocket\Message\Message;

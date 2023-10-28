@@ -10,8 +10,8 @@
 namespace WebSocket\Message;
 
 use Psr\Log\{
-    LoggerInterface,
     LoggerAwareInterface,
+    LoggerInterface,
     NullLogger
 };
 use WebSocket\Exception\BadOpcodeException;
