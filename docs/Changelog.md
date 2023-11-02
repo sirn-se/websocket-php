@@ -6,6 +6,10 @@
 
  > PHP version `^8.0`
 
+### `2.0.1`
+
+ * Fix `psr/log` dependency (@sirn-se)
+
 ### `2.0.0`
 
  * Listeners for client and server (@sirn-se)
