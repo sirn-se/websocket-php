@@ -64,7 +64,7 @@ class ServerTest extends TestCase
         $this->assertEquals(null, $server->getLastOpcode());
         $this->assertEquals(4096, $server->getFragmentSize());
 
-        $this->expectStreamFactoryCreateSockerServer();
+        $this->expectStreamFactoryCreateSocketServer();
         $this->expectSocketServer();
         $this->expectSocketServerGetTransports();
         $this->expectSocketServerGetMetadata();
@@ -166,7 +166,7 @@ class ServerTest extends TestCase
         $server = new Server(['timeout' => 300]);
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectStreamFactoryCreateSockerServer();
+        $this->expectStreamFactoryCreateSocketServer();
         $this->expectSocketServer();
         $this->expectSocketServerGetTransports();
         $this->expectSocketServerGetMetadata();
@@ -195,7 +195,7 @@ class ServerTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectStreamFactoryCreateSockerServer();
+        $this->expectStreamFactoryCreateSocketServer();
         $this->expectSocketServer();
         $this->expectSocketServerGetTransports();
         $this->expectSocketServerGetMetadata();
@@ -228,7 +228,7 @@ class ServerTest extends TestCase
         $server->setStreamFactory(new StreamFactory());
         $server->setFragmentSize(65540);
 
-        $this->expectStreamFactoryCreateSockerServer();
+        $this->expectStreamFactoryCreateSocketServer();
         $this->expectSocketServer();
         $this->expectSocketServerGetTransports();
         $this->expectSocketServerGetMetadata();
@@ -281,7 +281,7 @@ class ServerTest extends TestCase
         $server->setStreamFactory(new StreamFactory());
         $server->setFragmentSize(65540);
 
-        $this->expectStreamFactoryCreateSockerServer();
+        $this->expectStreamFactoryCreateSocketServer();
         $this->expectSocketServer();
         $this->expectSocketServerGetTransports();
         $this->expectSocketServerGetMetadata();
@@ -370,7 +370,7 @@ class ServerTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectStreamFactoryCreateSockerServer();
+        $this->expectStreamFactoryCreateSocketServer();
         $this->expectSocketServer();
         $this->expectSocketServerGetTransports();
         $this->expectSocketServerGetMetadata();
@@ -459,7 +459,7 @@ class ServerTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectStreamFactoryCreateSockerServer();
+        $this->expectStreamFactoryCreateSocketServer();
         $this->expectSocketServer();
         $this->expectSocketServerGetTransports();
         $this->expectSocketServerGetMetadata();
@@ -561,7 +561,7 @@ class ServerTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectStreamFactoryCreateSockerServer();
+        $this->expectStreamFactoryCreateSocketServer();
         $this->expectSocketServer();
         $this->expectSocketServerGetTransports();
         $this->expectSocketServerGetMetadata();
@@ -609,7 +609,7 @@ class ServerTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectStreamFactoryCreateSockerServer();
+        $this->expectStreamFactoryCreateSocketServer();
         $this->expectSocketServer();
         $this->expectSocketServerGetTransports();
         $this->expectSocketServerGetMetadata();
@@ -639,7 +639,7 @@ class ServerTest extends TestCase
         $server = new Server(['port' => 9999]);
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectStreamFactoryCreateSockerServer()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketServer()->addAssert(function ($method, $params) {
             $this->assertEquals(9999, $params[0]->getPort());
         });
         $this->expectSocketServer()->addAssert(function ($method, $params) {
@@ -647,7 +647,7 @@ class ServerTest extends TestCase
         })->setReturn(function ($params) {
             throw new StreamException(StreamException::SERVER_SOCKET_ERR, ['uri' => $params[0]->__toString()]);
         });
-        $this->expectStreamFactoryCreateSockerServer()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketServer()->addAssert(function ($method, $params) {
             $this->assertEquals(10000, $params[0]->getPort());
         });
         $this->expectSocketServer()->addAssert(function ($method, $params) {
@@ -669,7 +669,7 @@ class ServerTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectStreamFactoryCreateSockerServer();
+        $this->expectStreamFactoryCreateSocketServer();
         $this->expectSocketServer();
         $this->expectSocketServerGetTransports();
         $this->expectSocketServerGetMetadata();
@@ -692,7 +692,7 @@ class ServerTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectStreamFactoryCreateSockerServer();
+        $this->expectStreamFactoryCreateSocketServer();
         $this->expectSocketServer();
         $this->expectSocketServerGetTransports();
         $this->expectSocketServerGetMetadata();
@@ -726,7 +726,7 @@ class ServerTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectStreamFactoryCreateSockerServer();
+        $this->expectStreamFactoryCreateSocketServer();
         $this->expectSocketServer();
         $this->expectSocketServerGetTransports();
         $this->expectSocketServerGetMetadata();
@@ -756,7 +756,7 @@ class ServerTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectStreamFactoryCreateSockerServer();
+        $this->expectStreamFactoryCreateSocketServer();
         $this->expectSocketServer();
         $this->expectSocketServerGetTransports();
         $this->expectSocketServerGetMetadata();
@@ -796,7 +796,7 @@ class ServerTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectStreamFactoryCreateSockerServer();
+        $this->expectStreamFactoryCreateSocketServer();
         $this->expectSocketServer();
         $this->expectSocketServerGetTransports();
         $this->expectSocketServerGetMetadata();
@@ -835,7 +835,7 @@ class ServerTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectStreamFactoryCreateSockerServer();
+        $this->expectStreamFactoryCreateSocketServer();
         $this->expectSocketServer();
         $this->expectSocketServerGetTransports();
         $this->expectSocketServerGetMetadata();
@@ -868,7 +868,7 @@ class ServerTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectStreamFactoryCreateSockerServer();
+        $this->expectStreamFactoryCreateSocketServer();
         $this->expectSocketServer();
         $this->expectSocketServerGetTransports();
         $this->expectSocketServerGetMetadata();
@@ -901,7 +901,7 @@ class ServerTest extends TestCase
         $server = new Server();
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectStreamFactoryCreateSockerServer();
+        $this->expectStreamFactoryCreateSocketServer();
         $this->expectSocketServer();
         $this->expectSocketServerGetTransports();
         $this->expectSocketServerGetMetadata();
@@ -934,7 +934,7 @@ class ServerTest extends TestCase
         $server = new Server(['filter' => ['text', 'binary', 'pong', 'close']]);
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectStreamFactoryCreateSockerServer();
+        $this->expectStreamFactoryCreateSocketServer();
         $this->expectSocketServer();
         $this->expectSocketServerGetTransports();
         $this->expectSocketServerGetMetadata();
@@ -1051,7 +1051,7 @@ class ServerTest extends TestCase
         $server = new Server(['filter' => ['text', 'binary', 'pong', 'close'], 'return_obj' => true]);
         $server->setStreamFactory(new StreamFactory());
 
-        $this->expectStreamFactoryCreateSockerServer();
+        $this->expectStreamFactoryCreateSocketServer();
         $this->expectSocketServer();
         $this->expectSocketServerGetTransports();
         $this->expectSocketServerGetMetadata();
@@ -1137,7 +1137,7 @@ class ServerTest extends TestCase
         $this->assertNull($server->getRemoteName());
         $this->assertEquals('WebSocket\Server(closed)', "{$server}");
 
-        $this->expectStreamFactoryCreateSockerServer();
+        $this->expectStreamFactoryCreateSocketServer();
         $this->expectSocketServer();
         $this->expectSocketServerGetTransports();
         $this->expectSocketServerGetMetadata();
@@ -1219,7 +1219,7 @@ class ServerTest extends TestCase
         $this->assertNull($server->getRemoteName());
         $this->assertEquals('WebSocket\Server(closed)', "{$server}");
 
-        $this->expectStreamFactoryCreateSockerServer();
+        $this->expectStreamFactoryCreateSocketServer();
         $this->expectSocketServer();
         $this->expectSocketServerGetTransports();
         $this->expectSocketServerGetMetadata();
@@ -1253,7 +1253,7 @@ class ServerTest extends TestCase
         $this->assertNull($server->getRemoteName());
         $this->assertEquals('WebSocket\Server(closed)', "{$server}");
 
-        $this->expectStreamFactoryCreateSockerServer();
+        $this->expectStreamFactoryCreateSocketServer();
         $this->expectSocketServer();
         $this->expectSocketServerGetTransports();
         $this->expectSocketServerGetMetadata();

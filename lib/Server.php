@@ -230,6 +230,7 @@ class Server implements LoggerAwareInterface
     {
         $filter = $this->options['filter'];
         $return_obj = $this->options['return_obj'];
+        $return = null;
 
         if (!$this->isConnected()) {
             $this->connect();

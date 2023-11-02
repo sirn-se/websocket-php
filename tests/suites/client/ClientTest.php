@@ -70,7 +70,7 @@ class ClientTest extends TestCase
         $this->assertEquals(4096, $client->getFragmentSize());
 
         // Explicit connect and handshake
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -174,7 +174,7 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         // Explicit connect and handshake
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -212,7 +212,7 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         // Explicit connect and handshake
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -253,7 +253,7 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         // Explicit connect and handshake
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -294,7 +294,7 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         // Explicit connect and handshake
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:80', "{$params[0]}");
         });
@@ -335,7 +335,7 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         // Explicit connect and handshake
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('ssl://localhost:443', "{$params[0]}");
         });
@@ -385,7 +385,7 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         // Explicit connect and handshake
-        $this->expectStreamFactoryCreateSockerClient();
+        $this->expectStreamFactoryCreateSocketClient();
         $this->expectSocketClient();
         $this->expectSocketClientSetPersistent();
         $this->expectSocketClientSetTimeout();
@@ -420,7 +420,7 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         // Explicit connect and handshake
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -460,7 +460,7 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         // Explicit connect and handshake
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -500,7 +500,7 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         // Explicit connect and handshake
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -540,7 +540,7 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         // Explicit connect and handshake
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('ssl://localhost:8000', "{$params[0]}");
         });
@@ -585,7 +585,7 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         // Explicit connect and handshake
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -628,7 +628,7 @@ class ClientTest extends TestCase
         $client->setFragmentSize(65540);
 
         // Explicit connect and handshake
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -697,7 +697,7 @@ class ClientTest extends TestCase
         $client->setFragmentSize(65540);
 
         // Explicit connect and handshake
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -801,7 +801,7 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         // Explicit connect and handshake
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -912,7 +912,7 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         // Explicit connect and handshake
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -1031,7 +1031,7 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         // Explicit connect and handshake
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -1090,7 +1090,7 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         // Explicit connect and handshake
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -1135,7 +1135,7 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         // Implicit connect and handshake, send message
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -1196,7 +1196,7 @@ class ClientTest extends TestCase
         // Implicit reconnect and handshake, receive message
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamIsConnected();
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -1253,7 +1253,7 @@ class ClientTest extends TestCase
         $client = new Client('ws://localhost:8000/my/mock/path', ['persistent' => true]);
         $client->setStreamFactory(new StreamFactory());
 
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -1336,7 +1336,7 @@ class ClientTest extends TestCase
         $client = new Client('ws://localhost:8000/my/mock/path');
         $client->setStreamFactory(new StreamFactory());
 
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -1368,7 +1368,7 @@ class ClientTest extends TestCase
         $client = new Client('ws://localhost:8000/my/mock/path');
         $client->setStreamFactory(new StreamFactory());
 
-        $this->expectStreamFactoryCreateSockerClient();
+        $this->expectStreamFactoryCreateSocketClient();
         $this->expectSocketClient();
         $this->expectSocketClientSetPersistent();
         $this->expectSocketClientSetTimeout();
@@ -1398,7 +1398,7 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         // Explicit connect and handshake
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -1442,7 +1442,7 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         // Explicit connect and handshake
-        $this->expectStreamFactoryCreateSockerClient();
+        $this->expectStreamFactoryCreateSocketClient();
         $this->expectSocketClient();
         $this->expectSocketClientSetPersistent();
         $this->expectSocketClientSetTimeout();
@@ -1473,7 +1473,7 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         // Explicit connect and handshake
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -1517,7 +1517,7 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         // Explicit connect and handshake
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -1562,7 +1562,7 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         // Implicit connect and handshake, send message
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -1606,7 +1606,7 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         // Implicit connect and handshake, send message
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -1658,7 +1658,7 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         // Implicit connect and handshake, send message
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -1709,7 +1709,7 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         // Implicit connect and handshake, send message
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -1760,7 +1760,7 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         // Implicit connect and handshake, send message
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -1815,7 +1815,7 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         // Implicit connect and handshake, send message
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -1954,7 +1954,7 @@ class ClientTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         // Implicit connect and handshake, send message
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
@@ -2096,7 +2096,7 @@ class ClientTest extends TestCase
         $this->assertEquals('WebSocket\Client(closed)', "{$client}");
 
         // Implicit connect and handshake, send message
-        $this->expectStreamFactoryCreateSockerClient()->addAssert(function ($method, $params) {
+        $this->expectStreamFactoryCreateSocketClient()->addAssert(function ($method, $params) {
             $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);
             $this->assertEquals('tcp://localhost:8000', "{$params[0]}");
         });
