@@ -113,7 +113,7 @@ class ServerRequest extends Request implements ServerRequestInterface
      * Retrieve attributes derived from the request.
      * @return mixed[] Attributes derived from the request.
      */
-    public function getAttributes()
+    public function getAttributes(): array
     {
         throw new BadMethodCallException("Not implemented.");
     }
@@ -124,7 +124,7 @@ class ServerRequest extends Request implements ServerRequestInterface
      * @param mixed $default Default value to return if the attribute does not exist.
      * @return mixed
      */
-    public function getAttribute($name, $default = null)
+    public function getAttribute(string $name, $default = null)
     {
         throw new BadMethodCallException("Not implemented.");
     }
@@ -135,7 +135,7 @@ class ServerRequest extends Request implements ServerRequestInterface
      * @param mixed $value The value of the attribute.
      * @return static
      */
-    public function withAttribute($name, $value): self
+    public function withAttribute(string $name, $value): self
     {
         throw new BadMethodCallException("Not implemented.");
     }
@@ -145,7 +145,7 @@ class ServerRequest extends Request implements ServerRequestInterface
      * @param string $name The attribute name.
      * @return static
      */
-    public function withoutAttribute($name): self
+    public function withoutAttribute(string $name): self
     {
         throw new BadMethodCallException("Not implemented.");
     }
