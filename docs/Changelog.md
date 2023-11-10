@@ -29,6 +29,10 @@
 
  > PHP version `^7.4|^8.0`
 
+# `1.7.2`
+
+ * PSR compliance `psr/log v3` `psr/http-message v2` (@sirn-se)
+
 ### `1.7.1`
 
  * Define return on receive (@zgrguric, @sirn-se)
