@@ -39,7 +39,6 @@ use WebSocket\Middleware\{
     MiddlewareInterface
 };
 use WebSocket\Trait\{
-    OpcodeTrait,
     SendMethodsTrait
 };
 
@@ -49,7 +48,6 @@ use WebSocket\Trait\{
  */
 class Connection implements LoggerAwareInterface, Stringable
 {
-    use OpcodeTrait;
     use SendMethodsTrait;
 
     private $stream;
