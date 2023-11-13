@@ -42,7 +42,7 @@ class CloseHandler implements LoggerAwareInterface, ProcessIncomingInterface, Pr
             $connection->send(new Close($message->getCloseStatus(), $ack));
         } else {
             // Remote sent Close/Ack: disconnect
-            $this->logger->debug("[close-handler] Received 'close' ackowledge, disconnecting");
+            $this->logger->debug("[close-handler] Received 'close' acknowledge, disconnecting");
             $connection->disconnect();
         }
         return $message;
@@ -55,12 +55,12 @@ class CloseHandler implements LoggerAwareInterface, ProcessIncomingInterface, Pr
             return $message;
         }
         if ($connection->isReadable()) {
-            // Local sent Close: close for further writing, expect remote ackowledge
+            // Local sent Close: close for further writing, expect remote acknowledge
             $this->logger->debug("[close-handler] Sent 'close', status: {$message->getCloseStatus()}");
             $connection->closeWrite();
         } else {
             // Local sent Close/Ack: disconnect
-            $this->logger->debug("[close-handler] Sent 'close' ackowledge, disconnecting");
+            $this->logger->debug("[close-handler] Sent 'close' acknowledge, disconnecting");
             $connection->disconnect();
         }
         return $message;
