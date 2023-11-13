@@ -6,6 +6,10 @@
 
  > PHP version `^8.0`
 
+### `2.0.1`
+
+ * Fix `psr/log` dependency (@sirn-se)
+
 ### `2.0.0`
 
  * Listeners for client and server (@sirn-se)
@@ -24,6 +28,14 @@
 ## `v1.7`
 
  > PHP version `^7.4|^8.0`
+
+# `1.7.2`
+
+ * PSR compliance `psr/log v3` `psr/http-message v2` (@sirn-se)
+
+### `1.7.1`
+
+ * Define return on receive (@zgrguric, @sirn-se)
 
 ### `1.7.0`
 

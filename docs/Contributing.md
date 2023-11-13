@@ -84,3 +84,4 @@ make coverage
 * Antonio Mora
 * Simon Podlipsky
 * etrinh
+* zgrguric
