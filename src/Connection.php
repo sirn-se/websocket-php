@@ -70,7 +70,7 @@ class Connection implements LoggerAwareInterface, Stringable
         $this->stream = $stream;
         $this->httpHandler = new HttpHandler($this->stream);
         $this->messageHandler = new MessageHandler(new FrameHandler($this->stream, $pushMasked, $pullMaskedRequired));
-        $this->middlewareHandler = new MiddlewareHandler($this->messageHandler);
+        $this->middlewareHandler = new MiddlewareHandler($this->messageHandler, $this->httpHandler);
         $this->setLogger(new NullLogger());
         $this->localName = $this->stream->getLocalName();
         $this->remoteName = $this->stream->getRemoteName();
@@ -278,7 +278,7 @@ class Connection implements LoggerAwareInterface, Stringable
     public function pushHttp(HttpMessage $message): HttpMessage
     {
         try {
-            return $this->httpHandler->push($message);
+            return $this->middlewareHandler->processHttpOutgoing($this, $message);
         } catch (Throwable $e) {
             $this->throwException($e);
         }
@@ -287,7 +287,7 @@ class Connection implements LoggerAwareInterface, Stringable
     public function pullHttp(): HttpMessage
     {
         try {
-            return $this->httpHandler->pull();
+            return $this->middlewareHandler->processHttpIncoming($this);
         } catch (Throwable $e) {
             $this->throwException($e);
         }

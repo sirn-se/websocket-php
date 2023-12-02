@@ -160,6 +160,11 @@ abstract class Message implements MessageInterface
         return $lines;
     }
 
+    public function __toString(): string
+    {
+        return get_class($this);
+    }
+
     private function handleHeader(string $name, string|array $value): void
     {
         // @todo: Add all available characters, these are just some of them.
