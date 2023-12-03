@@ -51,17 +51,25 @@ $client_or_server
         },
         outgoing: function (WebSocket\Middleware\ProcessStack $stack, WebSocket\Connection $connection, WebSocket\Message\Message $message) {
             $message->setContent('Changed message');
-            $message = $stack->handleOutgoing($message);   // Forward outgoing message to next middleware
+            $message = $stack->handleOutgoing($message); // Forward outgoing message to next middleware
+            return $message;
+        },
+        httpIncoming: function (WebSocket\Middleware\ProcessHttpStack $stack, WebSocket\Connection $connection) {
+            $message = $stack->handleHttpIncoming(); // Get incoming message from next middleware
+            return $message;
+        },
+        httpOutgoing: function (WebSocket\Middleware\ProcessHttpStack $stack, WebSocket\Connection $connection, WebSocket\Message\Message $message) {
+            $message = $stack->handleHttpOutgoing($message); // Forward outgoing message to next middleware
             return $message;
         }
     ));
 ```
 
-The callback functions **MUST** return a [Message](Message.md) instance.
+The callback functions **MUST** return a [Message](Message.md) instance or a HTTP request/response message respectively..
 
-The `handleIncoming` and `handleOutgoing` methods will pass initiative further down the middleware stack.
+The `handleIncoming`, `handleOutgoing`, `handleHttpIncoming` and `handleHttpOutgoing` methods will pass initiative further down the middleware stack.
 
-## Writing your own middkeware
+## Writing your own middleware
 
 A middleware **MUST** implement the `MiddlewareInterface`.
 
@@ -97,7 +105,32 @@ interface WebSocket\Middleware\ProcessOutgoingInterface extends WebSocket\Middle
 }
 ```
 
-The `ProcessStack` class is used to hand over initiative to the next middleware in middleware stack.
+A middleware that wants to handle incoming HTTP messages **MUST** implement the `ProcessHttpIncomingInterface`.
+
+```php
+interface WebSocket\Middleware\ProcessHttpIncomingInterface extends WebSocket\Middleware\MiddlewareInterface
+{
+    public function processHttpIncoming(
+        WebSocket\Middleware\ProcessHttpStack $stack,
+        WebSocket\Connection $connection
+    ): WebSocket\Http\Message;
+}
+```
+
+A middleware that wants to handle outgoing HTTP messages **MUST** implement the `ProcessHttpOutgoingInterface`.
+
+```php
+interface WebSocket\Middleware\ProcessHttpOutgoingInterface extends WebSocket\Middleware\MiddlewareInterface
+{
+    public function processHttpOutgoing(
+        WebSocket\Middleware\ProcessHttpStack $stack,
+        WebSocket\Connection $connection,
+        WebSocket\Http\Message $message
+    ): WebSocket\Http\Message;
+}
+```
+
+The `ProcessStack` and `ProcessHttpStack` classes are used to hand over initiative to the next middleware in middleware stack.
 
 ```php
 // Get the received Message, possibly handled by other middlewares
@@ -105,4 +138,11 @@ $message = $stack->handleIncoming();
 
 // Forward the Message to be sent, possibly handled by other middlewares
 $message = $stack->handleOutgoing($message);
+
+// Get the received HTTP request/response message, possibly handled by other middlewares
+$message = $stack->handleHttpIncoming();
+
+// Forward the HTTP request/response message to be sent, possibly handled by other middlewares
+$message = $stack->handleHttpOutgoing($message);
+
 ```

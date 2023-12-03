@@ -38,7 +38,6 @@ use WebSocket\Message\Message;
 use WebSocket\Middleware\MiddlewareInterface;
 use WebSocket\Trait\{
     ListenerTrait,
-    OpcodeTrait,
     SendMethodsTrait
 };
 
@@ -49,7 +48,6 @@ use WebSocket\Trait\{
 class Client implements LoggerAwareInterface, Stringable
 {
     use ListenerTrait;
-    use OpcodeTrait;
     use SendMethodsTrait;
 
     // Settings

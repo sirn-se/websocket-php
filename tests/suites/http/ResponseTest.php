@@ -48,6 +48,7 @@ class ResponseTest extends TestCase
         $this->assertFalse($response->hasHeader('none'));
         $this->assertEquals([], $response->getHeader('none'));
         $this->assertEquals('', $response->getHeaderLine('none'));
+        $this->assertEquals('WebSocket\Http\Response', "{$response}");
         $this->assertEquals([
             'HTTP/1.1 200 OK',
         ], $response->getAsArray());
@@ -58,6 +59,7 @@ class ResponseTest extends TestCase
         $response = new Response(404);
         $this->assertEquals(404, $response->getStatusCode());
         $this->assertEquals('Not Found', $response->getReasonPhrase());
+        $this->assertEquals('WebSocket\Http\Response', "{$response}");
         $this->assertEquals([
             'HTTP/1.1 404 Not Found',
         ], $response->getAsArray());
@@ -68,6 +70,7 @@ class ResponseTest extends TestCase
         $response = new Response(400, 'Custom reason phrase');
         $this->assertEquals(400, $response->getStatusCode());
         $this->assertEquals('Custom reason phrase', $response->getReasonPhrase());
+        $this->assertEquals('WebSocket\Http\Response', "{$response}");
         $this->assertEquals([
             'HTTP/1.1 400 Custom reason phrase',
         ], $response->getAsArray());

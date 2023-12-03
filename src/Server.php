@@ -38,7 +38,6 @@ use WebSocket\Message\Message;
 use WebSocket\Middleware\MiddlewareInterface;
 use WebSocket\Trait\{
     ListenerTrait,
-    OpcodeTrait,
     SendMethodsTrait
 };
 
@@ -49,7 +48,6 @@ use WebSocket\Trait\{
 class Server implements LoggerAwareInterface, Stringable
 {
     use ListenerTrait;
-    use OpcodeTrait;
     use SendMethodsTrait;
 
     private const GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';

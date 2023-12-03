@@ -9,16 +9,12 @@
 
 namespace WebSocket\Frame;
 
-use WebSocket\Trait\OpcodeTrait;
-
 /**
  * WebSocket\Frame\Frame class.
  * Represent a single frame sent or received as part of websocket message.
  */
 class Frame
 {
-    use OpcodeTrait;
-
     private $opcode;
     private $payload;
     private $final;
