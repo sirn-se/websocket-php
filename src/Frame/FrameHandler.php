@@ -96,7 +96,7 @@ class FrameHandler implements LoggerAwareInterface
         }
 
         $frame = new Frame($opcode, $payload, $final);
-        $this->logger->debug("[frame-handler] Pulled '{opcode}' frame", [
+        $this->logger->debug("[frame-handler] Pulled '{$opcode}' frame", [
             'opcode' => $frame->getOpcode(),
             'final' => $frame->isFinal(),
             'content-length' => $frame->getPayloadLength(),
