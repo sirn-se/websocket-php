@@ -14,12 +14,14 @@ $client
     // Add standard middlewares
     ->addMiddleware(new WebSocket\Middleware\CloseHandler())
     ->addMiddleware(new WebSocket\Middleware\PingResponder())
+    ;
 
 // Send a message
 $client->text("Hello WebSocket.org!");
 
 // Read response (this is blocking)
-echo $client->receive();
+$message = $client->receive();
+echo "Got message: {$message->getContent()} \n";
 
 // Close connection
 $client->close();
@@ -112,11 +114,11 @@ All message listeners receive Client, Connection and Message as arguments.
 $client = new WebSocket\Client("ws://echo.websocket.org/");
 $client
     // Listen to incoming Text messages
-    ->onText(function (WebSocket\Server $server, WebSocket\Connection $connection, WebSocket\Message\Text $message) {
+    ->onText(function (WebSocket\Client $client, WebSocket\Connection $connection, WebSocket\Message\Text $message) {
         // Act on incoming message
     })
     // Listen to incoming Binary messages
-    ->onBinary(function (WebSocket\Server $server, WebSocket\Connection $connection, WebSocket\Message\Binary $message) {
+    ->onBinary(function (WebSocket\Client $client, WebSocket\Connection $connection, WebSocket\Message\Binary $message) {
         // Act on incoming message
     })
     ->start();

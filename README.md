@@ -39,12 +39,14 @@ $client
     // Add standard middlewares
     ->addMiddleware(new WebSocket\Middleware\CloseHandler())
     ->addMiddleware(new WebSocket\Middleware\PingResponder())
+    ;
 
 // Send a message
 $client->text("Hello WebSocket.org!");
 
 // Read response (this is blocking)
-echo $client->receive();
+$message = $client->receive();
+echo "Got message: {$message->getContent()} \n";
 
 // Close connection
 $client->close();

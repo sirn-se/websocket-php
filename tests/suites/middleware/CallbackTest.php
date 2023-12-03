@@ -97,4 +97,60 @@ class CallbackTest extends TestCase
         $this->expectSocketStreamClose();
         unset($stream);
     }
+
+    public function testHttpIncoming(): void
+    {
+        $temp = tmpfile();
+
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $stream = new SocketStream($temp);
+
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $connection = new Connection($stream, false, false);
+
+        $connection->addMiddleware(new Callback(httpIncoming: function ($stack, $connection) {
+            $message = $stack->handleHttpIncoming();
+            $message = $message->withMethod('POST');
+            $this->assertEquals('POST', $message->getMethod());
+            return $message;
+        }));
+        $this->expectSocketStreamReadLine()->setReturn(function () {
+            return "GET /a/path?a=b HTTP/1.1\r\nHost: test.com:123\r\n\r\n";
+        });
+        $message = $connection->pullHttp();
+        $this->assertEquals('POST', $message->getMethod());
+
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
+        unset($stream);
+    }
+
+    public function testHttpOutgoing(): void
+    {
+        $temp = tmpfile();
+
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $stream = new SocketStream($temp);
+
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $connection = new Connection($stream, false, false);
+
+        $connection->addMiddleware(new Callback(httpOutgoing: function ($stack, $connection, $message) {
+            $message = $stack->handleHttpOutgoing($message);
+            $message = $message->withStatus(400);
+            $this->assertEquals(400, $message->getStatusCode());
+            return $message;
+        }));
+        $this->expectSocketStreamWrite();
+        $message = $connection->pushHttp(new \WebSocket\Http\Response(200));
+        $this->assertEquals(400, $message->getStatusCode());
+
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
+        unset($stream);
+    }
 }

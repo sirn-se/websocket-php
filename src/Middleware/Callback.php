@@ -74,7 +74,7 @@ class Callback implements
         if (is_callable($this->httpIncoming)) {
             return call_user_func($this->httpIncoming, $stack, $connection);
         }
-        return $stack->handleIncoming();
+        return $stack->handleHttpIncoming();
     }
 
     public function processHttpOutgoing(
@@ -85,7 +85,7 @@ class Callback implements
         if (is_callable($this->httpOutgoing)) {
             return call_user_func($this->httpOutgoing, $stack, $connection, $message);
         }
-        return $stack->handleOutgoing($message);
+        return $stack->handleHttpOutgoing($message);
     }
 
     public function __toString(): string

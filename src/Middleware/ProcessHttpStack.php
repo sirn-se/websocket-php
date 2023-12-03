@@ -42,7 +42,7 @@ class ProcessHttpStack
      * Process middleware for incoming htpp message.
      * @return Message
      */
-    public function handleIncoming(): Message
+    public function handleHttpIncoming(): Message
     {
         $processor = array_shift($this->processors);
         if ($processor) {
@@ -56,7 +56,7 @@ class ProcessHttpStack
      * @param Message $message
      * @return Message
      */
-    public function handleOutgoing(Message $message): Message
+    public function handleHttpOutgoing(Message $message): Message
     {
         $processor = array_shift($this->processors);
         if ($processor) {

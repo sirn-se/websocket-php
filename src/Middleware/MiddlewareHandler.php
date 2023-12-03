@@ -147,7 +147,7 @@ class MiddlewareHandler implements LoggerAwareInterface
     {
         $this->logger->info("[middleware-handler] Processing http incoming");
         $stack = new ProcessHttpStack($connection, $this->httpHandler, $this->httpIncoming);
-        return $stack->handleIncoming();
+        return $stack->handleHttpIncoming();
     }
 
     /**
@@ -160,6 +160,6 @@ class MiddlewareHandler implements LoggerAwareInterface
     {
         $this->logger->info("[middleware-handler] Processing http outgoing");
         $stack = new ProcessHttpStack($connection, $this->httpHandler, $this->httpOutgoing);
-        return $stack->handleOutgoing($message);
+        return $stack->handleHttpOutgoing($message);
     }
 }

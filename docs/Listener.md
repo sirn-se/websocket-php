@@ -3,7 +3,7 @@
 # Websocket: Listener
 
 Both [Client](Client.md) and [Server](Server.md) support registering listeners as callback functions.
-Listeners will called when a message is received, a conneciton is opened and closed, and when an error occurs.
+Listeners will be called when a message is received, a conneciton is opened and closed, and when an error occurs.
 If you use the listener method `->start()` this will be the only way to act on incoming messages.
 
 ## Message listeners
