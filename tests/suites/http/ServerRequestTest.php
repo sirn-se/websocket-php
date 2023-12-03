@@ -48,6 +48,7 @@ class ServerRequestTest extends TestCase
         $this->assertEquals([], $request->getHeader('none'));
         $this->assertEquals('', $request->getHeaderLine('none'));
         $this->assertEquals([], $request->getQueryParams());
+        $this->assertEquals('WebSocket\Http\ServerRequest', "{$request}");
         $this->assertEquals([
             'GET / HTTP/1.1',
         ], $request->getAsArray());
@@ -65,6 +66,7 @@ class ServerRequestTest extends TestCase
         $this->assertEquals(['test.com:123'], $request->getHeader('Host'));
         $this->assertEquals('test.com:123', $request->getHeaderLine('Host'));
         $this->assertEquals(['a' => 'b', 'c' => 'd'], $request->getQueryParams());
+        $this->assertEquals('WebSocket\Http\ServerRequest', "{$request}");
         $this->assertEquals([
             'GET /a/path?a=b&c=d HTTP/1.1',
             'Host: test.com:123',
