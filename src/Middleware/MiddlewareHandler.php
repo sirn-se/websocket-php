@@ -36,6 +36,7 @@ class MiddlewareHandler implements LoggerAwareInterface
     private $outgoing = [];
     private $httpIncoming = [];
     private $httpOutgoing = [];
+    private $tick = [];
 
     // Handlers
     private $httpHandler;
@@ -110,6 +111,13 @@ class MiddlewareHandler implements LoggerAwareInterface
             }
             $this->httpOutgoing[] = $middleware;
         }
+        if ($middleware instanceof ProcessTickInterface) {
+            $this->logger->info("[middleware-handler] Added tick: {$middleware}");
+            if ($middleware instanceof LoggerAwareInterface) {
+                $middleware->setLogger($this->logger);
+            }
+            $this->tick[] = $middleware;
+        }
         return $this;
     }
 
@@ -161,5 +169,16 @@ class MiddlewareHandler implements LoggerAwareInterface
         $this->logger->info("[middleware-handler] Processing http outgoing");
         $stack = new ProcessHttpStack($connection, $this->httpHandler, $this->httpOutgoing);
         return $stack->handleHttpOutgoing($message);
+    }
+
+    /**
+     * Process middlewares for tick.
+     * @param Connection $connection
+     */
+    public function processTick(Connection $connection): void
+    {
+        $this->logger->info("[middleware-handler] Processing tick");
+        $stack = new ProcessTickStack($connection, $this->tick);
+        $stack->handleTick();
     }
 }

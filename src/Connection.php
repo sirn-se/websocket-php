@@ -156,7 +156,7 @@ class Connection implements LoggerAwareInterface, Stringable
     public function addMiddleware(MiddlewareInterface $middleware): self
     {
         $this->middlewareHandler->add($middleware);
-        $this->logger->debug("[connection] Addded middleware: {$middleware}");
+        $this->logger->debug("[connection] Added middleware: {$middleware}");
         return $this;
     }
 
@@ -242,6 +242,14 @@ class Connection implements LoggerAwareInterface, Stringable
     public function getRemoteName(): string|null
     {
         return $this->remoteName;
+    }
+
+    /**
+     * Tick operation on connection.
+     */
+    public function tick(): void
+    {
+        $this->middlewareHandler->processTick($this);
     }
 
 

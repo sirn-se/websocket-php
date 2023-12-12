@@ -32,6 +32,7 @@ class Callback implements
     ProcessHttpOutgoingInterface,
     ProcessIncomingInterface,
     ProcessOutgoingInterface,
+    ProcessTickInterface,
     Stringable
 {
     use LoggerAwareTrait;
@@ -40,17 +41,20 @@ class Callback implements
     private $outgoing;
     private $httpIncoming;
     private $httpOutgoing;
+    private $tick;
 
     public function __construct(
         Closure|null $incoming = null,
         Closure|null $outgoing = null,
         Closure|null $httpIncoming = null,
         Closure|null $httpOutgoing = null,
+        Closure|null $tick = null,
     ) {
         $this->incoming = $incoming;
         $this->outgoing = $outgoing;
         $this->httpIncoming = $httpIncoming;
         $this->httpOutgoing = $httpOutgoing;
+        $this->tick = $tick;
     }
 
     public function processIncoming(ProcessStack $stack, Connection $connection): Message
@@ -86,6 +90,14 @@ class Callback implements
             return call_user_func($this->httpOutgoing, $stack, $connection, $message);
         }
         return $stack->handleHttpOutgoing($message);
+    }
+
+    public function processTick(ProcessTickStack $stack, Connection $connection): void
+    {
+        if (is_callable($this->tick)) {
+            call_user_func($this->tick, $stack, $connection);
+        }
+        $stack->handleTick();
     }
 
     public function __toString(): string

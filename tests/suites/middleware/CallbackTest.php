@@ -153,4 +153,26 @@ class CallbackTest extends TestCase
         $this->expectSocketStreamClose();
         unset($stream);
     }
+
+    public function testTick(): void
+    {
+        $temp = tmpfile();
+
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $stream = new SocketStream($temp);
+
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $connection = new Connection($stream, false, false);
+
+        $connection->addMiddleware(new Callback(tick: function ($stack, $connection) {
+            $stack->handleTick();
+        }));
+        $connection->tick();
+
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
+        unset($stream);
+    }
 }
