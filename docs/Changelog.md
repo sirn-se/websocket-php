@@ -8,7 +8,7 @@
 
 ### `2.1.0`
 
- * Http middleware support
+ * Http & Tick middleware support
  * Remove unused code and documentation
 
 ## `v2.0`

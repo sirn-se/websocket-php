@@ -300,6 +300,9 @@ class Server implements LoggerAwareInterface, Stringable
                         $this->dispatch('error', [$this, $connection, $e]);
                     }
                 }
+                foreach ($this->connections as $connection) {
+                    $connection->tick();
+                }
                 $this->dispatch('tick', [$this]);
             } catch (Exception $e) {
                 // Low-level error

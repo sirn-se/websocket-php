@@ -61,13 +61,16 @@ $client_or_server
         httpOutgoing: function (WebSocket\Middleware\ProcessHttpStack $stack, WebSocket\Connection $connection, WebSocket\Message\Message $message) {
             $message = $stack->handleHttpOutgoing($message); // Forward outgoing message to next middleware
             return $message;
+        },
+        tick: function (WebSocket\Middleware\ProcessTickStack $stack, WebSocket\Connection $connection) {
+            $stack->handleTick(); // Forward tick to next middleware
         }
     ));
 ```
 
 The callback functions **MUST** return a [Message](Message.md) instance or a HTTP request/response message respectively..
 
-The `handleIncoming`, `handleOutgoing`, `handleHttpIncoming` and `handleHttpOutgoing` methods will pass initiative further down the middleware stack.
+The `handleIncoming`, `handleOutgoing`, `handleHttpIncoming`, `handleHttpOutgoing` and `handleTick` methods will pass initiative further down the middleware stack.
 
 ## Writing your own middleware
 
@@ -130,7 +133,24 @@ interface WebSocket\Middleware\ProcessHttpOutgoingInterface extends WebSocket\Mi
 }
 ```
 
-The `ProcessStack` and `ProcessHttpStack` classes are used to hand over initiative to the next middleware in middleware stack.
+A middleware that wants to handle Tick operation **MUST** implement the `ProcessTickInterface`.
+
+```php
+interface ProcessTickInterface extends MiddlewareInterface
+{
+    public function processTick(ProcessTickStack $stack, Connection $connection): void;
+}
+
+interface WebSocket\Middleware\ProcessTickInterface extends WebSocket\Middleware\MiddlewareInterface
+{
+    public function processTick(
+        WebSocket\Middleware\ProcessTickStack $stack,
+        WebSocket\Connection $connection
+    ): void;
+}
+```
+
+The `ProcessStack`, `ProcessHttpStack` and `ProcessTickStack` classes are used to hand over initiative to the next middleware in middleware stack.
 
 ```php
 // Get the received Message, possibly handled by other middlewares
@@ -145,4 +165,6 @@ $message = $stack->handleHttpIncoming();
 // Forward the HTTP request/response message to be sent, possibly handled by other middlewares
 $message = $stack->handleHttpOutgoing($message);
 
+// Forward the Tick operation, possibly handled by other middlewares
+$stack->handleTick();
 ```

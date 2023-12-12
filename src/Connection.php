@@ -244,6 +244,14 @@ class Connection implements LoggerAwareInterface, Stringable
         return $this->remoteName;
     }
 
+    /**
+     * Tick operation on connection.
+     */
+    public function tick(): void
+    {
+        $this->middlewareHandler->processTick($this);
+    }
+
 
     /* ---------- WebSocket Message methods ------------------------------------------------------------------------ */
 

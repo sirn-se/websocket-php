@@ -293,6 +293,7 @@ class Client implements LoggerAwareInterface, Stringable
                 if (!$this->connection->isConnected()) {
                     $this->running = false;
                 }
+                $this->connection->tick();
                 $this->dispatch('tick', [$this]);
             } catch (Exception $e) {
                 $this->disconnect();
