@@ -201,5 +201,11 @@ $connection->getHandshakeRequest();
 
 // Get the Response server sent during handshake procedure
 $connection->getHandshakeResponse();
-```
 
+// Trigger a tick event on connection
+$connection->tick();
+
+// Get and set associated meta data on connection
+$connection->setMeta('myMetaData', $anything);
+$connection->getMeta('myMetaData');
+```
