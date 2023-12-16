@@ -15,7 +15,6 @@ use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\SocketStream;
 use Phrity\Net\Mock\Stack\ExpectSocketStreamTrait;
 use WebSocket\Connection;
-use WebSocket\Message\Ping;
 use WebSocket\Middleware\PingInterval;
 
 /**
@@ -56,9 +55,13 @@ class PingIntervalTest extends TestCase
         $this->expectSocketStreamIsWritable();
         $connection->tick();
 
+        // Next tick should not trigger ping
+        $this->expectSocketStreamIsWritable();
+        $connection->tick();
+
         sleep(1); // Simulate inactivity
 
-        // This tick should now trigger auto-ping
+        // This tick should now trigger ping
         $this->expectSocketStreamIsWritable();
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(base64_decode('iQA='), $params[0]);

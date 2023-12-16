@@ -16,7 +16,7 @@ use Psr\Log\{
 use Stringable;
 use WebSocket\Connection;
 use WebSocket\Message\{
-    Close,
+    Ping,
     Message
 };
 
@@ -46,7 +46,7 @@ class PingInterval implements LoggerAwareInterface, ProcessOutgoingInterface, Pr
         // Push if time exceeds timestamp for next ping
         if ($connection->isWritable() && time() >= $this->getNext($connection)) {
             $this->logger->debug("[ping-interval] Auto-pushing ping");
-            $connection->ping();
+            $connection->send(new Ping());
             $this->setNext($connection); // Update timestamp for next ping
         }
         $stack->handleTick();
