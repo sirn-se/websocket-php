@@ -61,6 +61,7 @@ class Connection implements LoggerAwareInterface, Stringable
     private $remoteName;
     private $handshakeRequest;
     private $handshakeResponse;
+    private $meta = [];
 
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
@@ -242,6 +243,26 @@ class Connection implements LoggerAwareInterface, Stringable
     public function getRemoteName(): string|null
     {
         return $this->remoteName;
+    }
+
+    /**
+     * Set meta value on connection.
+     * @param string $key Meta key
+     * @param mixed $value Meta value
+     */
+    public function setMeta(string $key, mixed $value): void
+    {
+        $this->meta[$key] = $value;
+    }
+
+    /**
+     * Set meta value on connection.
+     * @param string $key Meta key
+     * @return mixed Meta value
+     */
+    public function getMeta(string $key): mixed
+    {
+        return $this->meta[$key] ?? null;
     }
 
     /**

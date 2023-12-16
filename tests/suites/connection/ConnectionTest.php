@@ -70,6 +70,11 @@ class ConnectionTest extends TestCase
         $this->assertEquals('', $connection->getName());
         $this->assertEquals('', $connection->getRemoteName());
         $this->assertEquals('Connection()', "{$connection}");
+        $connection->tick();
+        $connection->setMeta('test.meta.1', 'meta.data.1');
+        $connection->setMeta('test.meta.2', 'meta.data.2');
+        $this->assertEquals('meta.data.1', $connection->getMeta('test.meta.1'));
+        $this->assertEquals('meta.data.2', $connection->getMeta('test.meta.2'));
 
         $this->expectSocketStreamSetTimeout();
         $this->assertSame($connection, $connection->setTimeout(10));
