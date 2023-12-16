@@ -32,7 +32,7 @@ and should be added unless you write your own implementation of close and ping/p
 These middlewares are included in library and can be added to provide additional functionality.
 
 * `PingInterval` - Used to automatically send Ping messages at specified interval
-* `Callback` - Apply sprcified callback function on certain actions
+* `Callback` - Apply provided callback function on specified actions
 
 ## Middleware descriptions
 
@@ -67,7 +67,7 @@ $client_or_server->addMiddleware(new WebSocket\Middleware\PingInterval(interval:
 
 ### The Callback middleware
 
-This middleware will apply callback functions when a message is sent and/or received.
+This middleware will apply callback functions on certain actions.
 
 ```php
 $client_or_server
@@ -166,11 +166,6 @@ interface WebSocket\Middleware\ProcessHttpOutgoingInterface extends WebSocket\Mi
 A middleware that wants to handle Tick operation **MUST** implement the `ProcessTickInterface`.
 
 ```php
-interface ProcessTickInterface extends MiddlewareInterface
-{
-    public function processTick(ProcessTickStack $stack, Connection $connection): void;
-}
-
 interface WebSocket\Middleware\ProcessTickInterface extends WebSocket\Middleware\MiddlewareInterface
 {
     public function processTick(

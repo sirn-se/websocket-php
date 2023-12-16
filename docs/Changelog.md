@@ -10,7 +10,7 @@
 
  * Http & Tick middleware support (@sirn-se)
  * PingInterval middleware for heartbeat functionality (@sirn-se)
- * Connection get/set meta functions
+ * Connection get/set meta functions (@sirn-se)
  * Fixing various typos (@UksusoFF, @sirn-se)
  * Remove unused code and documentation (@sirn-se)
 
