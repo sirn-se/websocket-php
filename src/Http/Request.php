@@ -113,10 +113,15 @@ class Request extends Message implements RequestInterface
         return $new;
     }
 
+    public function __toString(): string
+    {
+        return $this->stringable('%s %s', $this->getMethod(), $this->getUri());
+    }
+
     public function getAsArray(): array
     {
         return array_merge([
-            "GET {$this->getRequestTarget()} HTTP/{$this->getProtocolVersion()}",
+            "{$this->getMethod()} {$this->getRequestTarget()} HTTP/{$this->getProtocolVersion()}",
         ], parent::getAsArray());
     }
 }

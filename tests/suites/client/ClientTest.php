@@ -23,6 +23,7 @@ use Phrity\Net\Mock\Stack\{
 };
 use Phrity\Net\StreamException;
 use Phrity\Net\Uri;
+use Stringable;
 use WebSocket\{
     Client,
     Connection
@@ -69,6 +70,7 @@ class ClientTest extends TestCase
         $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');
         $client->setStreamFactory(new StreamFactory());
+        $this->assertInstanceOf(Stringable::class, $client);
 
         $this->assertFalse($client->isConnected());
         $this->assertFalse($client->isReadable());
@@ -736,7 +738,7 @@ class ClientTest extends TestCase
 
         $this->assertNull($client->getName());
         $this->assertNull($client->getRemoteName());
-        $this->assertEquals('Client(closed)', "{$client}");
+        $this->assertEquals('WebSocket\Client(closed)', "{$client}");
 
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake();
@@ -793,7 +795,7 @@ class ClientTest extends TestCase
         $this->assertEquals('localhost:8000', $client->getRemoteName());
 
         $this->expectSocketStreamIsConnected();
-        $this->assertEquals('Client(ws://localhost:8000/my/mock/path)', "{$client}");
+        $this->assertEquals('WebSocket\Client(ws://localhost:8000/my/mock/path)', "{$client}");
 
         $this->expectSocketStreamClose();
         unset($client);

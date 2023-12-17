@@ -14,6 +14,7 @@ namespace WebSocket\Test\Middleware;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\SocketStream;
 use Phrity\Net\Mock\Stack\ExpectSocketStreamTrait;
+use Stringable;
 use WebSocket\Connection;
 use WebSocket\Middleware\PingInterval;
 
@@ -41,6 +42,7 @@ class PingIntervalTest extends TestCase
 
         $middleware = new PingInterval(1);
         $this->assertEquals('WebSocket\Middleware\PingInterval', "{$middleware}");
+        $this->assertInstanceOf(Stringable::class, $middleware);
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();

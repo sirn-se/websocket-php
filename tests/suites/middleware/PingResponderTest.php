@@ -14,6 +14,7 @@ namespace WebSocket\Test\Middleware;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\SocketStream;
 use Phrity\Net\Mock\Stack\ExpectSocketStreamTrait;
+use Stringable;
 use WebSocket\Connection;
 use WebSocket\Message\Ping;
 use WebSocket\Middleware\PingResponder;
@@ -47,7 +48,12 @@ class PingResponderTest extends TestCase
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
         $connection = new Connection($stream, false, false);
-        $connection->addMiddleware(new PingResponder());
+
+        $middleware = new PingResponder();
+        $connection->addMiddleware($middleware);
+        $this->assertInstanceOf(Stringable::class, $middleware);
+        $this->assertEquals('WebSocket\Middleware\PingResponder', "{$middleware}");
+
         $message = new Ping();
 
         $this->expectSocketStreamRead()->setReturn(function () {

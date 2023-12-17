@@ -20,6 +20,7 @@ use Psr\Http\Message\{
     ResponseInterface,
     UriInterface
 };
+use Stringable;
 use WebSocket\Http\{
     Message,
     Response
@@ -48,7 +49,8 @@ class ResponseTest extends TestCase
         $this->assertFalse($response->hasHeader('none'));
         $this->assertEquals([], $response->getHeader('none'));
         $this->assertEquals('', $response->getHeaderLine('none'));
-        $this->assertEquals('WebSocket\Http\Response', "{$response}");
+        $this->assertInstanceOf(Stringable::class, $response);
+        $this->assertEquals('WebSocket\Http\Response(200)', "{$response}");
         $this->assertEquals([
             'HTTP/1.1 200 OK',
         ], $response->getAsArray());
@@ -59,7 +61,7 @@ class ResponseTest extends TestCase
         $response = new Response(404);
         $this->assertEquals(404, $response->getStatusCode());
         $this->assertEquals('Not Found', $response->getReasonPhrase());
-        $this->assertEquals('WebSocket\Http\Response', "{$response}");
+        $this->assertEquals('WebSocket\Http\Response(404)', "{$response}");
         $this->assertEquals([
             'HTTP/1.1 404 Not Found',
         ], $response->getAsArray());
@@ -70,7 +72,7 @@ class ResponseTest extends TestCase
         $response = new Response(400, 'Custom reason phrase');
         $this->assertEquals(400, $response->getStatusCode());
         $this->assertEquals('Custom reason phrase', $response->getReasonPhrase());
-        $this->assertEquals('WebSocket\Http\Response', "{$response}");
+        $this->assertEquals('WebSocket\Http\Response(400)', "{$response}");
         $this->assertEquals([
             'HTTP/1.1 400 Custom reason phrase',
         ], $response->getAsArray());

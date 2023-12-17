@@ -56,7 +56,7 @@ class ConfigTest extends TestCase
         $this->assertSame($server, $server->setStreamFactory(new StreamFactory()));
         $this->assertSame($server, $server->addMiddleware(new Callback()));
 
-        $this->assertEquals('Server(closed)', "{$server}");
+        $this->assertEquals('WebSocket\Server(closed)', "{$server}");
         $this->assertEquals(60, $server->getTimeout());
         $this->assertEquals(4096, $server->getFrameSize());
         $this->assertEquals(8000, $server->getPort());
@@ -74,7 +74,7 @@ class ConfigTest extends TestCase
             $server->stop();
         });
         $server->start();
-        $this->assertEquals('Server(tcp://0.0.0.0:8000)', "{$server}");
+        $this->assertEquals('WebSocket\Server(tcp://0.0.0.0:8000)', "{$server}");
         $this->assertFalse($server->isRunning());
 
         unset($server);
@@ -114,7 +114,7 @@ class ConfigTest extends TestCase
         $this->assertSame($server, $server->setFrameSize(64));
         $this->assertSame($server, $server->addMiddleware(new Callback()));
 
-        $this->assertEquals('Server(ssl://0.0.0.0:9000)', "{$server}");
+        $this->assertEquals('WebSocket\Server(ssl://0.0.0.0:9000)', "{$server}");
         $this->assertEquals(300, $server->getTimeout());
         $this->assertEquals(64, $server->getFrameSize());
         $this->assertEquals(9000, $server->getPort());

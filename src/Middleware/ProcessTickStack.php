@@ -9,14 +9,18 @@
 
 namespace WebSocket\Middleware;
 
+use Stringable;
 use WebSocket\Connection;
+use WebSocket\Trait\StringableTrait;
 
 /**
  * WebSocket\Middleware\ProcessTickStack class.
  * Worker stack for HTTP middleware implementations.
  */
-class ProcessTickStack
+class ProcessTickStack implements Stringable
 {
+    use StringableTrait;
+
     private $connection;
     private $processors;
 

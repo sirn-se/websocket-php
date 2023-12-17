@@ -15,13 +15,17 @@ use Psr\Http\Message\{
     MessageInterface,
     StreamInterface
 };
+use Stringable;
+use WebSocket\Trait\StringableTrait;
 
 /**
  * Phrity\WebSocket\Http\Message class.
  * Only used for handshake procedure.
  */
-abstract class Message implements MessageInterface
+abstract class Message implements MessageInterface, Stringable
 {
+    use StringableTrait;
+
     protected $version = '1.1';
     protected $headers = [];
 
@@ -158,11 +162,6 @@ abstract class Message implements MessageInterface
             }
         }
         return $lines;
-    }
-
-    public function __toString(): string
-    {
-        return get_class($this);
     }
 
     private function handleHeader(string $name, string|array $value): void

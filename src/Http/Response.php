@@ -129,6 +129,11 @@ class Response extends Message implements ResponseInterface
         return $this->reason ?: $d;
     }
 
+    public function __toString(): string
+    {
+        return $this->stringable('%s', $this->getStatusCode());
+    }
+
     public function getAsArray(): array
     {
         return array_merge([

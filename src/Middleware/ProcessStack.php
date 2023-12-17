@@ -9,18 +9,22 @@
 
 namespace WebSocket\Middleware;
 
+use Stringable;
 use WebSocket\Connection;
 use WebSocket\Message\{
     Message,
     MessageHandler
 };
+use WebSocket\Trait\StringableTrait;
 
 /**
  * WebSocket\Middleware\ProcessStack class.
  * Worker stack for middleware implementations.
  */
-class ProcessStack
+class ProcessStack implements Stringable
 {
+    use StringableTrait;
+
     private $connection;
     private $messageHandler;
     private $processors;

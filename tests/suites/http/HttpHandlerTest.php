@@ -22,6 +22,7 @@ use Psr\Http\Message\{
     UriInterface
 };
 use RuntimeException;
+use Stringable;
 use WebSocket\Http\{
     HttpHandler,
     Message,
@@ -66,6 +67,8 @@ class HttpHandlerTest extends TestCase
         });
         $sent = $handler->push($request);
         $this->assertSame($request, $sent);
+        $this->assertInstanceOf(Stringable::class, $handler);
+        $this->assertEquals('WebSocket\Http\HttpHandler', "{$handler}");
 
         fclose($temp);
     }

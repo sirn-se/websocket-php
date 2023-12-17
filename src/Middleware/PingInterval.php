@@ -19,14 +19,16 @@ use WebSocket\Message\{
     Ping,
     Message
 };
+use WebSocket\Trait\StringableTrait;
 
 /**
  * WebSocket\Middleware\PingInterval class.
  * Handles close procedure.
  */
-class PingInterval implements LoggerAwareInterface, ProcessOutgoingInterface, ProcessTickInterface, Stringable
+class PingInterval implements LoggerAwareInterface, ProcessOutgoingInterface, ProcessTickInterface
 {
     use LoggerAwareTrait;
+    use StringableTrait;
 
     private $interval;
 
@@ -50,11 +52,6 @@ class PingInterval implements LoggerAwareInterface, ProcessOutgoingInterface, Pr
             $this->setNext($connection); // Update timestamp for next ping
         }
         $stack->handleTick();
-    }
-
-    public function __toString(): string
-    {
-        return get_class($this);
     }
 
     private function getNext(Connection $connection): int

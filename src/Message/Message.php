@@ -11,14 +11,18 @@ namespace WebSocket\Message;
 
 use DateTimeImmutable;
 use DateTimeInterface;
+use Stringable;
 use WebSocket\Frame\Frame;
+use WebSocket\Trait\StringableTrait;
 
 /**
  * WebSocket\Message\Message class.
  * Abstract superclass for WebSocket messages.
  */
-abstract class Message
+abstract class Message implements Stringable
 {
+    use StringableTrait;
+
     protected $opcode;
     protected $content;
     protected $timestamp;
@@ -57,11 +61,6 @@ abstract class Message
     public function hasContent(): bool
     {
         return $this->content != '';
-    }
-
-    public function __toString(): string
-    {
-        return get_class($this);
     }
 
     public function getPayload(): string

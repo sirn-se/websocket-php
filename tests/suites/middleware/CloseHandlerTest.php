@@ -14,6 +14,7 @@ namespace WebSocket\Test\Middleware;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\SocketStream;
 use Phrity\Net\Mock\Stack\ExpectSocketStreamTrait;
+use Stringable;
 use WebSocket\Connection;
 use WebSocket\Message\Close;
 use WebSocket\Middleware\CloseHandler;
@@ -47,7 +48,11 @@ class CloseHandlerTest extends TestCase
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
         $connection = new Connection($stream, false, false);
-        $connection->addMiddleware(new CloseHandler());
+
+        $middleware = new CloseHandler();
+        $connection->addMiddleware($middleware);
+        $this->assertInstanceOf(Stringable::class, $middleware);
+        $this->assertEquals('WebSocket\Middleware\CloseHandler', "{$middleware}");
 
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(base64_decode('iAYD6HR0Zm4'), $params[0]);

@@ -14,15 +14,19 @@ use Psr\Log\{
     LoggerInterface,
     NullLogger
 };
+use Stringable;
 use WebSocket\Exception\BadOpcodeException;
 use WebSocket\Frame\FrameHandler;
+use WebSocket\Trait\StringableTrait;
 
 /**
  * WebSocket\Message\MessageHandler class.
  * Message/Frame handling.
  */
-class MessageHandler implements LoggerAwareInterface
+class MessageHandler implements LoggerAwareInterface, Stringable
 {
+    use StringableTrait;
+
     private const DEFAULT_SIZE = 4096;
 
     private $frameHandler;

@@ -11,6 +11,9 @@
  * Http & Tick middleware support (@sirn-se)
  * PingInterval middleware for heartbeat functionality (@sirn-se)
  * Connection get/set meta functions (@sirn-se)
+ * All classes Stringable, consistent (@sirn-se)
+ * HTTP method fix (@sirn-se)
+ * Unit tests for php 8.4 (@sirn-se)
  * Fixing various typos (@UksusoFF, @sirn-se)
  * Remove unused code and documentation (@sirn-se)
 

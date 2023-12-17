@@ -149,4 +149,9 @@ class ServerRequest extends Request implements ServerRequestInterface
     {
         throw new BadMethodCallException("Not implemented.");
     }
+
+    public function __toString(): string
+    {
+        return $this->stringable('%s %s', $this->getMethod(), $this->getRequestTarget());
+    }
 }

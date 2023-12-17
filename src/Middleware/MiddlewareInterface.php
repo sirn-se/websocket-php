@@ -9,11 +9,12 @@
 
 namespace WebSocket\Middleware;
 
+use Stringable;
+
 /**
  * WebSocket\Middleware\MiddlewareInterface interface.
  * Interface for middleware implementations.
  */
-interface MiddlewareInterface
+interface MiddlewareInterface extends Stringable
 {
-    public function __toString(): string;
 }
