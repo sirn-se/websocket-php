@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace WebSocket\Test\Message;
 
 use PHPUnit\Framework\TestCase;
+use Stringable;
 use WebSocket\BadOpcodeException;
 use WebSocket\Frame\Frame;
 use WebSocket\Message\{
@@ -43,6 +44,7 @@ class BinaryTest extends TestCase
         $message->setContent('');
         $this->assertEquals(0, $message->getLength());
         $this->assertFalse($message->hasContent());
+        $this->assertInstanceOf(Stringable::class, $message);
         $this->assertEquals('WebSocket\Message\Binary', "{$message}");
 
         $frames = $message->getFrames();

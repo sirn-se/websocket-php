@@ -15,6 +15,7 @@ use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\SocketStream;
 use Phrity\Net\Mock\Stack\ExpectSocketStreamTrait;
 use RuntimeException;
+use Stringable;
 use WebSocket\ConnectionException;
 use WebSocket\Frame\{
     Frame,
@@ -48,6 +49,7 @@ class FrameHandlerTest extends TestCase
         $stream = new SocketStream($temp);
         $handler = new FrameHandler($stream, false, false);
         $this->assertInstanceOf(FrameHandler::class, $handler);
+        $this->assertInstanceOf(Stringable::class, $handler);
 
         $frame = new Frame('text', 'Text message', true);
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
@@ -57,6 +59,7 @@ class FrameHandlerTest extends TestCase
         });
         $written = $handler->push($frame, false);
         $this->assertEquals(14, $written);
+        $this->assertEquals('WebSocket\Frame\FrameHandler', "{$handler}");
 
         fclose($temp);
     }

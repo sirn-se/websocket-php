@@ -9,12 +9,17 @@
 
 namespace WebSocket\Frame;
 
+use Stringable;
+use WebSocket\Trait\StringableTrait;
+
 /**
  * WebSocket\Frame\Frame class.
  * Represent a single frame sent or received as part of websocket message.
  */
-class Frame
+class Frame implements Stringable
 {
+    use StringableTrait;
+
     private $opcode;
     private $payload;
     private $final;
@@ -49,5 +54,10 @@ class Frame
     public function getPayloadLength(): int
     {
         return strlen($this->payload);
+    }
+
+    public function __toString(): string
+    {
+        return $this->stringable('%s', $this->opcode);
     }
 }

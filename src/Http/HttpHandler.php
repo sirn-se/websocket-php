@@ -25,13 +25,17 @@ use Psr\Log\{
     NullLogger
 };
 use RuntimeException;
+use Stringable;
+use WebSocket\Trait\StringableTrait;
 
 /**
  * WebSocket\Http\HttpHandler class.
  * Reads and writes HTTP message to/from stream.
  */
-class HttpHandler implements LoggerAwareInterface
+class HttpHandler implements LoggerAwareInterface, Stringable
 {
+    use StringableTrait;
+
     private $stream;
     private $logger;
 

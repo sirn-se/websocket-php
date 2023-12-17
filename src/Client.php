@@ -38,7 +38,8 @@ use WebSocket\Message\Message;
 use WebSocket\Middleware\MiddlewareInterface;
 use WebSocket\Trait\{
     ListenerTrait,
-    SendMethodsTrait
+    SendMethodsTrait,
+    StringableTrait
 };
 
 /**
@@ -49,6 +50,7 @@ class Client implements LoggerAwareInterface, Stringable
 {
     use ListenerTrait;
     use SendMethodsTrait;
+    use StringableTrait;
 
     // Settings
     private $logger;
@@ -85,7 +87,7 @@ class Client implements LoggerAwareInterface, Stringable
      */
     public function __toString(): string
     {
-        return sprintf("Client(%s)", $this->connection ? $this->socketUri->__toString() : 'closed');
+        return $this->stringable('%s', $this->connection ? $this->socketUri->__toString() : 'closed');
     }
 
 

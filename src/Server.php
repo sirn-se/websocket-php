@@ -38,7 +38,8 @@ use WebSocket\Message\Message;
 use WebSocket\Middleware\MiddlewareInterface;
 use WebSocket\Trait\{
     ListenerTrait,
-    SendMethodsTrait
+    SendMethodsTrait,
+    StringableTrait
 };
 
 /**
@@ -49,6 +50,7 @@ class Server implements LoggerAwareInterface, Stringable
 {
     use ListenerTrait;
     use SendMethodsTrait;
+    use StringableTrait;
 
     private const GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 
@@ -92,7 +94,7 @@ class Server implements LoggerAwareInterface, Stringable
      */
     public function __toString(): string
     {
-        return sprintf("Server(%s)", $this->server ? "{$this->scheme}://0.0.0.0:{$this->port}" : 'closed');
+        return $this->stringable('%s', $this->server ? "{$this->scheme}://0.0.0.0:{$this->port}" : 'closed');
     }
 
 

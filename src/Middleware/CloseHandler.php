@@ -13,20 +13,21 @@ use Psr\Log\{
     LoggerAwareInterface,
     LoggerAwareTrait
 };
-use Stringable;
 use WebSocket\Connection;
 use WebSocket\Message\{
     Close,
     Message
 };
+use WebSocket\Trait\StringableTrait;
 
 /**
  * WebSocket\Middleware\CloseHandler class.
  * Handles close procedure.
  */
-class CloseHandler implements LoggerAwareInterface, ProcessIncomingInterface, ProcessOutgoingInterface, Stringable
+class CloseHandler implements LoggerAwareInterface, ProcessIncomingInterface, ProcessOutgoingInterface
 {
     use LoggerAwareTrait;
+    use StringableTrait;
 
     public function processIncoming(ProcessStack $stack, Connection $connection): Message
     {
@@ -64,10 +65,5 @@ class CloseHandler implements LoggerAwareInterface, ProcessIncomingInterface, Pr
             $connection->disconnect();
         }
         return $message;
-    }
-
-    public function __toString(): string
-    {
-        return get_class($this);
     }
 }

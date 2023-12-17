@@ -16,16 +16,21 @@ use Psr\Log\{
     NullLogger
 };
 use RuntimeException;
+use Stringable;
 use WebSocket\Exception\CloseException;
-use WebSocket\Trait\OpcodeTrait;
+use WebSocket\Trait\{
+    OpcodeTrait,
+    StringableTrait
+};
 
 /**
  * WebSocket\Frame\FrameHandler class.
  * Reads and writes Frames on stream.
  */
-class FrameHandler implements LoggerAwareInterface
+class FrameHandler implements LoggerAwareInterface, Stringable
 {
     use OpcodeTrait;
+    use StringableTrait;
 
     private $stream;
     private $logger;

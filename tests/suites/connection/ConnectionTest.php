@@ -15,6 +15,7 @@ use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\SocketStream;
 use Phrity\Net\Mock\Stack\ExpectSocketStreamTrait;
 use Psr\Log\NullLogger;
+use Stringable;
 use WebSocket\Connection;
 use WebSocket\Exception\{
     BadOpcodeException,
@@ -63,13 +64,14 @@ class ConnectionTest extends TestCase
         $this->expectSocketStreamGetRemoteName();
         $connection = new Connection($stream, false, false);
         $this->assertInstanceOf(Connection::class, $connection);
+        $this->assertInstanceOf(Stringable::class, $connection);
 
         $this->expectSocketStreamIsConnected();
         $this->assertTrue($connection->isConnected());
 
         $this->assertEquals('', $connection->getName());
         $this->assertEquals('', $connection->getRemoteName());
-        $this->assertEquals('Connection()', "{$connection}");
+        $this->assertEquals('WebSocket\Connection(:)', "{$connection}");
         $connection->tick();
         $connection->setMeta('test.meta.1', 'meta.data.1');
         $connection->setMeta('test.meta.2', 'meta.data.2');

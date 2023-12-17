@@ -21,6 +21,7 @@ use WebSocket\Http\{
     Message as HttpMessage
 };
 use WebSocket\Message\Message;
+use WebSocket\Trait\StringableTrait;
 
 /**
  * WebSocket\Middleware\Callback class.
@@ -32,10 +33,10 @@ class Callback implements
     ProcessHttpOutgoingInterface,
     ProcessIncomingInterface,
     ProcessOutgoingInterface,
-    ProcessTickInterface,
-    Stringable
+    ProcessTickInterface
 {
     use LoggerAwareTrait;
+    use StringableTrait;
 
     private $incoming;
     private $outgoing;
@@ -98,10 +99,5 @@ class Callback implements
             call_user_func($this->tick, $stack, $connection);
         }
         $stack->handleTick();
-    }
-
-    public function __toString(): string
-    {
-        return get_class($this);
     }
 }

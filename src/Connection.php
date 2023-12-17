@@ -39,7 +39,8 @@ use WebSocket\Middleware\{
     MiddlewareInterface
 };
 use WebSocket\Trait\{
-    SendMethodsTrait
+    SendMethodsTrait,
+    StringableTrait
 };
 
 /**
@@ -49,6 +50,7 @@ use WebSocket\Trait\{
 class Connection implements LoggerAwareInterface, Stringable
 {
     use SendMethodsTrait;
+    use StringableTrait;
 
     private $stream;
     private $httpHandler;
@@ -86,7 +88,7 @@ class Connection implements LoggerAwareInterface, Stringable
 
     public function __toString(): string
     {
-        return "Connection({$this->localName})";
+        return $this->stringable('%s:%s', $this->localName, $this->remoteName);
     }
 
 

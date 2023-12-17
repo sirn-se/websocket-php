@@ -22,6 +22,7 @@ use Phrity\Net\Mock\Stack\{
 };
 use Phrity\Net\StreamException;
 use Psr\Log\NullLogger;
+use Stringable;
 use WebSocket\{
     Connection,
     Server
@@ -75,6 +76,8 @@ class ServerTest extends TestCase
         $this->expectStreamFactory();
         $server = new Server(8000);
         $server->setStreamFactory(new StreamFactory());
+        $this->assertInstanceOf(Stringable::class, $server);
+        $this->assertEquals('WebSocket\Server(closed)', "{$server}");
 
         $server->onConnect(function ($server, $connection, $request) {
             $this->assertInstanceOf(Server::class, $server);

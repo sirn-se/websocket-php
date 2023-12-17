@@ -14,6 +14,7 @@ namespace WebSocket\Test\Message;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\SocketStream;
 use Phrity\Net\Mock\Stack\ExpectSocketStreamTrait;
+use Stringable;
 use WebSocket\Exception\BadOpcodeException;
 use WebSocket\Frame\{
     Frame,
@@ -55,6 +56,8 @@ class MessageHandlerTest extends TestCase
         $this->expectSocketStreamGetMetadata();
         $handler = new MessageHandler(new FrameHandler(new SocketStream($temp), false, false));
         $this->assertInstanceOf(MessageHandler::class, $handler);
+        $this->assertInstanceOf(Stringable::class, $handler);
+        $this->assertEquals('WebSocket\Message\MessageHandler', "{$handler}");
 
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(14, strlen($params[0]));

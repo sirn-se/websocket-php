@@ -15,6 +15,7 @@ use Psr\Log\{
     LoggerAwareInterface,
     NullLogger
 };
+use Stringable;
 use WebSocket\Connection;
 use WebSocket\Http\{
     HttpHandler,
@@ -24,13 +25,16 @@ use WebSocket\Message\{
     Message,
     MessageHandler
 };
+use WebSocket\Trait\StringableTrait;
 
 /**
  * WebSocket\Middleware\MiddlewareHandler class.
  * Middleware handling.
  */
-class MiddlewareHandler implements LoggerAwareInterface
+class MiddlewareHandler implements LoggerAwareInterface, Stringable
 {
+    use StringableTrait;
+
     // Processor collections
     private $incoming = [];
     private $outgoing = [];

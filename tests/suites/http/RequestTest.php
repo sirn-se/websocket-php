@@ -20,6 +20,7 @@ use Psr\Http\Message\{
     RequestInterface,
     UriInterface
 };
+use Stringable;
 use WebSocket\Http\{
     Message,
     Request
@@ -49,7 +50,8 @@ class RequestTest extends TestCase
         $this->assertFalse($request->hasHeader('none'));
         $this->assertEquals([], $request->getHeader('none'));
         $this->assertEquals('', $request->getHeaderLine('none'));
-        $this->assertEquals('WebSocket\Http\Request', "{$request}");
+        $this->assertInstanceOf(Stringable::class, $request);
+        $this->assertEquals('WebSocket\Http\Request(GET )', "{$request}");
         $this->assertEquals([
             'GET / HTTP/1.1',
         ], $request->getAsArray());
@@ -66,9 +68,9 @@ class RequestTest extends TestCase
         $this->assertTrue($request->hasHeader('Host'));
         $this->assertEquals(['test.com:123'], $request->getHeader('Host'));
         $this->assertEquals('test.com:123', $request->getHeaderLine('Host'));
-        $this->assertEquals('WebSocket\Http\Request', "{$request}");
+        $this->assertEquals('WebSocket\Http\Request(POST ws://test.com:123/a/path?a=b)', "{$request}");
         $this->assertEquals([
-            'GET /a/path?a=b HTTP/1.1',
+            'POST /a/path?a=b HTTP/1.1',
             'Host: test.com:123',
         ], $request->getAsArray());
     }
@@ -83,9 +85,9 @@ class RequestTest extends TestCase
         $this->assertTrue($request->hasHeader('Host'));
         $this->assertEquals(['test.com:123'], $request->getHeader('Host'));
         $this->assertEquals('test.com:123', $request->getHeaderLine('Host'));
-        $this->assertEquals('WebSocket\Http\Request', "{$request}");
+        $this->assertEquals('WebSocket\Http\Request(POST ws://test.com:123/a/path?a=b)', "{$request}");
         $this->assertEquals([
-            'GET /a/path?a=b HTTP/1.1',
+            'POST /a/path?a=b HTTP/1.1',
             'Host: test.com:123',
         ], $request->getAsArray());
     }
