@@ -68,9 +68,4 @@ class ProcessStack implements Stringable
         }
         return $this->messageHandler->push($message, $this->connection->getFrameSize());
     }
-
-    public function __toString(): string
-    {
-        return get_class($this);
-    }
 }

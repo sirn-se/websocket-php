@@ -15,6 +15,7 @@ use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\SocketStream;
 use Phrity\Net\Mock\Stack\ExpectSocketStreamTrait;
 use Psr\Log\NullLogger;
+use Stringable;
 use WebSocket\Connection;
 use WebSocket\Message\Text;
 use WebSocket\Middleware\Callback;
@@ -48,13 +49,16 @@ class CallbackTest extends TestCase
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
         $connection = new Connection($stream, false, false);
-
-        $connection->addMiddleware(new Callback(incoming: function ($stack, $connection) {
+        $middleware = new Callback(incoming: function ($stack, $connection) {
             $message = $stack->handleIncoming();
             $message->setContent("Changed message");
             $this->assertEquals('Changed message', $message->getContent());
             return $message;
-        }));
+        });
+
+        $connection->addMiddleware($middleware);
+        $this->assertInstanceOf(Stringable::class, $middleware);
+        $this->assertEquals('WebSocket\Middleware\Callback', "{$middleware}");
 
         $this->expectSocketStreamRead()->setReturn(function () {
             return base64_decode('gQw=');
