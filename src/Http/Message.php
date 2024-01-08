@@ -170,7 +170,12 @@ abstract class Message implements MessageInterface, Stringable
         if (!preg_match('|^[0-9a-zA-Z#_-]+$|', $name)) {
             throw new InvalidArgumentException("'{$name}' is not a valid header field name.");
         }
-        $value = is_array($value) ? $value : [$value];
+        $value = array_map(function (string|array $item) {
+            return trim($item);
+        }, is_array($value) ? $value : [$value]);
+        if (empty($value)) {
+            throw new InvalidArgumentException("Invalid header value(s) provided.");
+        }
         foreach ($value as $content) {
             $content = trim($content);
             if ('' === $content) {
