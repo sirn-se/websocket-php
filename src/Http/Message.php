@@ -172,7 +172,8 @@ abstract class Message implements MessageInterface, Stringable
         }
         $value = is_array($value) ? $value : [$value];
         foreach ($value as $content) {
-            if (!(is_string($content) || is_numeric($content)) || empty($content = trim($content))) {
+            $content = trim($content);
+            if ('' === $content) {
                 throw new InvalidArgumentException("Invalid header value(s) provided.");
             }
             $this->headers[strtolower($name)][$name][] = $content;
