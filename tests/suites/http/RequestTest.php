@@ -232,4 +232,40 @@ class RequestTest extends TestCase
         $this->expectExceptionMessage("Invalid header value(s) provided.");
         $request->withHeader('name', '');
     }
+
+    /**
+     * @dataProvider provideInvalidHeaderValues
+     * @
+     */
+    public function testHeaderValueInvalidVariants($value): void
+    {
+        $request = new Request();
+        $this->expectException(InvalidArgumentException::class);
+        $request->withHeader('name', $value);
+    }
+
+    public static function provideInvalidHeaderValues(): \Generator
+    {
+        yield [''];
+        yield ['  '];
+    }
+
+    /**
+     * @dataProvider provideValidHeaderValues
+     * @
+     */
+    public function testHeaderValueValidVariants($value): void
+    {
+        $request = new Request();
+        $request = $request->withHeader('name', $value);
+        $this->assertInstanceOf(Request::class, $request);
+    }
+
+    public static function provideValidHeaderValues(): \Generator
+    {
+        yield ['null'];
+        yield ['0'];
+        yield ['  0'];
+        yield ['1'];
+    }
 }
