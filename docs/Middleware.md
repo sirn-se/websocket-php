@@ -36,7 +36,7 @@ These middlewares are included in library and can be added to provide additional
 
 ## Middleware descriptions
 
-Descriptiopn of included middlewares.
+Description of included middlewares.
 
 ### The CloseHandler middleware
 
