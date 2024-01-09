@@ -98,7 +98,7 @@ abstract class Message implements MessageInterface, Stringable
      * @return static
      * @throws \InvalidArgumentException for invalid header names or values.
      */
-    public function withHeader(string $name, $value): self
+    public function withHeader(string $name, mixed $value): self
     {
         $new = clone $this;
         if ($this->hasHeader($name)) {
@@ -116,7 +116,7 @@ abstract class Message implements MessageInterface, Stringable
      * @throws \InvalidArgumentException for invalid header names.
      * @throws \InvalidArgumentException for invalid header values.
      */
-    public function withAddedHeader(string $name, $value): self
+    public function withAddedHeader(string $name, mixed $value): self
     {
         $new = clone $this;
         $new->handleHeader($name, $value);
@@ -164,19 +164,20 @@ abstract class Message implements MessageInterface, Stringable
         return $lines;
     }
 
-    private function handleHeader(string $name, string|array $value): void
+    private function handleHeader(string $name, mixed $value): void
     {
         // @todo: Add all available characters, these are just some of them.
         if (!preg_match('|^[0-9a-zA-Z#_-]+$|', $name)) {
             throw new InvalidArgumentException("'{$name}' is not a valid header field name.");
         }
-        $value = array_map(function (string|array $item) {
-            return trim($item);
-        }, is_array($value) ? $value : [$value]);
+        $value = is_array($value) ? $value : [$value];
         if (empty($value)) {
             throw new InvalidArgumentException("Invalid header value(s) provided.");
         }
         foreach ($value as $content) {
+            if (!is_string($content) && !is_numeric($content)) {
+                throw new InvalidArgumentException("Invalid header value(s) provided.");
+            }
             $content = trim($content);
             if ('' === $content) {
                 throw new InvalidArgumentException("Invalid header value(s) provided.");

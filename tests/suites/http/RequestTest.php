@@ -242,6 +242,8 @@ class RequestTest extends TestCase
         yield [''];
         yield ['  '];
         yield [['0', '']];
+        yield [[null]];
+        yield [[[0]]];
         yield [[]];
     }
 
@@ -262,5 +264,6 @@ class RequestTest extends TestCase
         yield ['0  ', ['name' => ['0']]];
         yield ['  0', ['name' => ['0']]];
         yield [['0', '1'], ['name' => ['0', '1']]];
+        yield [0, ['name' => ['0']]];
     }
 }

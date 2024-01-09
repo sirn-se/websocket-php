@@ -8,7 +8,8 @@
 
 ### `2.1.1`
 
- * Fix for HTTP headers (@zgrguric, @sirn-se)
+ * Fix issue with falsy but valid HTTP headers (@zgrguric)
+ * Additional check for HTTP headers (@sirn-se)
 
 ### `2.1.0`
 
