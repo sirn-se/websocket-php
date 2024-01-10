@@ -14,7 +14,7 @@ This is usable for debugging. For production, use a proper logger.
 ```php
 $logger = new WebSocket\Test\EchoLog();
 
-$client = new WebSocket\Client('ws://echo.websocket.org/');
+$client = new WebSocket\Client('wss://echo.websocket.org/');
 $client->setLogger($logger);
 
 $server = new WebSocket\Server();

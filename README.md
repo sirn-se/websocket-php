@@ -34,7 +34,7 @@ It internally supports Upgrade handshake and implicit close and ping/pong operat
 
 Set up a WebSocket Client for request/response strategy.
 ```php
-$client = new WebSocket\Client("ws://echo.websocket.org/");
+$client = new WebSocket\Client("wss://echo.websocket.org/");
 $client
     // Add standard middlewares
     ->addMiddleware(new WebSocket\Middleware\CloseHandler())
@@ -54,7 +54,7 @@ $client->close();
 
 Set up a WebSocket Client for continuous subscription
 ```php
-$client = new WebSocket\Client("ws://echo.websocket.org/");
+$client = new WebSocket\Client("wss://echo.websocket.org/");
 $client
     // Add standard middlewares
     ->addMiddleware(new WebSocket\Middleware\CloseHandler())

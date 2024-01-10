@@ -9,7 +9,7 @@ The client can read and write on a WebSocket stream.
 Set up a WebSocket client for request/response strategy.
 
 ```php
-$client = new WebSocket\Client("ws://echo.websocket.org/");
+$client = new WebSocket\Client("wss://echo.websocket.org/");
 $client
     // Add standard middlewares
     ->addMiddleware(new WebSocket\Middleware\CloseHandler())
@@ -32,7 +32,7 @@ $client->close();
 If you want to subscribe to messages sent by server at any point, use the listener functions.
 
 ```php
-$client = new WebSocket\Client("ws://echo.websocket.org/");
+$client = new WebSocket\Client("wss://echo.websocket.org/");
 $client
     // Add standard middlewares
     ->addMiddleware(new WebSocket\Middleware\CloseHandler())
@@ -55,7 +55,7 @@ Other options are available runtime by calling configuration methods.
 
 ```php
 // Create client
-$client = new WebSocket\Client("ws://echo.websocket.org/");
+$client = new WebSocket\Client("wss://echo.websocket.org/");
 $client
     // Use a PSR-3 compatible logger
     ->setLogger(Psr\Log\LoggerInterface $logger)
@@ -93,7 +93,7 @@ This repo comes with two middlewares that provide standard operability according
 If not added, you need to handle close operation and respond to ping requests in your own implementation.
 
 ```php
-$client = new WebSocket\Client("ws://echo.websocket.org/");
+$client = new WebSocket\Client("wss://echo.websocket.org/");
 $client
     // Add CloseHandler middleware
     ->addMiddleware(new WebSocket\Middleware\CloseHandler())
@@ -111,7 +111,7 @@ whenever the server receives a method of the same type.
 All message listeners receive Client, Connection and Message as arguments.
 
 ```php
-$client = new WebSocket\Client("ws://echo.websocket.org/");
+$client = new WebSocket\Client("wss://echo.websocket.org/");
 $client
     // Listen to incoming Text messages
     ->onText(function (WebSocket\Client $client, WebSocket\Connection $connection, WebSocket\Message\Text $message) {
