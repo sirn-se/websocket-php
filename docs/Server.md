@@ -162,18 +162,14 @@ $server->close(1000, "Closing now");
 When started, the server will continue to run until something tells it so stop.
 There are some additional methods that control the server.
 
-Start server - It will continuously listen to incoming messages and apply specified callback functions.
 ```php
+// Start server - It will continuously listen to incoming messages and apply specified callback functions
 $server->start();
-```
 
-Stop server - When called, server will no longer listen to incoming messages but will not disconnect clients.
-```php
+// Stop server - When called, server will no longer listen to incoming messages but will not disconnect clients
 $server->stop();
-```
 
-Disconnect server - Server will immediately stop and disconnect all clients without normal close procedure.
-```php
+//Disconnect server - Server will immediately stop and disconnect all clients without normal close procedure
 $server->disconnect();
 ```
 

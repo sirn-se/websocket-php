@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace WebSocket\Test\Http;
 
 use BadMethodCallException;
+use Generator;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\StreamFactory;
@@ -215,7 +216,7 @@ class RequestTest extends TestCase
         $request->withBody($factory->createStream());
     }
 
-    public function testHaederNameError(): void
+    public function testHeaderNameError(): void
     {
         $request = new Request();
         $this->expectException(InvalidArgumentException::class);
@@ -224,48 +225,45 @@ class RequestTest extends TestCase
         $request->withHeader('.', 'invaid name');
     }
 
-    public function testHaederValueError(): void
+    /**
+     * @dataProvider provideInvalidHeaderValues
+     */
+    public function testHeaderValueInvalidVariants(mixed $value): void
     {
         $request = new Request();
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionCode(0);
         $this->expectExceptionMessage("Invalid header value(s) provided.");
-        $request->withHeader('name', '');
-    }
-
-    /**
-     * @dataProvider provideInvalidHeaderValues
-     * @
-     */
-    public function testHeaderValueInvalidVariants($value): void
-    {
-        $request = new Request();
-        $this->expectException(InvalidArgumentException::class);
         $request->withHeader('name', $value);
     }
 
-    public static function provideInvalidHeaderValues(): \Generator
+    public static function provideInvalidHeaderValues(): Generator
     {
         yield [''];
         yield ['  '];
+        yield [['0', '']];
+        yield [[null]];
+        yield [[[0]]];
+        yield [[]];
     }
 
     /**
      * @dataProvider provideValidHeaderValues
-     * @
      */
-    public function testHeaderValueValidVariants($value): void
+    public function testHeaderValueValidVariants(mixed $value, array $expected): void
     {
         $request = new Request();
         $request = $request->withHeader('name', $value);
         $this->assertInstanceOf(Request::class, $request);
+        $this->assertEquals($expected, $request->getHeaders());
     }
 
-    public static function provideValidHeaderValues(): \Generator
+    public static function provideValidHeaderValues(): Generator
     {
-        yield ['null'];
-        yield ['0'];
-        yield ['  0'];
-        yield ['1'];
+        yield ['null', ['name' => ['null']]];
+        yield ['0  ', ['name' => ['0']]];
+        yield ['  0', ['name' => ['0']]];
+        yield [['0', '1'], ['name' => ['0', '1']]];
+        yield [0, ['name' => ['0']]];
     }
 }

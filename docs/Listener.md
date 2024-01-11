@@ -9,7 +9,7 @@ If you use the listener method `->start()` this will be the only way to act on i
 ## Message listeners
 
 The message listeners are called whenever the client or server receives a message of the same type.
-All message listeners receive Client|Server, Connection and Message as arguments.
+All message listeners receive `Client|Server`, `Connection` and `Message` as arguments.
 
 ```php
 $client_or_server
@@ -40,8 +40,8 @@ $client_or_server
 
 These listeners are called when the Client or Server connects and disconnects.
 
-* On Client, the onConnect() will receive a Response as last argument
-* On Server, the onConnect() will receive a ServerRequest as last argument
+* On Client, the `onConnect()` will receive a `Response` as last argument
+* On Server, the `onConnect()` will receive a `ServerRequest` as last argument
 
 ```php
 $client_or_server
@@ -75,7 +75,7 @@ $client_or_server
 Using above functions, your Client and Server will be able to receive incoming messages and take action accordingly.
 
 But what if your implementation need to process other data, and send unsolicited messages?
-The coroutine implementation will regulary call the onTick() method, depending on workload and configuration.
+The coroutine implementation will regulary call the `onTick()` method, depending on workload and configuration.
 
 ```php
 $client_or_server

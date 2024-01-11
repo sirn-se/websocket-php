@@ -6,6 +6,11 @@
 
  > PHP version `^8.0`
 
+### `2.1.1`
+
+ * Fix issue with falsy but valid HTTP headers (@axklim)
+ * Additional check for HTTP headers (@sirn-se)
+
 ### `2.1.0`
 
  * Http & Tick middleware support (@sirn-se)

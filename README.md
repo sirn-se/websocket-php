@@ -8,8 +8,8 @@ Replaces `textalk/websocket`.
 
 The client and server provides methods for reading and writing to WebSocket streams.
 
-This fork is maintained by Sören Jensen, who has been maintaining the original textalk/websocket
-repo since `v1.3`.
+This repo replaces the abandoned `textalk/websocket` repo
+and is maintained by Sören Jensen, who has been maintaining the original since `v1.3`.
 
 ## Documentation
 

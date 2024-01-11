@@ -69,7 +69,7 @@ make coverage
 * Simon Lipp
 * Quentin Bellus
 * Patrick McCarren
-* swmcdonnell,
+* swmcdonnell
 * Ignas Bernotas
 * Mark Herhold
 * Andreas Palm
@@ -86,3 +86,4 @@ make coverage
 * Simon Podlipsky
 * etrinh
 * zgrguric
+* axklim
