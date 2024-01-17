@@ -63,6 +63,7 @@ class ConfigTest extends TestCase
         $this->assertEquals('tcp', $server->getScheme());
         $this->assertFalse($server->isRunning());
         $this->assertEquals(0, $server->getConnectionCount());
+        $this->assertEmpty($server->getSupportedSubProtocols());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
         $this->expectStreamCollectionWaitRead()->addAssert(function ($method, $params) {
@@ -113,6 +114,7 @@ class ConfigTest extends TestCase
         $this->assertSame($server, $server->setTimeout(300));
         $this->assertSame($server, $server->setFrameSize(64));
         $this->assertSame($server, $server->addMiddleware(new Callback()));
+        $this->assertSame($server, $server->setSupportedSubProtocols(['soap']));
 
         $this->assertEquals('WebSocket\Server(ssl://0.0.0.0:9000)', "{$server}");
         $this->assertEquals(300, $server->getTimeout());
@@ -121,6 +123,7 @@ class ConfigTest extends TestCase
         $this->assertEquals('ssl', $server->getScheme());
         $this->assertFalse($server->isRunning());
         $this->assertEquals(1, $server->getConnectionCount());
+        $this->assertEquals(['soap'], $server->getSupportedSubProtocols());
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();

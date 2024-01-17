@@ -73,12 +73,15 @@ $client
         ],
     ])
     // Add header to handshake request
-    ->addHeader("Sec-WebSocket-Protocol", "soap")
+    ->addHeader("my-header", "header-value")
+    // Add requested protocol
+    ->setSubProtocol("soap")
     ;
 
 // Get current settings
 echo "timeout:      {$client->getTimeout()}s\n";
 echo "frame size:   {$client->getFrameSize()}b\n";
+echo "protocol:      {$client->getSubProtocol()}\n";
 echo "running:      {$client->isRunning()}\n";
 ```
 

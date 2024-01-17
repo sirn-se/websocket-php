@@ -68,6 +68,7 @@ class Server implements LoggerAwareInterface, Stringable
     private $running = false;
     private $connections = [];
     private $middlewares = [];
+    private $supportedSubProtocols = [];
 
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
@@ -220,6 +221,17 @@ class Server implements LoggerAwareInterface, Stringable
         return $this;
     }
 
+    public function getSupportedSubProtocols(): array
+    {
+        return $this->supportedSubProtocols;
+    }
+
+    public function setSupportedSubProtocols(array $supportedSubProtocols): self
+    {
+        $this->supportedSubProtocols = $supportedSubProtocols;
+
+        return $this;
+    }
 
     /* ---------- Messaging operations ----------------------------------------------------------------------------- */
 
@@ -469,12 +481,23 @@ class Server implements LoggerAwareInterface, Stringable
                     $response->withStatus(426)
                 );
             }
+            $protocolHeader = trim($request->getHeaderLine('Sec-WebSocket-protocol'));
+            if ($this->supportedSubProtocols && false === in_array($protocolHeader, $this->supportedSubProtocols)) {
+                throw new HandshakeException(
+                    "Handshake request with unsupported Sec-WebSocket-Protocol header: '{$keyHeader}'",
+                    $response->withStatus(426)
+                );
+            }
 
             $responseKey = base64_encode(pack('H*', sha1($keyHeader . self::GUID)));
             $response = $response
                 ->withHeader('Upgrade', 'websocket')
                 ->withHeader('Connection', 'Upgrade')
                 ->withHeader('Sec-WebSocket-Accept', $responseKey);
+
+            if ($this->supportedSubProtocols) {
+                $response = $response->withHeader('Sec-WebSocket-Protocol', $protocolHeader);
+            }
         } catch (HandshakeException $e) {
             $this->logger->warning("[server] {$e->getMessage()}");
             $response = $e->getResponse();

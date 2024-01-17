@@ -67,6 +67,7 @@ class Client implements LoggerAwareInterface, Stringable
     private $middlewares = [];
     private $streams;
     private $running = false;
+    private $subProtocol;
 
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
@@ -220,6 +221,24 @@ class Client implements LoggerAwareInterface, Stringable
         return $this;
     }
 
+    /**
+     * @return string
+     */
+    public function getSubProtocol(): string
+    {
+        return $this->subProtocol;
+    }
+
+    /**
+     * @param string $subProtocol
+     * @return Client
+     */
+    public function setSubProtocol(string $subProtocol): self
+    {
+        $this->subProtocol = $subProtocol;
+
+        return $this;
+    }
 
     /* ---------- Messaging operations ----------------------------------------------------------------------------- */
 
@@ -484,6 +503,10 @@ class Client implements LoggerAwareInterface, Stringable
             ->withHeader('Upgrade', 'websocket')
             ->withHeader('Sec-WebSocket-Key', $key)
             ->withHeader('Sec-WebSocket-Version', '13');
+
+        if ($this->subProtocol) {
+            $request = $request->withHeader('Sec-WebSocket-Protocol', $this->subProtocol);
+        }
 
         // Handle basic authentication.
         if ($userinfo = $this->socketUri->getUserInfo()) {

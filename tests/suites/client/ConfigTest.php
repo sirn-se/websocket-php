@@ -195,6 +195,26 @@ class ConfigTest extends TestCase
         unset($client);
     }
 
+    public function testProtocolOption(): void
+    {
+        $this->expectStreamFactory();
+        $client = new Client('ws://localhost:8000/my/mock/path');
+        $client->setStreamFactory(new StreamFactory());
+        $client->setSubProtocol('soap');
+
+        $this->expectWsClientConnect();
+        $this->expectWsClientPerformHandshake(
+            'localhost:8000',
+            '/my/mock/path',
+            "Sec-WebSocket-Protocol: soap\r\n"
+        );
+        $client->connect();
+
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
+        unset($client);
+    }
+
     public function testHeadersOption(): void
     {
         $this->expectStreamFactory();

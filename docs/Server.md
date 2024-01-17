@@ -42,14 +42,17 @@ $server
     ->setTimeout(300)
     // Specify frame size in bytes (default 4096 bytes)
     ->setFrameSize(1024)
+    // Specify which protocols are supported (default empty)
+    ->setSupportedSubProtocols(['soapV1', 'soapV2'])
     ;
 
-echo "port:         {$server->getPort()}\n";
-echo "scheme:       {$server->getScheme()}\n";
-echo "timeout:      {$server->getTimeout()}s\n";
-echo "frame size:   {$server->getFrameSize()}b\n";
-echo "running:      {$server->isRunning()}\n";
-echo "connections:  {$server->getConnectionCount()}\n";
+echo "port:                 {$server->getPort()}\n";
+echo "scheme:               {$server->getScheme()}\n";
+echo "timeout:              {$server->getTimeout()}s\n";
+echo "frame size:           {$server->getFrameSize()}b\n";
+echo "running:              {$server->isRunning()}\n";
+echo "connections:          {$server->getConnectionCount()}\n";
+echo "supported protocols:" .  implode(', ', $server->getSupportedSubProtocols()) ."\n";
 ```
 
 ## Middlewares
