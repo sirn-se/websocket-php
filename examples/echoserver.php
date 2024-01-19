@@ -31,6 +31,7 @@ try {
     $server
         ->addMiddleware(new \WebSocket\Middleware\CloseHandler())
         ->addMiddleware(new \WebSocket\Middleware\PingResponder())
+        ->addMiddleware(new \WebSocket\Middleware\SubprotocolHandler(['soap', 'towel']))
         ;
 
     // If debug mode and logger is available

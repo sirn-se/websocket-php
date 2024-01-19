@@ -33,6 +33,7 @@ try {
     $client
         ->addMiddleware(new \WebSocket\Middleware\CloseHandler())
         ->addMiddleware(new \WebSocket\Middleware\PingResponder())
+        ->addMiddleware(new \WebSocket\Middleware\SubprotocolHandler(['towel', 'soap']))
         ->onText(function ($client, $connection, $message) {
             echo "> Received '{$message->getContent()}' [opcode: {$message->getOpcode()}]\n";
             echo "< Closing client\n";

@@ -57,6 +57,7 @@ class HttpHandler implements LoggerAwareInterface, Stringable
             $buffer = $this->stream->readLine(1024);
             $data .= $buffer;
         } while (substr_count($data, "\r\n\r\n") == 0);
+echo "---------- PULL: $data \n";
 
         list ($head, $body) = explode("\r\n\r\n", $data);
         $headers = array_filter(explode("\r\n", $head));
@@ -85,7 +86,7 @@ class HttpHandler implements LoggerAwareInterface, Stringable
         foreach ($headers as $header) {
             $parts = explode(':', $header, 2);
             if (count($parts) == 2) {
-                $message = $message->withHeader($parts[0], $parts[1]);
+                $message = $message->withAddedHeader($parts[0], $parts[1]);
             }
         }
         if ($message instanceof Request) {
@@ -99,6 +100,7 @@ class HttpHandler implements LoggerAwareInterface, Stringable
     public function push(MessageInterface $message): MessageInterface
     {
         $data = implode("\r\n", $message->getAsArray()) . "\r\n\r\n";
+echo "---------- PUSH: $data \n";
         $this->stream->write($data);
         return $message;
     }

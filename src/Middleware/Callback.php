@@ -16,10 +16,7 @@ use Psr\Log\{
 };
 use Stringable;
 use WebSocket\Connection;
-use WebSocket\Http\{
-    HttpHandler,
-    Message as HttpMessage
-};
+use WebSocket\Http\Message as HttpMessage;
 use WebSocket\Message\Message;
 use WebSocket\Trait\StringableTrait;
 
