@@ -6,6 +6,10 @@
 
  > PHP version `^8.0`
 
+### `2.1.2`
+
+ * Allow repeated headers when pulling HTTP messages (@sirn-se)
+
 ### `2.1.1`
 
  * Fix issue with falsy but valid HTTP headers (@axklim)
