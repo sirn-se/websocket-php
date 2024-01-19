@@ -226,9 +226,9 @@ class Server implements LoggerAwareInterface, Stringable
         return $this->supportedSubProtocols;
     }
 
-    public function setSupportedSubProtocols(array $supportedSubProtocols): self
+    public function addSupportedSubProtocol(string $supportedSubProtocol): self
     {
-        $this->supportedSubProtocols = $supportedSubProtocols;
+        $this->supportedSubProtocols[] = $supportedSubProtocol;
 
         return $this;
     }
@@ -481,13 +481,6 @@ class Server implements LoggerAwareInterface, Stringable
                     $response->withStatus(426)
                 );
             }
-            $protocolHeader = trim($request->getHeaderLine('Sec-WebSocket-protocol'));
-            if ($this->supportedSubProtocols && false === in_array($protocolHeader, $this->supportedSubProtocols)) {
-                throw new HandshakeException(
-                    "Handshake request with unsupported Sec-WebSocket-Protocol header: '{$keyHeader}'",
-                    $response->withStatus(426)
-                );
-            }
 
             $responseKey = base64_encode(pack('H*', sha1($keyHeader . self::GUID)));
             $response = $response
@@ -495,8 +488,13 @@ class Server implements LoggerAwareInterface, Stringable
                 ->withHeader('Connection', 'Upgrade')
                 ->withHeader('Sec-WebSocket-Accept', $responseKey);
 
-            if ($this->supportedSubProtocols) {
-                $response = $response->withHeader('Sec-WebSocket-Protocol', $protocolHeader);
+            $protocolHeader = trim($request->getHeaderLine('Sec-WebSocket-Protocol'));
+            foreach ($this->supportedSubProtocols as $supportedSubProtocol) {
+                if ($protocolHeader !== $supportedSubProtocol) {
+                    continue;
+                }
+
+                $response = $response->withHeader('Sec-WebSocket-Protocol', $supportedSubProtocol);
             }
         } catch (HandshakeException $e) {
             $this->logger->warning("[server] {$e->getMessage()}");
