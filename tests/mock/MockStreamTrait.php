@@ -1,7 +1,8 @@
 <?php
 
 /**
- * This class is used by phpunit tests to mock and track various socket/stream calls.
+ * Copyright (C) 2014-2024 Textalk and contributors.
+ * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
 namespace WebSocket\Test;
@@ -9,6 +10,9 @@ namespace WebSocket\Test;
 use Phrity\Net\Mock\StreamCollection;
 use Phrity\Net\Mock\Stack\StackItem;
 
+/**
+ * This trait is used by phpunit tests to mock and track various socket/stream calls.
+ */
 trait MockStreamTrait
 {
     private $stack = [];

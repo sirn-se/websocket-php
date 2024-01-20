@@ -1,13 +1,17 @@
 <?php
 
 /**
- * This class is used by phpunit tests to mock and track various socket/stream calls.
+ * Copyright (C) 2014-2024 Textalk and contributors.
+ * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
 namespace WebSocket\Test;
 
 use Psr\Http\Message\UriInterface;
 
+/**
+ * This class is used by phpunit tests to mock and track various socket/stream calls.
+ */
 class MockUri implements UriInterface
 {
     public function __toString(): string

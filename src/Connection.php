@@ -1,10 +1,8 @@
 <?php
 
 /**
- * Copyright (C) 2014-2023 Textalk and contributors.
- *
+ * Copyright (C) 2014-2024 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
- * License text: https://raw.githubusercontent.com/sirn-se/websocket-php/master/COPYING.md
  */
 
 namespace WebSocket;
@@ -349,7 +347,7 @@ class Connection implements LoggerAwareInterface, Stringable
 
     /* ---------- Internal helper methods -------------------------------------------------------------------------- */
 
-    protected function throwException(Throwable $e): void
+    protected function throwException(Throwable $e): never
     {
         // Internal exceptions are handled and re-thrown
         if ($e instanceof Exception) {
