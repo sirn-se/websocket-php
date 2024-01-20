@@ -1,6 +1,14 @@
-[Documentation](Index.md) > Changelog
+[Documentation](Index.md) / Changelog
 
 # Websocket: Changelog
+
+## `v2.2`
+
+ > PHP version `^8.0`
+
+### `2.2.0`
+
+ * Documentation overview (@sirn-se)
 
 ## `v2.1`
 

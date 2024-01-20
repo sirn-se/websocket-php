@@ -1,4 +1,4 @@
-[Documentation](Index.md) > Message
+[Documentation](Index.md) / Message
 
 # Websocket: Message
 

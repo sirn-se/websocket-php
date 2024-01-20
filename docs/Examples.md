@@ -1,4 +1,4 @@
-[Documentation](Index.md) > Examples
+[Documentation](Index.md) / Examples
 
 # Websocket: Examples
 
