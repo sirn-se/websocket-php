@@ -85,7 +85,7 @@ class HttpHandler implements LoggerAwareInterface, Stringable
         foreach ($headers as $header) {
             $parts = explode(':', $header, 2);
             if (count($parts) == 2) {
-                $message = $message->withHeader($parts[0], $parts[1]);
+                $message = $message->withAddedHeader($parts[0], $parts[1]);
             }
         }
         if ($message instanceof Request) {
