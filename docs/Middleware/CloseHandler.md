@@ -1,4 +1,4 @@
-[Documentation](Index.md) / [Middleware](Middleware.md) / CloseHandler
+[Documentation](../Index.md) / [Middleware](../Middleware.md) / CloseHandler
 
 # Websocket: CloseHandler middleware
 

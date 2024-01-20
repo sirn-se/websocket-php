@@ -1,4 +1,4 @@
-[Documentation](Index.md) / [Middleware](Middleware.md) / PingInterval
+[Documentation](../Index.md) / [Middleware](../Middleware.md) / PingInterval
 
 # Websocket: PingInterval middleware
 

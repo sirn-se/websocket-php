@@ -1,4 +1,4 @@
-[Documentation](Index.md) / [Middleware](Middleware.md) / Callback
+[Documentation](../Index.md) / [Middleware](../Middleware.md) / Callback
 
 # Websocket: Callback middleware
 

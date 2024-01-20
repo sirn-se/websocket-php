@@ -1,4 +1,4 @@
-[Documentation](Index.md) / [Middleware](Middleware.md) / PingResponder
+[Documentation](../Index.md) / [Middleware](../Middleware.md) / PingResponder
 
 # Websocket: PingResponder middleware
 
