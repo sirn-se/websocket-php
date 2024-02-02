@@ -12,6 +12,7 @@ namespace WebSocket\Test\Http;
 use BadMethodCallException;
 use Generator;
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\StreamFactory;
 use Phrity\Net\Uri;
@@ -226,6 +227,7 @@ class RequestTest extends TestCase
     /**
      * @dataProvider provideInvalidHeaderValues
      */
+    #[DataProvider('provideInvalidHeaderValues')]
     public function testHeaderValueInvalidVariants(mixed $value): void
     {
         $request = new Request();
@@ -245,9 +247,11 @@ class RequestTest extends TestCase
         yield [[]];
     }
 
+
     /**
      * @dataProvider provideValidHeaderValues
      */
+    #[DataProvider('provideValidHeaderValues')]
     public function testHeaderValueValidVariants(mixed $value, array $expected): void
     {
         $request = new Request();
