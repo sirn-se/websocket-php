@@ -4,12 +4,12 @@
 
 ## `v2.2`
 
- > PHP version `^8.1`
+ > PHP version `^8.0`
 
 ### `2.2.0`
 
- * Documentation overview (@sirn-se)
- * Removed PHP `8.0` support (@sirn-se)
+ * Documentation review (@sirn-se)
+ * Dependency updates (@sirn-se)
 
 ## `v2.1`
 
