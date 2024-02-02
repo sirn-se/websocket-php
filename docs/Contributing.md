@@ -5,12 +5,20 @@
 Everyone is welcome to help out!
 But to keep this project sustainable, please ensure your contribution respects the requirements below.
 
-## PR Requirements
+## Pull Request requirements
 
 Requirements on pull requests;
 * All tests **MUST** pass.
 * Code coverage **MUST** remain at 100%.
 * Code **MUST** adhere to PSR-1 and PSR-12 code standards.
+
+## SemVer, versions, and target branches
+
+This repo uses strict [Semantic Versioning](https://semver.org).
+
+* MAJOR version when introducing breaking changes
+* MINOR version when adding features
+* PATCH version when fixing bugs and equivalent changes
 
 Base your patch on corresponding version branch, and target that version branch in your pull request.
 
@@ -27,7 +35,6 @@ Base your patch on corresponding version branch, and target that version branch 
 | [`1.2`](https://github.com/sirn-se/websocket-php/tree/1.2.0) | - | - | Not supported |
 | [`1.1`](https://github.com/sirn-se/websocket-php/tree/1.1.0) | - | - | Not supported |
 | [`1.0`](https://github.com/sirn-se/websocket-php/tree/1.0.0) | - | - | Not supported |
-
 
 ## Dependency management
 
