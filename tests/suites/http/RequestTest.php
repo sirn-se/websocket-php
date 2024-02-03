@@ -1,10 +1,8 @@
 <?php
 
 /**
- * Copyright (C) 2014-2023 Textalk and contributors.
- *
+ * Copyright (C) 2014-2024 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
- * License text: https://raw.githubusercontent.com/sirn-se/websocket-php/master/COPYING.md
  */
 
 declare(strict_types=1);
@@ -14,6 +12,7 @@ namespace WebSocket\Test\Http;
 use BadMethodCallException;
 use Generator;
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\StreamFactory;
 use Phrity\Net\Uri;
@@ -228,6 +227,7 @@ class RequestTest extends TestCase
     /**
      * @dataProvider provideInvalidHeaderValues
      */
+    #[DataProvider('provideInvalidHeaderValues')]
     public function testHeaderValueInvalidVariants(mixed $value): void
     {
         $request = new Request();
@@ -247,9 +247,11 @@ class RequestTest extends TestCase
         yield [[]];
     }
 
+
     /**
      * @dataProvider provideValidHeaderValues
      */
+    #[DataProvider('provideValidHeaderValues')]
     public function testHeaderValueValidVariants(mixed $value, array $expected): void
     {
         $request = new Request();

@@ -1,10 +1,8 @@
 <?php
 
 /**
- * Copyright (C) 2014-2023 Textalk and contributors.
- *
+ * Copyright (C) 2014-2024 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
- * License text: https://raw.githubusercontent.com/sirn-se/websocket-php/master/COPYING.md
  */
 
 namespace WebSocket\Http;
@@ -85,7 +83,7 @@ class HttpHandler implements LoggerAwareInterface, Stringable
         foreach ($headers as $header) {
             $parts = explode(':', $header, 2);
             if (count($parts) == 2) {
-                $message = $message->withHeader($parts[0], $parts[1]);
+                $message = $message->withAddedHeader($parts[0], $parts[1]);
             }
         }
         if ($message instanceof Request) {

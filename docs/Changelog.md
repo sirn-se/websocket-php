@@ -1,10 +1,23 @@
-[Documentation](Index.md) > Changelog
+[Documentation](Index.md) / Changelog
 
 # Websocket: Changelog
+
+## `v2.2`
+
+ > PHP version `^8.0`
+
+### `2.2.0`
+
+ * Documentation review (@sirn-se)
+ * Dependency updates (@sirn-se)
 
 ## `v2.1`
 
  > PHP version `^8.0`
+
+### `2.1.2`
+
+ * Allow repeated headers when pulling HTTP messages (@sirn-se)
 
 ### `2.1.1`
 

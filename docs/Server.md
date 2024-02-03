@@ -1,4 +1,4 @@
-[Documentation](Index.md) > Sever
+[Documentation](Index.md) / Server
 
 # Websocket: Server
 

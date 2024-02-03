@@ -16,3 +16,4 @@
 * [Changelog](Changelog.md) - The changelog of this repo
 * [Contributing](Contributing.md) - Contributors and requirements
 * [Examples](Examples.md) - Examples
+* [License](../LICENCE.md) - License

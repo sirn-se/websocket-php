@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * Copyright (C) 2014-2024 Textalk and contributors.
+ * This file is part of Websocket PHP and is free software under the ISC License.
+ */
+
+/**
  * Websocket server that read/write random data.
  * Run in console: php examples/random_server.php
  *

@@ -1,11 +1,15 @@
 <?php
 
 /**
- * Simple echo logger (only available when running in dev environment)
+ * Copyright (C) 2014-2024 Textalk and contributors.
+ * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
 namespace WebSocket\Test;
 
+/**
+ * Simple echo logger (only available when running in dev environment)
+ */
 class EchoLog implements \Psr\Log\LoggerInterface
 {
     use \Psr\Log\LoggerTrait;
