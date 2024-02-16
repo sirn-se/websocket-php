@@ -436,7 +436,7 @@ class Server implements LoggerAwareInterface, Stringable
                 );
             }
             $connectionHeader = trim($request->getHeaderLine('Connection'));
-            if (strtolower($connectionHeader) != 'upgrade') {
+            if (!str_contains('upgrade', strtolower($connectionHeader))) {
                 throw new HandshakeException(
                     "Handshake request with invalid Connection header: '{$connectionHeader}'",
                     $response->withStatus(426)
