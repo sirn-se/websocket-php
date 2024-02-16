@@ -6,6 +6,10 @@
 
  > PHP version `^8.0`
 
+### `2.1.3`
+
+ * Allow additional content in Connection header during handshake (@sirn-se)
+
 ### `2.1.2`
 
  * Allow repeated headers when pulling HTTP messages (@sirn-se)
