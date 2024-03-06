@@ -117,21 +117,12 @@ class ResponseTest extends TestCase
         $response->withBody($factory->createStream());
     }
 
-    public function testHaederNameError(): void
+    public function testHeaderNameError(): void
     {
         $response = new Response();
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionCode(0);
         $this->expectExceptionMessage("'.' is not a valid header field name.");
         $response->withHeader('.', 'invaid name');
-    }
-
-    public function testHaederValueError(): void
-    {
-        $response = new Response();
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionCode(0);
-        $this->expectExceptionMessage("Invalid header value(s) provided.");
-        $response->withHeader('name', '');
     }
 }

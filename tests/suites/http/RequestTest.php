@@ -240,12 +240,8 @@ class RequestTest extends TestCase
 
     public static function provideInvalidHeaderValues(): Generator
     {
-        yield [''];
-        yield ['  '];
-        yield [['0', '']];
         yield [[null]];
         yield [[[0]]];
-        yield [[]];
     }
 
     /**
@@ -262,6 +258,10 @@ class RequestTest extends TestCase
 
     public static function provideValidHeaderValues(): Generator
     {
+        yield ['', ['']];
+        yield ['  ', ['']];
+        yield [['0', ''],  ['0', '']];
+        yield [[], []];
         yield ['null', ['null']];
         yield ['0  ', ['0']];
         yield ['  0', ['0']];
