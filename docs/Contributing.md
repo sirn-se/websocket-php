@@ -24,10 +24,10 @@ Base your patch on corresponding version branch, and target that version branch 
 
 | Version | Branch | PHP | Status |
 | --- | --- | --- | --- |
-| [`2.2`](https://github.com/sirn-se/websocket-php/tree/2.2.0) | `v2.2-main` | `^8.1` | Future version |
-| [`2.1`](https://github.com/sirn-se/websocket-php/tree/2.1.0) | `v2.1-main` | `^8.0` | Current version |
-| [`2.0`](https://github.com/sirn-se/websocket-php/tree/2.0.0) | `v2.0-main` | `^8.0` | Bug fixes only |
-| [`1.7`](https://github.com/sirn-se/websocket-php/tree/1.7.0) | `v1.7-master` | `^7.4\|^8.0` | Bug fixes only |
+| [`2.2`](https://github.com/sirn-se/websocket-php/tree/2.2.0) | `v2.2-main` | `^8.0` | Current version |
+| [`2.1`](https://github.com/sirn-se/websocket-php/tree/2.1.0) | `v2.1-main` | `^8.0` | Bug fixes only |
+| [`2.0`](https://github.com/sirn-se/websocket-php/tree/2.0.0) | - | `^8.0` | Not supported |
+| [`1.7`](https://github.com/sirn-se/websocket-php/tree/1.7.0) | - | `^7.4\|^8.0` | Not supported |
 | [`1.6`](https://github.com/sirn-se/websocket-php/tree/1.6.0) | - | `^7.4\|^8.0` | Not supported |
 | [`1.5`](https://github.com/sirn-se/websocket-php/tree/1.5.0) | - | `^7.4\|^8.0` | Not supported |
 | [`1.4`](https://github.com/sirn-se/websocket-php/tree/1.4.0) | - | `^7.1` | Not supported |
@@ -70,7 +70,7 @@ make coverage
 ## Contributors
 
 * Sören Jensen (maintainer)
-* Fredrik Liljegren
+* Fredrik Liljegren (orginator)
 * Armen Baghumian Sankbarani
 * Ruslan Bekenev
 * Joshua Thijssen

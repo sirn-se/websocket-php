@@ -105,7 +105,7 @@ class ConfigTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         $this->expectWsClientConnect(port: 80);
-        $this->expectWsClientPerformHandshake('localhost:80', '/my/mock/path');
+        $this->expectWsClientPerformHandshake('localhost', '/my/mock/path');
         $client->connect();
 
         $this->expectSocketStreamIsConnected();
@@ -123,7 +123,7 @@ class ConfigTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         $this->expectWsClientConnect(scheme: 'ssl', port: 443);
-        $this->expectWsClientPerformHandshake('localhost:443', '/my/mock/path');
+        $this->expectWsClientPerformHandshake('localhost', '/my/mock/path');
         $client->connect();
 
         $this->expectSocketStreamIsConnected();
@@ -141,7 +141,7 @@ class ConfigTest extends TestCase
         $this->expectWsClientPerformHandshake(
             'localhost:8000',
             '/my/mock/path',
-            "authorization: Basic dXNlbmFtZTpwYXNzd29yZA==\r\n"
+            "Authorization: Basic dXNlbmFtZTpwYXNzd29yZA==\r\n"
         );
         $client->connect();
 
