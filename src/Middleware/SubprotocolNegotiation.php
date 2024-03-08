@@ -14,20 +14,24 @@ use Psr\Log\{
     LoggerAwareTrait
 };
 use WebSocket\Connection;
-use WebSocket\Http\Message;
+use WebSocket\Http\{
+    Message,
+    Request,
+    Response,
+    ServerRequest,
+};
 use WebSocket\Trait\StringableTrait;
 
 /**
  * WebSocket\Middleware\CloseHandler class.
  * Handles close procedure.
  */
-class SubprotocolHandler implements LoggerAwareInterface, ProcessHttpOutgoingInterface, ProcessHttpIncomingInterface
+class SubprotocolNegotiation implements LoggerAwareInterface, ProcessHttpOutgoingInterface, ProcessHttpIncomingInterface
 {
     use LoggerAwareTrait;
     use StringableTrait;
 
     private $subprotocols;
-    private $selected = null;
 
     public function __construct(array $subprotocols)
     {
@@ -36,36 +40,35 @@ class SubprotocolHandler implements LoggerAwareInterface, ProcessHttpOutgoingInt
 
     public function processHttpOutgoing(ProcessHttpStack $stack, Connection $connection, Message $message): Message
     {
-        if ($message instanceof \WebSocket\Http\Request) {
+        if ($message instanceof Request) {
             // Outgoing requests on Client
             foreach ($this->subprotocols as $subprotocol) {
                 $message = $message->withAddedHeader('Sec-WebSocket-Protocol', $subprotocol);
             }
-        } elseif ($message instanceof \WebSocket\Http\Response) {
-            // Outgoing Response
-            if ($this->selected) {
-                $message = $message->withHeader('Sec-WebSocket-Protocol', $this->selected);
+        } elseif ($message instanceof Response) {
+            // Outgoing Response from Server
+            if ($selected = $connection->getMeta('subprotocolNegotiation.selected')) {
+                $message = $message->withHeader('Sec-WebSocket-Protocol', $selected);
             }
         }
-
         return $stack->handleHttpOutgoing($message);
     }
 
     public function processHttpIncoming(ProcessHttpStack $stack, Connection $connection): Message
     {
-        $this->selected = null;
+        $connection->setMeta('subprotocolNegotiation.selected', null);
         $message = $stack->handleHttpIncoming();
 
-        if ($message instanceof \WebSocket\Http\ServerRequest) {
+        if ($message instanceof ServerRequest) {
             // Incoming requests on Server
             foreach ($message->getHeader('Sec-WebSocket-Protocol') as $subprotocol) {
                 if (in_array($subprotocol, $this->subprotocols)) {
-                    $this->selected = $subprotocol;
+                    $connection->setMeta('subprotocolNegotiation.selected', $subprotocol);
+                    $this->logger->info("Selected subprotocol: {$subprotocol}");
                     return $message;
                 }
             }
         }
-
         return $message;
     }
 }

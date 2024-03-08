@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * Copyright (C) 2014-2024 Textalk and contributors.
+ * This file is part of Websocket PHP and is free software under the ISC License.
+ */
+
+/**
  * Simple send & receive client for test purpose.
  * Run in console: php examples/send.php <options> <message>
  *
@@ -33,7 +38,6 @@ try {
     $client
         ->addMiddleware(new \WebSocket\Middleware\CloseHandler())
         ->addMiddleware(new \WebSocket\Middleware\PingResponder())
-        ->addMiddleware(new \WebSocket\Middleware\SubprotocolHandler(['towel', 'soap']))
         ->onText(function ($client, $connection, $message) {
             echo "> Received '{$message->getContent()}' [opcode: {$message->getOpcode()}]\n";
             echo "< Closing client\n";

@@ -1,10 +1,8 @@
 <?php
 
 /**
- * Copyright (C) 2014-2023 Textalk and contributors.
- *
+ * Copyright (C) 2014-2024 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
- * License text: https://raw.githubusercontent.com/sirn-se/websocket-php/master/COPYING.md
  */
 
 namespace WebSocket\Http;
@@ -57,7 +55,6 @@ class HttpHandler implements LoggerAwareInterface, Stringable
             $buffer = $this->stream->readLine(1024);
             $data .= $buffer;
         } while (substr_count($data, "\r\n\r\n") == 0);
-echo "---------- PULL: $data \n";
 
         list ($head, $body) = explode("\r\n\r\n", $data);
         $headers = array_filter(explode("\r\n", $head));
@@ -86,12 +83,16 @@ echo "---------- PULL: $data \n";
         foreach ($headers as $header) {
             $parts = explode(':', $header, 2);
             if (count($parts) == 2) {
-                $message = $message->withAddedHeader($parts[0], $parts[1]);
+                if ($message->getheaderLine($parts[0]) === '') {
+                    $message = $message->withHeader($parts[0], trim($parts[1]));
+                } else {
+                    $message = $message->withAddedHeader($parts[0], trim($parts[1]));
+                }
             }
         }
         if ($message instanceof Request) {
-            $uri = new Uri("//{$message->getHeaderLine('host')}{$path}");
-            $message = $message->withUri($uri);
+            $uri = new Uri("//{$message->getHeaderLine('Host')}{$path}");
+            $message = $message->withUri($uri, true);
         }
 
         return $message;
@@ -100,7 +101,6 @@ echo "---------- PULL: $data \n";
     public function push(MessageInterface $message): MessageInterface
     {
         $data = implode("\r\n", $message->getAsArray()) . "\r\n\r\n";
-echo "---------- PUSH: $data \n";
         $this->stream->write($data);
         return $message;
     }
