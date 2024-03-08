@@ -83,12 +83,16 @@ class HttpHandler implements LoggerAwareInterface, Stringable
         foreach ($headers as $header) {
             $parts = explode(':', $header, 2);
             if (count($parts) == 2) {
-                $message = $message->withAddedHeader($parts[0], $parts[1]);
+                if ($message->getheaderLine($parts[0]) === '') {
+                    $message = $message->withHeader($parts[0], trim($parts[1]));
+                } else {
+                    $message = $message->withAddedHeader($parts[0], trim($parts[1]));
+                }
             }
         }
         if ($message instanceof Request) {
-            $uri = new Uri("//{$message->getHeaderLine('host')}{$path}");
-            $message = $message->withUri($uri);
+            $uri = new Uri("//{$message->getHeaderLine('Host')}{$path}");
+            $message = $message->withUri($uri, true);
         }
 
         return $message;

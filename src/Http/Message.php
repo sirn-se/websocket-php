@@ -164,22 +164,15 @@ abstract class Message implements MessageInterface, Stringable
 
     private function handleHeader(string $name, mixed $value): void
     {
-        // @todo: Add all available characters, these are just some of them.
         if (!preg_match('|^[0-9a-zA-Z#_-]+$|', $name)) {
             throw new InvalidArgumentException("'{$name}' is not a valid header field name.");
         }
         $value = is_array($value) ? $value : [$value];
-        if (empty($value)) {
-            throw new InvalidArgumentException("Invalid header value(s) provided.");
-        }
         foreach ($value as $content) {
             if (!is_string($content) && !is_numeric($content)) {
                 throw new InvalidArgumentException("Invalid header value(s) provided.");
             }
             $content = trim($content);
-            if ('' === $content) {
-                throw new InvalidArgumentException("Invalid header value(s) provided.");
-            }
             $this->headers[strtolower($name)][$name][] = $content;
         }
     }

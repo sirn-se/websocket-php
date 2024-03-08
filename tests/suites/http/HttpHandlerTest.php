@@ -104,14 +104,14 @@ class HttpHandlerTest extends TestCase
         $this->assertInstanceOf(HttpHandler::class, $handler);
 
         $this->expectSocketStreamReadLine()->setReturn(function () {
-            return "GET /a/path?a=b HTTP/1.1\r\nHost: test.com:123\r\n\r\n";
+            return "GET /a/path?a=b HTTP/1.1\r\nA: \r\nA: 0\r\nA: B\r\nHost: test.com:123\r\n\r\n";
         });
         $request = $handler->pull();
         $this->assertInstanceOf(ServerRequest::class, $request);
         $this->assertEquals('/a/path?a=b', $request->getRequestTarget());
         $this->assertEquals('GET', $request->getMethod());
         $this->assertEquals('1.1', $request->getProtocolVersion());
-        $this->assertEquals(['Host' => ['test.com:123']], $request->getHeaders());
+        $this->assertEquals(['Host' => ['test.com:123'], 'A' => ['0', 'B']], $request->getHeaders());
         $this->assertTrue($request->hasHeader('Host'));
         $uri = $request->getUri();
         $this->assertInstanceOf(UriInterface::class, $uri);
