@@ -12,7 +12,7 @@ jobs:
     name: Unit test
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Set up PHP
       uses: shivammathur/setup-php@v2
       with:
@@ -24,7 +24,7 @@ jobs:
       id: composer-cache
       run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
     - name: Cache dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ${{ steps.composer-cache.outputs.dir }}
         key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}
@@ -39,11 +39,11 @@ jobs:
     name: Code standard
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Set up PHP
       uses: shivammathur/setup-php@v2
       with:
-        php-version: "8.2"
+        php-version: "8.3"
         coverage: none
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -51,7 +51,7 @@ jobs:
       id: composer-cache
       run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
     - name: Cache dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ${{ steps.composer-cache.outputs.dir }}
         key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}
@@ -66,11 +66,11 @@ jobs:
     name: Code coverage
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Set up PHP
       uses: shivammathur/setup-php@v2
       with:
-        php-version: "8.2"
+        php-version: "8.3"
         coverage: xdebug
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -78,7 +78,7 @@ jobs:
       id: composer-cache
       run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
     - name: Cache dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ${{ steps.composer-cache.outputs.dir }}
         key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}

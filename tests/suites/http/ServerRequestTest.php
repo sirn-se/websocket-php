@@ -1,10 +1,8 @@
 <?php
 
 /**
- * Copyright (C) 2014-2023 Textalk and contributors.
- *
+ * Copyright (C) 2014-2024 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
- * License text: https://raw.githubusercontent.com/sirn-se/websocket-php/master/COPYING.md
  */
 
 declare(strict_types=1);
@@ -44,7 +42,7 @@ class ServerRequestTest extends TestCase
         $this->assertEquals('GET', $request->getMethod());
         $this->assertInstanceOf(UriInterface::class, $request->getUri());
         $this->assertEquals('1.1', $request->getProtocolVersion());
-        $this->assertEquals([], $request->getHeaders());
+        $this->assertEquals(['Host' => ['']], $request->getHeaders());
         $this->assertFalse($request->hasHeader('none'));
         $this->assertEquals([], $request->getHeader('none'));
         $this->assertEquals('', $request->getHeaderLine('none'));
@@ -53,6 +51,7 @@ class ServerRequestTest extends TestCase
         $this->assertEquals('WebSocket\Http\ServerRequest(GET /)', "{$request}");
         $this->assertEquals([
             'GET / HTTP/1.1',
+            'Host: ',
         ], $request->getAsArray());
     }
 

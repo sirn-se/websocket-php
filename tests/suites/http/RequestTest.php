@@ -1,10 +1,8 @@
 <?php
 
 /**
- * Copyright (C) 2014-2023 Textalk and contributors.
- *
+ * Copyright (C) 2014-2024 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
- * License text: https://raw.githubusercontent.com/sirn-se/websocket-php/master/COPYING.md
  */
 
 declare(strict_types=1);
@@ -14,6 +12,7 @@ namespace WebSocket\Test\Http;
 use BadMethodCallException;
 use Generator;
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\StreamFactory;
 use Phrity\Net\Uri;
@@ -47,7 +46,7 @@ class RequestTest extends TestCase
         $this->assertEquals('GET', $request->getMethod());
         $this->assertInstanceOf(UriInterface::class, $request->getUri());
         $this->assertEquals('1.1', $request->getProtocolVersion());
-        $this->assertEquals([], $request->getHeaders());
+        $this->assertEquals(['Host' => ['']], $request->getHeaders());
         $this->assertFalse($request->hasHeader('none'));
         $this->assertEquals([], $request->getHeader('none'));
         $this->assertEquals('', $request->getHeaderLine('none'));
@@ -55,6 +54,7 @@ class RequestTest extends TestCase
         $this->assertEquals('WebSocket\Http\Request(GET )', "{$request}");
         $this->assertEquals([
             'GET / HTTP/1.1',
+            'Host: ',
         ], $request->getAsArray());
     }
 
@@ -228,6 +228,7 @@ class RequestTest extends TestCase
     /**
      * @dataProvider provideInvalidHeaderValues
      */
+    #[DataProvider('provideInvalidHeaderValues')]
     public function testHeaderValueInvalidVariants(mixed $value): void
     {
         $request = new Request();
@@ -239,31 +240,32 @@ class RequestTest extends TestCase
 
     public static function provideInvalidHeaderValues(): Generator
     {
-        yield [''];
-        yield ['  '];
-        yield [['0', '']];
         yield [[null]];
         yield [[[0]]];
-        yield [[]];
     }
 
     /**
      * @dataProvider provideValidHeaderValues
      */
+    #[DataProvider('provideValidHeaderValues')]
     public function testHeaderValueValidVariants(mixed $value, array $expected): void
     {
         $request = new Request();
         $request = $request->withHeader('name', $value);
         $this->assertInstanceOf(Request::class, $request);
-        $this->assertEquals($expected, $request->getHeaders());
+        $this->assertEquals($expected, $request->getHeader('name'));
     }
 
     public static function provideValidHeaderValues(): Generator
     {
-        yield ['null', ['name' => ['null']]];
-        yield ['0  ', ['name' => ['0']]];
-        yield ['  0', ['name' => ['0']]];
-        yield [['0', '1'], ['name' => ['0', '1']]];
-        yield [0, ['name' => ['0']]];
+        yield ['', ['']];
+        yield ['  ', ['']];
+        yield [['0', ''],  ['0', '']];
+        yield [[], []];
+        yield ['null', ['null']];
+        yield ['0  ', ['0']];
+        yield ['  0', ['0']];
+        yield [['0', '1'], ['0', '1']];
+        yield [0, ['0']];
     }
 }

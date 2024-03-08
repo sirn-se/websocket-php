@@ -1,10 +1,8 @@
 <?php
 
 /**
- * Copyright (C) 2014-2023 Textalk and contributors.
- *
+ * Copyright (C) 2014-2024 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
- * License text: https://raw.githubusercontent.com/sirn-se/websocket-php/master/COPYING.md
  */
 
 declare(strict_types=1);
@@ -107,7 +105,7 @@ class ConfigTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         $this->expectWsClientConnect(port: 80);
-        $this->expectWsClientPerformHandshake('localhost:80', '/my/mock/path');
+        $this->expectWsClientPerformHandshake('localhost', '/my/mock/path');
         $client->connect();
 
         $this->expectSocketStreamIsConnected();
@@ -125,7 +123,7 @@ class ConfigTest extends TestCase
         $client->setStreamFactory(new StreamFactory());
 
         $this->expectWsClientConnect(scheme: 'ssl', port: 443);
-        $this->expectWsClientPerformHandshake('localhost:443', '/my/mock/path');
+        $this->expectWsClientPerformHandshake('localhost', '/my/mock/path');
         $client->connect();
 
         $this->expectSocketStreamIsConnected();
@@ -143,7 +141,7 @@ class ConfigTest extends TestCase
         $this->expectWsClientPerformHandshake(
             'localhost:8000',
             '/my/mock/path',
-            "authorization: Basic dXNlbmFtZTpwYXNzd29yZA==\r\n"
+            "Authorization: Basic dXNlbmFtZTpwYXNzd29yZA==\r\n"
         );
         $client->connect();
 

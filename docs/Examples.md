@@ -1,4 +1,4 @@
-[Documentation](Index.md) > Examples
+[Documentation](Index.md) / Examples
 
 # Websocket: Examples
 
@@ -83,7 +83,7 @@ The random client will use random options and continuously send/receive random m
 Example use:
 ```
 php examples/random_client.php --uri ws://echo.websocket.org // Connect to echo.websocket.org
-php examples/random_client.php --timeout 5 --fragment_size 16 // Specify settings
+php examples/random_client.php --timeout 5 --framesize 16 // Specify settings
 php examples/random_client.php --debug //  Use runtime debugging
 ```
 
@@ -96,6 +96,6 @@ The random server will use random options and continuously send/receive random m
 Example use:
 ```
 php examples/random_server.php --port 8080 // // Listen on port 8080
-php examples/random_server.php --timeout 5 --fragment_size 16 // Specify settings
+php examples/random_server.php --timeout 5 --framesize 16 // Specify settings
 php examples/random_server.php --debug //  Use runtime debugging
 ```

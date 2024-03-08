@@ -1,10 +1,8 @@
 <?php
 
 /**
- * Copyright (C) 2014-2023 Textalk and contributors.
- *
+ * Copyright (C) 2014-2024 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
- * License text: https://raw.githubusercontent.com/sirn-se/websocket-php/master/COPYING.md
  */
 
 namespace WebSocket\Http;
@@ -30,9 +28,7 @@ class Request extends Message implements RequestInterface
     {
         $this->uri = $uri instanceof Uri ? $uri : new Uri((string)$uri);
         $this->method = $method;
-        if ($this->uri->getHost()) {
-            $this->headers = ['host' => ['Host' => [$this->uri->getAuthority()]]];
-        }
+        $this->headers = ['host' => ['Host' => [$this->formatHostHeader($this->uri)]]];
     }
 
     /**
@@ -106,9 +102,7 @@ class Request extends Message implements RequestInterface
             if (isset($new->headers['host'])) {
                 unset($new->headers['host']);
             }
-            if ($host = $uri->getHost()) {
-                $new->headers = array_merge(['host' => ['Host' => [$uri->getAuthority()]]], $new->headers);
-            }
+            $new->headers = array_merge(['host' => ['Host' => [$this->formatHostHeader($uri)]]], $new->headers);
         }
         return $new;
     }
@@ -123,5 +117,12 @@ class Request extends Message implements RequestInterface
         return array_merge([
             "{$this->getMethod()} {$this->getRequestTarget()} HTTP/{$this->getProtocolVersion()}",
         ], parent::getAsArray());
+    }
+
+    private function formatHostHeader(Uri $uri): string
+    {
+        $host = $uri->getHost();
+        $port = $uri->getPort();
+        return $host && $port ? "{$host}:{$port}" : $host;
     }
 }
