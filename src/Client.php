@@ -488,7 +488,7 @@ class Client implements LoggerAwareInterface, Stringable
             $request = $request->withHeader($name, $content);
         }
 
-        $this->connection->pushHttp($request);
+        $request = $this->connection->pushHttp($request);
         $response = $this->connection->pullHttp();
 
         try {

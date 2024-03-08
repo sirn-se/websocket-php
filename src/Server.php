@@ -480,7 +480,11 @@ class Server implements LoggerAwareInterface, Stringable
         }
 
         // Respond to handshake
-        $connection->pushHttp($response);
+        $response = $connection->pushHttp($response);
+        if ($response->getStatusCode() != 101) {
+            $exception = new HandshakeException("Invalid status code {$response->getStatusCode()}", $response);
+        }
+
         if ($exception) {
             throw $exception;
         }
