@@ -736,6 +736,7 @@ class ClientTest extends TestCase
 
         $this->assertNull($client->getName());
         $this->assertNull($client->getRemoteName());
+        $this->assertNull($client->getMeta('metadata'));
         $this->assertEquals('WebSocket\Client(closed)', "{$client}");
 
         $this->expectWsClientConnect();

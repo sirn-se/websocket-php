@@ -33,6 +33,7 @@ These middlewares are included in library and can be added to provide additional
 
 * [PingInterval](Middleware/PingInterval.md) - Used to automatically send Ping messages at specified interval
 * [Callback](Middleware/Callback.md) - Apply provided callback function on specified actions
+* [SubprotocolNegotiation](Middleware/SubprotocolNegotiation.md) - Helper middleware that negotiate subprotocol
 
 ## Creating your own middleware
 

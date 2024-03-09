@@ -449,6 +449,16 @@ class Client implements LoggerAwareInterface, Stringable
     }
 
     /**
+     * Get meta value on connection.
+     * @param string $key Meta key
+     * @return mixed Meta value
+     */
+    public function getMeta(string $key): mixed
+    {
+        return $this->isConnected() ? $this->connection->getMeta($key) : null;
+    }
+
+    /**
      * Get Response for handshake procedure.
      * @return Response|null Handshake.
      */
