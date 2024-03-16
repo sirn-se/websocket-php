@@ -498,10 +498,10 @@ class Client implements LoggerAwareInterface, Stringable
             $request = $request->withHeader($name, $content);
         }
 
-        $request = $this->connection->pushHttp($request);
-        $response = $this->connection->pullHttp();
-
         try {
+            $request = $this->connection->pushHttp($request);
+            $response = $this->connection->pullHttp();
+
             if ($response->getStatusCode() != 101) {
                 throw new HandshakeException("Invalid status code {$response->getStatusCode()}.", $response);
             }

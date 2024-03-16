@@ -8,8 +8,14 @@
 
 ### `2.2.0`
 
- * Documentation review (@sirn-se)
- * Dependency updates (@sirn-se)
+ * Optional `SubprotocolNegotiation` middleware (@sirn-se)
+ * `getMeta()` exposed on Client (@sirn-se)
+ * Server throws `HandshakeException` if HTTP middleware return invalid status (@sirn-se)
+ * Improved URI handling (@sirn-se)
+ * Allow empty HTTP header handling (RFC compliance) (@sirn-se)
+ * Documentation changes (@sirn-se)
+ * Using `phrity/net v2` (@sirn-se)
+ * Updating workflow and dependencies (@sirn-se)
 
 ## `v2.1`
 
