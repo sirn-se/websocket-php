@@ -449,6 +449,16 @@ class Client implements LoggerAwareInterface, Stringable
     }
 
     /**
+     * Get meta value on connection.
+     * @param string $key Meta key
+     * @return mixed Meta value
+     */
+    public function getMeta(string $key): mixed
+    {
+        return $this->isConnected() ? $this->connection->getMeta($key) : null;
+    }
+
+    /**
      * Get Response for handshake procedure.
      * @return Response|null Handshake.
      */
@@ -488,10 +498,10 @@ class Client implements LoggerAwareInterface, Stringable
             $request = $request->withHeader($name, $content);
         }
 
-        $this->connection->pushHttp($request);
-        $response = $this->connection->pullHttp();
-
         try {
+            $request = $this->connection->pushHttp($request);
+            $response = $this->connection->pullHttp();
+
             if ($response->getStatusCode() != 101) {
                 throw new HandshakeException("Invalid status code {$response->getStatusCode()}.", $response);
             }

@@ -187,6 +187,9 @@ echo "local:    {$client->getName()}\n";
 // View server name
 echo "remote:   {$client->getRemoteName()}\n";
 
+// Get meta data by key
+echo "meta:   {$client->getMeta('some-metadata')}\n";
+
 // Get response on handshake
 $response = $client->getHandshakeResponse();
 ```

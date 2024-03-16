@@ -256,7 +256,7 @@ class Connection implements LoggerAwareInterface, Stringable
     }
 
     /**
-     * Set meta value on connection.
+     * Get meta value on connection.
      * @param string $key Meta key
      * @return mixed Meta value
      */
