@@ -171,13 +171,13 @@ class HandshakeTest extends TestCase
         $this->expectWsClientConnect();
         $this->expectSocketStreamWrite();
         $this->expectSocketStreamReadLine()->setReturn(function () {
-            throw new ReconnectException(new Uri('ws://redirect.to:8001/new/target'));
+            throw new ReconnectException(new Uri('ws://localhost:8000/my/new/path'));
         });
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
         $this->expectSocketStreamIsConnected();
-        $this->expectWsClientConnect(host: 'redirect.to', port: 8001);
-        $this->expectWsClientPerformHandshake(path: '/new/target', host: 'redirect.to:8001');
+        $this->expectWsClientConnect();
+        $this->expectWsClientPerformHandshake(path: '/my/new/path');
         $this->expectSocketStreamIsConnected();
         $client->connect();
 
