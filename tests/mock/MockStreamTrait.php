@@ -45,6 +45,7 @@ trait MockStreamTrait
             $this->assertEquals($persistent, $params[0]);
         });
         $this->expectSocketClientSetTimeout()->addAssert(function ($method, $params) use ($timeout) {
+echo "Mock.expectSocketClientSetTimeout\n";
             $this->assertEquals($timeout, $params[0]);
         });
         $this->expectSocketClientSetContext()->addAssert(function ($method, $params) use ($context) {
@@ -65,6 +66,7 @@ trait MockStreamTrait
         });
 
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($timeout) {
+echo "Mock.expectSocketStreamSetTimeout\n";
             $this->assertEquals($timeout, $params[0]);
             $this->assertEquals(0, $params[1]);
         });

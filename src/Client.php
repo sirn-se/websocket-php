@@ -398,6 +398,7 @@ echo "Client.connect {$this->socketUri}\n";
         $this->streams->attach($stream, $name);
         $this->connection = new Connection($stream, true, false, $host_uri->getScheme() === 'ssl');
         $this->connection->setFrameSize($this->frameSize);
+echo "Client.connect > setTimeout\n";
         $this->connection->setTimeout($this->timeout);
         $this->connection->setLogger($this->logger);
         foreach ($this->middlewares as $middleware) {

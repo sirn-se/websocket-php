@@ -116,6 +116,7 @@ echo "Connection.__destruct\n";
      */
     public function setTimeout(int $seconds): self
     {
+echo "Connection.setTimeout\n";
         $this->timeout = $seconds;
         $this->stream->setTimeout($seconds, 0);
         $this->logger->debug("[connection] Setting timeout: {$seconds} seconds");
