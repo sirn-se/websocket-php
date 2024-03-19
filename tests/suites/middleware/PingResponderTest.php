@@ -65,7 +65,6 @@ class PingResponderTest extends TestCase
         $this->assertInstanceOf(Ping::class, $message);
 
         $this->expectSocketStreamClose();
-        $this->expectSocketStreamIsConnected();
         $this->assertSame($connection, $connection->disconnect());
 
         unset($stream);

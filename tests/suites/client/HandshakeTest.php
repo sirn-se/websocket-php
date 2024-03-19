@@ -55,7 +55,7 @@ class HandshakeTest extends TestCase
         $this->tearDownStack();
     }
 
-    public function xxxtestHandshakeResponse(): void
+    public function testHandshakeResponse(): void
     {
         // Creating client
         $this->expectStreamFactory();
@@ -79,7 +79,7 @@ class HandshakeTest extends TestCase
         unset($client);
     }
 
-    public function xxxtestHandshakeConnectionFailure(): void
+    public function testHandshakeConnectionFailure(): void
     {
         $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');
@@ -101,7 +101,7 @@ class HandshakeTest extends TestCase
         unset($client);
     }
 
-    public function xxxtestHandshakeUpgradeStatusFailure(): void
+    public function testHandshakeUpgradeStatusFailure(): void
     {
         $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');
@@ -121,7 +121,7 @@ class HandshakeTest extends TestCase
         unset($client);
     }
 
-    public function xxxtestHandshakeUpgradeHeadersFailure(): void
+    public function testHandshakeUpgradeHeadersFailure(): void
     {
         $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');
@@ -141,7 +141,7 @@ class HandshakeTest extends TestCase
         unset($client);
     }
 
-    public function xxxtestHandshakeUpgradeKeyFailure(): void
+    public function testHandshakeUpgradeKeyFailure(): void
     {
         $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');

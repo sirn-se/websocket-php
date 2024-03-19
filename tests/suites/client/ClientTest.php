@@ -502,7 +502,6 @@ class ClientTest extends TestCase
         });
         $this->expectSocketStreamIsReadable();
         $this->expectSocketStreamClose();
-        $this->expectSocketStreamIsConnected();
         $message = $client->receive();
         $this->assertInstanceOf(Close::class, $message);
 
@@ -574,7 +573,6 @@ class ClientTest extends TestCase
         $this->expectStreamCollectionAttach();
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(60, $params[0]);
             $this->assertEquals(0, $params[1]);
@@ -720,7 +718,6 @@ class ClientTest extends TestCase
         $this->assertInstanceOf(Close::class, $message);
 
         $this->assertEquals('Closing', $message->getContent());
-        $this->expectSocketStreamIsConnected();
         $this->assertFalse($client->isConnected());
 
         unset($client);
@@ -815,7 +812,6 @@ class ClientTest extends TestCase
         $this->expectSocketStreamIsConnected();
         $client->disconnect();
 
-        $this->expectSocketStreamIsConnected();
         $client->disconnect();
     }
 
@@ -1002,7 +998,6 @@ class ClientTest extends TestCase
         $this->expectSocketStreamIsConnected();
         $client->start();
 
-        $this->expectSocketStreamIsConnected();
         unset($client);
     }
 
@@ -1029,7 +1024,6 @@ class ClientTest extends TestCase
         });
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        $this->expectSocketStreamIsConnected();
         $client->start();
         unset($client);
     }
@@ -1047,7 +1041,6 @@ class ClientTest extends TestCase
         });
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        $this->expectSocketStreamIsConnected();
         $this->expectException(StreamException::class);
         $this->expectExceptionMessage('Stream is detached.');
         $client->start();

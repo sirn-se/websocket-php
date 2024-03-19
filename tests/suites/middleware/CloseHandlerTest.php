@@ -68,7 +68,6 @@ class CloseHandlerTest extends TestCase
         });
         $this->expectSocketStreamIsWritable();
         $this->expectSocketStreamClose();
-        $this->expectSocketStreamIsConnected();
         $message = $connection->pullMessage();
         $this->assertInstanceOf(Close::class, $message);
 
@@ -102,7 +101,6 @@ class CloseHandlerTest extends TestCase
         });
         $this->expectSocketStreamIsReadable();
         $this->expectSocketStreamClose();
-        $this->expectSocketStreamIsConnected();
         $message = $connection->pullMessage();
         $this->assertInstanceOf(Close::class, $message);
 

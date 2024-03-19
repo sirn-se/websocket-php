@@ -103,7 +103,6 @@ class ConnectionTest extends TestCase
         $this->expectSocketStreamIsConnected();
         $this->assertSame($connection, $connection->disconnect());
 
-        $this->expectSocketStreamIsConnected();
         $this->assertFalse($connection->isConnected());
 
         unset($connection);
@@ -160,7 +159,6 @@ class ConnectionTest extends TestCase
         $this->assertSame($response, $connection->getHandshakeResponse());
 
         $this->expectSocketStreamClose();
-        $this->expectSocketStreamIsConnected();
         $this->assertSame($connection, $connection->disconnect());
 
         unset($connection);
@@ -195,7 +193,6 @@ class ConnectionTest extends TestCase
         $this->assertInstanceOf(Text::class, $message);
 
         $this->expectSocketStreamClose();
-        $this->expectSocketStreamIsConnected();
         $this->assertSame($connection, $connection->disconnect());
 
         unset($connection);

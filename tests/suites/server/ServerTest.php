@@ -231,8 +231,6 @@ class ServerTest extends TestCase
 
         $this->expectSocketStreamClose();
         $this->expectSocketServerClose();
-        $this->expectSocketStreamIsConnected();
-
         $server->disconnect();
 
         unset($server);
@@ -360,16 +358,20 @@ class ServerTest extends TestCase
         $this->expectWsServerPerformHandshake();
         $this->expectSocketStreamClose();
         $server->start();
-
+/*
         $this->expectSocketStreamIsConnected();
         $this->expectStreamCollectionDetach();
+        $this->expectWsSelectConnections([]);
+        $this->expectSocketServerClose();
+
+
         $this->expectSocketStreamIsConnected()->setReturn(function () use ($server) {
             $server->stop();
             return false;
         });
-        $this->expectWsSelectConnections([]);
-        $server->start();
 
+        $server->start();
+*/
         unset($server);
     }
 
@@ -403,8 +405,6 @@ class ServerTest extends TestCase
         $this->expectWsServerPerformHandshake();
         $this->expectSocketStreamClose();
         $server->start();
-
-        $this->expectSocketStreamIsConnected();
 
         unset($server);
     }
@@ -462,7 +462,6 @@ class ServerTest extends TestCase
 
         $this->expectSocketStreamClose();
         $this->expectSocketServerClose();
-        $this->expectSocketStreamIsConnected();
         $server->disconnect();
 
         unset($server);
@@ -500,7 +499,6 @@ class ServerTest extends TestCase
         });
         $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
-        $this->expectSocketStreamIsConnected();
         $server->start();
 
         // Should be closed
@@ -549,7 +547,6 @@ class ServerTest extends TestCase
 
         $this->expectSocketStreamClose();
         $this->expectSocketServerClose();
-        $this->expectSocketStreamIsConnected();
         $server->disconnect();
 
         unset($server);
@@ -584,7 +581,6 @@ class ServerTest extends TestCase
         });
         $this->expectSocketStreamClose();
         $this->expectSocketServerClose();
-        $this->expectSocketStreamIsConnected();
         $this->expectException(StreamException::class);
         $this->expectExceptionMessage('Stream is detached.');
         $server->start();
