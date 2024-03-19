@@ -62,13 +62,13 @@ class Connection implements LoggerAwareInterface, Stringable
     private $handshakeRequest;
     private $handshakeResponse;
     private $meta = [];
+    private $closed = false;
 
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
 
     public function __construct(SocketStream $stream, bool $pushMasked, bool $pullMaskedRequired, bool $ssl = false)
     {
-echo "Connection.__construct \n";
         $this->stream = $stream;
         $this->httpHandler = new HttpHandler($this->stream, $ssl);
         $this->messageHandler = new MessageHandler(new FrameHandler($this->stream, $pushMasked, $pullMaskedRequired));
@@ -76,13 +76,11 @@ echo "Connection.__construct \n";
         $this->setLogger(new NullLogger());
         $this->localName = $this->stream->getLocalName();
         $this->remoteName = $this->stream->getRemoteName();
-echo "Connection.__construct done\n";
     }
 
     public function __destruct()
     {
-echo "Connection.__destruct\n";
-        if ($this->isConnected()) {
+        if (!$this->closed && $this->isConnected()) {
             $this->stream->close();
         }
     }
@@ -117,11 +115,8 @@ echo "Connection.__destruct\n";
      */
     public function setTimeout(int $seconds): self
     {
-$cl = get_class($this->stream);
-echo "Connection.setTimeout $cl\n";
         $this->timeout = $seconds;
         $this->stream->setTimeout($seconds, 0);
-echo "Connection.setTimeout > on stream\n";
         $this->logger->debug("[connection] Setting timeout: {$seconds} seconds");
         return $this;
     }
@@ -142,8 +137,6 @@ echo "Connection.setTimeout > on stream\n";
      */
     public function setFrameSize(int $frameSize): self
     {
-$cl = get_class($this->stream);
-echo "Connection.setFrameSize $cl\n";
         $this->frameSize = $frameSize;
         return $this;
     }
@@ -207,6 +200,7 @@ echo "Connection.setFrameSize $cl\n";
     {
         $this->logger->info('[connection] Closing connection');
         $this->stream->close();
+        $this->closed = true;
         return $this;
     }
 

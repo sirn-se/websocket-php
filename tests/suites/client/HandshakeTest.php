@@ -175,10 +175,9 @@ class HandshakeTest extends TestCase
         });
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        $this->expectSocketStreamIsConnected();
+
         $this->expectWsClientConnect(local: '127.0.0.1:12346');
         $this->expectWsClientPerformHandshake(path: '/my/new/path');
-        $this->expectSocketStreamIsConnected();
         $client->connect();
 
         $response = $client->getHandshakeResponse();

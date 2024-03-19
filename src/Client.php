@@ -343,7 +343,6 @@ class Client implements LoggerAwareInterface, Stringable
      */
     public function isConnected(): bool
     {
-echo "Client.isConnected \n";
         return $this->connection && $this->connection->isConnected();
     }
 
@@ -372,7 +371,6 @@ echo "Client.isConnected \n";
      */
     public function connect(): void
     {
-echo "Client.connect {$this->socketUri}\n";
         $this->disconnect();
         $this->streams = $this->streamFactory->createStreamCollection();
 
@@ -394,25 +392,16 @@ echo "Client.connect {$this->socketUri}\n";
             $this->logger->error("[client] {$error}", []);
             throw new ClientException($error);
         }
-try {
         $name = $stream->getRemoteName();
         $this->streams->attach($stream, $name);
         $this->connection = new Connection($stream, true, false, $host_uri->getScheme() === 'ssl');
-echo "Client.connect > setFrameSize {$this->connection}\n";
         $this->connection->setFrameSize($this->frameSize);
-echo "Client.connect > setTimeout {$this->connection}\n";
         $this->connection->setTimeout($this->timeout);
         $this->connection->setLogger($this->logger);
         foreach ($this->middlewares as $middleware) {
             $this->connection->addMiddleware($middleware);
         }
 
-} catch (Throwable $e) {
-    echo "$e \n\n";
-    throw $e;
-}
-
-echo "Client.connect > isConnected\n";
         if (!$this->isConnected()) {
             $error = "Invalid stream on \"{$host_uri}\".";
             $this->logger->error("[client] {$error}");
@@ -427,7 +416,6 @@ echo "Client.connect > isConnected\n";
             if ($uri = $e->getUri()) {
                 $this->socketUri = $uri;
             }
-            $this->disconnect();
             $this->connect();
             return;
         }
@@ -440,7 +428,6 @@ echo "Client.connect > isConnected\n";
      */
     public function disconnect(): void
     {
-echo "Client.disconnect \n";
         if ($this->isConnected()) {
             $this->connection->disconnect();
             $this->logger->info('[client] Client disconnected');
