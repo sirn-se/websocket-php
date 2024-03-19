@@ -68,7 +68,7 @@ class Connection implements LoggerAwareInterface, Stringable
 
     public function __construct(SocketStream $stream, bool $pushMasked, bool $pullMaskedRequired, bool $ssl = false)
     {
-echo "Connection.__construct\n";
+echo "Connection.__construct \n";
         $this->stream = $stream;
         $this->httpHandler = new HttpHandler($this->stream, $ssl);
         $this->messageHandler = new MessageHandler(new FrameHandler($this->stream, $pushMasked, $pullMaskedRequired));
@@ -76,6 +76,7 @@ echo "Connection.__construct\n";
         $this->setLogger(new NullLogger());
         $this->localName = $this->stream->getLocalName();
         $this->remoteName = $this->stream->getRemoteName();
+echo "Connection.__construct done\n";
     }
 
     public function __destruct()
@@ -116,9 +117,11 @@ echo "Connection.__destruct\n";
      */
     public function setTimeout(int $seconds): self
     {
-echo "Connection.setTimeout\n";
+$cl = get_class($this->stream);
+echo "Connection.setTimeout $cl\n";
         $this->timeout = $seconds;
         $this->stream->setTimeout($seconds, 0);
+echo "Connection.setTimeout > on stream\n";
         $this->logger->debug("[connection] Setting timeout: {$seconds} seconds");
         return $this;
     }
