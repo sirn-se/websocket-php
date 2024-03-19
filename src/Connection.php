@@ -68,6 +68,7 @@ class Connection implements LoggerAwareInterface, Stringable
 
     public function __construct(SocketStream $stream, bool $pushMasked, bool $pullMaskedRequired, bool $ssl = false)
     {
+echo "Connection.__construct\n";
         $this->stream = $stream;
         $this->httpHandler = new HttpHandler($this->stream, $ssl);
         $this->messageHandler = new MessageHandler(new FrameHandler($this->stream, $pushMasked, $pullMaskedRequired));
@@ -79,6 +80,7 @@ class Connection implements LoggerAwareInterface, Stringable
 
     public function __destruct()
     {
+echo "Connection.__destruct\n";
         if ($this->isConnected()) {
             $this->stream->close();
         }

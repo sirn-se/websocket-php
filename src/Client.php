@@ -343,6 +343,7 @@ class Client implements LoggerAwareInterface, Stringable
      */
     public function isConnected(): bool
     {
+echo "Client.isConnected \n";
         return $this->connection && $this->connection->isConnected();
     }
 
@@ -371,6 +372,7 @@ class Client implements LoggerAwareInterface, Stringable
      */
     public function connect(): void
     {
+echo "Client.connect {$this->socketUri}\n";
         $this->disconnect();
         $this->streams = $this->streamFactory->createStreamCollection();
 
@@ -402,6 +404,7 @@ class Client implements LoggerAwareInterface, Stringable
             $this->connection->addMiddleware($middleware);
         }
 
+echo "Client.connect > isConnected\n";
         if (!$this->isConnected()) {
             $error = "Invalid stream on \"{$host_uri}\".";
             $this->logger->error("[client] {$error}");
@@ -416,6 +419,7 @@ class Client implements LoggerAwareInterface, Stringable
             if ($uri = $e->getUri()) {
                 $this->socketUri = $uri;
             }
+            $this->disconnect();
             $this->connect();
             return;
         }
@@ -428,6 +432,7 @@ class Client implements LoggerAwareInterface, Stringable
      */
     public function disconnect(): void
     {
+echo "Client.disconnect \n";
         if ($this->isConnected()) {
             $this->connection->disconnect();
             $this->logger->info('[client] Client disconnected');
