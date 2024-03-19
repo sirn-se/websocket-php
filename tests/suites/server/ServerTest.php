@@ -358,20 +358,27 @@ class ServerTest extends TestCase
         $this->expectWsServerPerformHandshake();
         $this->expectSocketStreamClose();
         $server->start();
-/*
+
         $this->expectSocketStreamIsConnected();
         $this->expectStreamCollectionDetach();
-        $this->expectWsSelectConnections([]);
-        $this->expectSocketServerClose();
-
-
-        $this->expectSocketStreamIsConnected()->setReturn(function () use ($server) {
-            $server->stop();
-            return false;
+        $this->expectWsSelectConnections(['@server']);
+        // Accept connection
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
+            return 'fake-connection-1';
         });
-
+        $this->expectStreamCollectionAttach();
+        $this->expectSocketStreamGetLocalName()->setReturn(function () {
+            return 'fake-connection-1';
+        });
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $this->expectWsServerPerformHandshake();
+        $this->expectSocketStreamClose();
         $server->start();
-*/
+
         unset($server);
     }
 

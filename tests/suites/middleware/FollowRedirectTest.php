@@ -10,22 +10,38 @@ declare(strict_types=1);
 namespace WebSocket\Test\Middleware;
 
 use PHPUnit\Framework\TestCase;
-use Phrity\Net\Mock\SocketStream;
-use Phrity\Net\Mock\Stack\ExpectSocketStreamTrait;
+use Phrity\Net\Mock\{
+    SocketStream,
+    StreamFactory,
+};
+use Phrity\Net\Mock\Stack\{
+    ExpectSocketClientTrait,
+    ExpectSocketStreamTrait,
+    ExpectStreamCollectionTrait,
+    ExpectStreamFactoryTrait,
+};
 use Stringable;
-use WebSocket\Connection;
+use WebSocket\{
+    Client,
+    Connection
+};
 use WebSocket\Exception\{
     HandshakeException,
     ReconnectException,
 };
 use WebSocket\Middleware\FollowRedirect;
+use WebSocket\Test\MockStreamTrait;
 
 /**
  * Test case for WebSocket\Middleware\FollowRedirect
  */
 class FollowRedirectTest extends TestCase
 {
+    use ExpectSocketClientTrait;
     use ExpectSocketStreamTrait;
+    use ExpectStreamCollectionTrait;
+    use ExpectStreamFactoryTrait;
+    use MockStreamTrait;
 
     public function setUp(): void
     {
