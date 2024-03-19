@@ -63,6 +63,7 @@ echo "Mock.expectSocketClientSetTimeout\n";
             return "{$local}";
         });
         $this->expectSocketStreamGetRemoteName()->setReturn(function () use ($host, $port) {
+echo "Mock.expectSocketStreamGetRemoteName\n";
             return "{$host}:{$port}";
         });
 

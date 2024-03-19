@@ -142,6 +142,8 @@ echo "Connection.setTimeout > on stream\n";
      */
     public function setFrameSize(int $frameSize): self
     {
+$cl = get_class($this->stream);
+echo "Connection.setFrameSize $cl\n";
         $this->frameSize = $frameSize;
         return $this;
     }

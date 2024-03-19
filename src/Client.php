@@ -394,9 +394,11 @@ echo "Client.connect {$this->socketUri}\n";
             $this->logger->error("[client] {$error}", []);
             throw new ClientException($error);
         }
+try {
         $name = $stream->getRemoteName();
         $this->streams->attach($stream, $name);
         $this->connection = new Connection($stream, true, false, $host_uri->getScheme() === 'ssl');
+echo "Client.connect > setFrameSize {$this->connection}\n";
         $this->connection->setFrameSize($this->frameSize);
 echo "Client.connect > setTimeout {$this->connection}\n";
         $this->connection->setTimeout($this->timeout);
@@ -404,6 +406,11 @@ echo "Client.connect > setTimeout {$this->connection}\n";
         foreach ($this->middlewares as $middleware) {
             $this->connection->addMiddleware($middleware);
         }
+
+} catch (Throwable $e) {
+    echo "$e \n\n";
+    throw $e;
+}
 
 echo "Client.connect > isConnected\n";
         if (!$this->isConnected()) {
