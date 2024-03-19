@@ -13,6 +13,7 @@ use Psr\Log\{
     LoggerAwareInterface,
     LoggerAwareTrait
 };
+use Stringable;
 use WebSocket\Connection;
 use WebSocket\Exception\HandshakeException;
 use WebSocket\Http\{
@@ -27,7 +28,11 @@ use WebSocket\Trait\StringableTrait;
  * WebSocket\Middleware\CloseHandler class.
  * Handles close procedure.
  */
-class SubprotocolNegotiation implements LoggerAwareInterface, ProcessHttpOutgoingInterface, ProcessHttpIncomingInterface
+class SubprotocolNegotiation implements
+    LoggerAwareInterface,
+    ProcessHttpOutgoingInterface,
+    ProcessHttpIncomingInterface,
+    Stringable
 {
     use LoggerAwareTrait;
     use StringableTrait;

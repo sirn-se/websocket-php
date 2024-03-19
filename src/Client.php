@@ -26,7 +26,8 @@ use WebSocket\Exception\{
     ConnectionLevelInterface,
     Exception,
     HandshakeException,
-    MessageLevelInterface
+    MessageLevelInterface,
+    ReconnectException
 };
 use WebSocket\Http\{
     Request,
@@ -393,7 +394,7 @@ class Client implements LoggerAwareInterface, Stringable
         }
         $name = $stream->getRemoteName();
         $this->streams->attach($stream, $name);
-        $this->connection = new Connection($stream, true, false);
+        $this->connection = new Connection($stream, true, false, $host_uri->getScheme() === 'ssl');
         $this->connection->setFrameSize($this->frameSize);
         $this->connection->setTimeout($this->timeout);
         $this->connection->setLogger($this->logger);
@@ -406,11 +407,18 @@ class Client implements LoggerAwareInterface, Stringable
             $this->logger->error("[client] {$error}");
             throw new ClientException($error);
         }
-
-        if (!$this->persistent || $stream->tell() == 0) {
-            $response = $this->performHandshake($this->socketUri);
+        try {
+            if (!$this->persistent || $stream->tell() == 0) {
+                $response = $this->performHandshake($this->socketUri);
+            }
+        } catch (ReconnectException $e) {
+            $this->logger->info("[client] {$e->getMessage()}");
+            if ($uri = $e->getUri()) {
+                $this->socketUri = $uri;
+            }
+            $this->connect();
+            return;
         }
-
         $this->logger->info("[client] Client connected to {$this->socketUri}");
         $this->dispatch('connect', [$this, $this->connection, $response]);
     }

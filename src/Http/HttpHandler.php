@@ -35,11 +35,13 @@ class HttpHandler implements LoggerAwareInterface, Stringable
     use StringableTrait;
 
     private $stream;
+    private $ssl;
     private $logger;
 
-    public function __construct(SocketStream $stream)
+    public function __construct(SocketStream $stream, bool $ssl = false)
     {
         $this->stream = $stream;
+        $this->ssl = $ssl;
         $this->setLogger(new NullLogger());
     }
 
@@ -91,7 +93,8 @@ class HttpHandler implements LoggerAwareInterface, Stringable
             }
         }
         if ($message instanceof Request) {
-            $uri = new Uri("//{$message->getHeaderLine('Host')}{$path}");
+            $scheme = $this->ssl ? 'wss' : 'ws';
+            $uri = new Uri("{$scheme}://{$message->getHeaderLine('Host')}{$path}");
             $message = $message->withUri($uri, true);
         }
 

@@ -29,7 +29,6 @@ trait MockStreamTrait
         array $context = [],
         bool $persistent = false
     ): void {
-
         $this->expectStreamFactoryCreateStreamCollection();
         $this->expectStreamCollection();
         $this->expectStreamFactoryCreateSocketClient()->addAssert(

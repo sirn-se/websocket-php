@@ -66,10 +66,10 @@ class Connection implements LoggerAwareInterface, Stringable
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
 
-    public function __construct(SocketStream $stream, bool $pushMasked, bool $pullMaskedRequired)
+    public function __construct(SocketStream $stream, bool $pushMasked, bool $pullMaskedRequired, bool $ssl = false)
     {
         $this->stream = $stream;
-        $this->httpHandler = new HttpHandler($this->stream);
+        $this->httpHandler = new HttpHandler($this->stream, $ssl);
         $this->messageHandler = new MessageHandler(new FrameHandler($this->stream, $pushMasked, $pullMaskedRequired));
         $this->middlewareHandler = new MiddlewareHandler($this->messageHandler, $this->httpHandler);
         $this->setLogger(new NullLogger());
