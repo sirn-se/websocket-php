@@ -37,8 +37,12 @@ info     | Received 'close' message []
 
 ## A self-resuming continuous subscription Client
 
-```php
+This setup will create Client that sends initial message to Server,
+and then subscribes to messages sent by Server.
+The `PingInterval` (possibly change interval) will keep conneciton open.
+If something goes wrong, it will in most cases be able to re-connect and resume subscription.
 
+```php
 use WebSocket\Client;
 use WebSocket\Connection;
 use WebSocket\Connection;
@@ -63,6 +67,7 @@ $client
     })
     ->onText(function (Client $client, Connection $connection, Message $message) {
         // Act on incoming message
+        $message->getContent();
         // Possibly respond to server
         $client->text($some_message);
     })
@@ -77,7 +82,6 @@ $client
     ->start()
     ;
 ```
-
 
 ## The `send` client
 
