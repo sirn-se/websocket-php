@@ -64,7 +64,7 @@ Connection might be null. The Exception thrown is present as last argument.
 ```php
 $client_or_server
     // When a resolvable error occurs, this listener will be called
-    ->onError(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection|null $connection, Exception $exception) {
+    ->onError(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection|null $connection, WebSocket\Exception\Exception $exception) {
         // Act on exception
     })
     ;
