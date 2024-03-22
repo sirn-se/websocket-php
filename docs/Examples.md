@@ -35,6 +35,54 @@ info     | Sent 'close' message []
 info     | Received 'close' message []
 ```
 
+## A self-resuming continuous subscription Client
+
+This setup will create Client that sends initial message to Server,
+and then subscribes to messages sent by Server.
+The `PingInterval` (possibly change interval) will keep conneciton open.
+If something goes wrong, it will in most cases be able to re-connect and resume subscription.
+
+```php
+use WebSocket\Client;
+use WebSocket\Connection;
+use WebSocket\Connection;
+use WebSocket\Exception\Exception;
+use WebSocket\Message\Message;
+use WebSocket\Middleware\CloseHandler;
+use WebSocket\Middleware\PingResponder;
+use WebSocket\Middleware\PingInterval;
+
+// Create client
+$client = new Client("wss://echo.websocket.org/");
+$client
+    // Add standard middlewares
+    ->addMiddleware(new CloseHandler())
+    ->addMiddleware(new PingResponder())
+    // Add ping interval middleware as heartbeat to keep connection open
+    ->addMiddleware(new PingInterval(interval: 30))
+    ->onConnect(function (Client $client, Connection $connection, Message $message) {
+        // Initial message, typically some authorization or configuration
+        // This will be called everytime the client connect or reconnect
+        $client->text($initial_message);
+    })
+    ->onText(function (Client $client, Connection $connection, Message $message) {
+        // Act on incoming message
+        $message->getContent();
+        // Possibly respond to server
+        $client->text($some_message);
+    })
+    ->onError(function (Client $client, Connection|null $connection, Exception $exception) {
+        // Act on exception
+        if (!$client->isRunning()) {
+            // Re-start if not running - will reconnect if necessary
+            $client->start();
+        }
+    })
+    // Start subscription
+    ->start()
+    ;
+```
+
 ## The `send` client
 
 Source: [examples/send.php](../examples/send.php)

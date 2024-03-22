@@ -24,6 +24,7 @@ Base your patch on corresponding version branch, and target that version branch 
 
 | Version | Branch | PHP | Status |
 | --- | --- | --- | --- |
+| [`2.3`](https://github.com/sirn-se/websocket-php/tree/2.2.0) | `v2.3-main` | TBC | Future version |
 | [`2.2`](https://github.com/sirn-se/websocket-php/tree/2.2.0) | `v2.2-main` | `^8.0` | Current version |
 | [`2.1`](https://github.com/sirn-se/websocket-php/tree/2.1.0) | `v2.1-main` | `^8.0` | Bug fixes only |
 | [`2.0`](https://github.com/sirn-se/websocket-php/tree/2.0.0) | - | `^8.0` | Not supported |
@@ -35,6 +36,13 @@ Base your patch on corresponding version branch, and target that version branch 
 | [`1.2`](https://github.com/sirn-se/websocket-php/tree/1.2.0) | - | - | Not supported |
 | [`1.1`](https://github.com/sirn-se/websocket-php/tree/1.1.0) | - | - | Not supported |
 | [`1.0`](https://github.com/sirn-se/websocket-php/tree/1.0.0) | - | - | Not supported |
+
+## Policy
+
+* Library **MUST** provide core functionality, fully compatible with [WebSocket](https://datatracker.ietf.org/doc/html/rfc6455) standard.
+* Library **MAY** provide optional functionality of general use. Such functionality should preferably be offered as middleware, or possibly as configuration option.
+* Library must **NOT** make assumptions on how it will be used.
+* Library must **NOT** provide specific service implementations. Such implementations should be provided in separate repo, using this library as a dependency.
 
 ## Dependency management
 
