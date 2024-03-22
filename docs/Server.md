@@ -50,6 +50,7 @@ echo "timeout:      {$server->getTimeout()}s\n";
 echo "frame size:   {$server->getFrameSize()}b\n";
 echo "running:      {$server->isRunning()}\n";
 echo "connections:  {$server->getConnectionCount()}\n";
+echo "ssl:          {$server->isSsl()}\n";
 ```
 
 ## Middlewares

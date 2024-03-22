@@ -196,6 +196,15 @@ class Server implements LoggerAwareInterface, Stringable
     }
 
     /**
+     * Get connection scheme.
+     * @return string scheme
+     */
+    public function isSsl(): bool
+    {
+        return $this->scheme === 'ssl';
+    }
+
+    /**
      * Number of currently connected clients.
      * @return int Connection count
      */
@@ -381,7 +390,7 @@ class Server implements LoggerAwareInterface, Stringable
             $stream = $socket->accept();
             $name = $stream->getRemoteName();
             $this->streams->attach($stream, $name);
-            $connection = new Connection($stream, false, true);
+            $connection = new Connection($stream, false, true, $this->isSsl());
             $connection
                 ->setLogger($this->logger)
                 ->setFrameSize($this->frameSize)

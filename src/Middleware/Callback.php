@@ -28,7 +28,8 @@ class Callback implements
     ProcessHttpOutgoingInterface,
     ProcessIncomingInterface,
     ProcessOutgoingInterface,
-    ProcessTickInterface
+    ProcessTickInterface,
+    Stringable
 {
     use LoggerAwareTrait;
     use StringableTrait;

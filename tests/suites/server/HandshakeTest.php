@@ -107,7 +107,6 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamGetMetadata();
         $this->expectSocketStreamClose();
-        $this->expectSocketStreamIsConnected();
         $server->start();
 
         unset($server);
@@ -142,7 +141,6 @@ class HandshakeTest extends TestCase
             $this->assertEquals("HTTP/1.1 405 Method Not Allowed\r\n\r\n", $params[0]);
         });
         $this->expectSocketStreamClose();
-        $this->expectSocketStreamIsConnected();
         $server->start();
 
         unset($server);
@@ -177,7 +175,6 @@ class HandshakeTest extends TestCase
             $this->assertEquals("HTTP/1.1 426 Upgrade Required\r\n\r\n", $params[0]);
         });
         $this->expectSocketStreamClose();
-        $this->expectSocketStreamIsConnected();
         $server->start();
 
         unset($server);
@@ -212,7 +209,6 @@ class HandshakeTest extends TestCase
             $this->assertEquals("HTTP/1.1 426 Upgrade Required\r\n\r\n", $params[0]);
         });
         $this->expectSocketStreamClose();
-        $this->expectSocketStreamIsConnected();
         $server->start();
 
         unset($server);
@@ -247,7 +243,6 @@ class HandshakeTest extends TestCase
             $this->assertEquals("HTTP/1.1 426 Upgrade Required\r\nSec-WebSocket-Version: 13\r\n\r\n", $params[0]);
         });
         $this->expectSocketStreamClose();
-        $this->expectSocketStreamIsConnected();
         $server->start();
 
         unset($server);
@@ -282,7 +277,6 @@ class HandshakeTest extends TestCase
             $this->assertEquals("HTTP/1.1 426 Upgrade Required\r\n\r\n", $params[0]);
         });
         $this->expectSocketStreamClose();
-        $this->expectSocketStreamIsConnected();
         $server->start();
 
         unset($server);
@@ -317,7 +311,6 @@ class HandshakeTest extends TestCase
             $this->assertEquals("HTTP/1.1 426 Upgrade Required\r\n\r\n", $params[0]);
         });
         $this->expectSocketStreamClose();
-        $this->expectSocketStreamIsConnected();
         $server->start();
 
         unset($server);
@@ -354,7 +347,6 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamGetMetadata();
         $this->expectSocketStreamClose();
-        $this->expectSocketStreamIsConnected();
         $server->start();
 
         unset($server);

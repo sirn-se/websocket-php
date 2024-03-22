@@ -11,6 +11,7 @@ use Psr\Log\{
     LoggerAwareInterface,
     LoggerAwareTrait
 };
+use Stringable;
 use WebSocket\Connection;
 use WebSocket\Message\{
     Ping,
@@ -23,7 +24,7 @@ use WebSocket\Trait\StringableTrait;
  * WebSocket\Middleware\PingResponder class.
  * Responds on incoming ping messages.
  */
-class PingResponder implements LoggerAwareInterface, ProcessIncomingInterface
+class PingResponder implements LoggerAwareInterface, ProcessIncomingInterface, Stringable
 {
     use StringableTrait;
     use LoggerAwareTrait;

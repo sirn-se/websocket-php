@@ -8,9 +8,12 @@
 
 ### `2.2.0`
 
+ * Optional `FollowRedirect` middleware (Client only) (@sirn-se)
  * Optional `SubprotocolNegotiation` middleware (@sirn-se)
  * `getMeta()` exposed on Client (@sirn-se)
  * Server throws `HandshakeException` if HTTP middleware return invalid status (@sirn-se)
+ * New `ReconnectException` to force Client reconnection (@sirn-se)
+ * `Server->isSsl()` method (@sirn-se)
  * Improved URI handling (@sirn-se)
  * Allow empty HTTP header handling (RFC compliance) (@sirn-se)
  * Documentation changes (@sirn-se)

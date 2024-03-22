@@ -23,7 +23,7 @@ use WebSocket\Trait\StringableTrait;
  * WebSocket\Middleware\PingInterval class.
  * Handles close procedure.
  */
-class PingInterval implements LoggerAwareInterface, ProcessOutgoingInterface, ProcessTickInterface
+class PingInterval implements LoggerAwareInterface, ProcessOutgoingInterface, ProcessTickInterface, Stringable
 {
     use LoggerAwareTrait;
     use StringableTrait;

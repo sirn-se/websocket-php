@@ -27,9 +27,9 @@ trait MockStreamTrait
         int $port = 8000,
         int $timeout = 60,
         array $context = [],
-        bool $persistent = false
+        bool $persistent = false,
+        string $local = '127.0.0.1:12345',
     ): void {
-
         $this->expectStreamFactoryCreateStreamCollection();
         $this->expectStreamCollection();
         $this->expectStreamFactoryCreateSocketClient()->addAssert(
@@ -58,8 +58,8 @@ trait MockStreamTrait
             return "{$host}:{$port}";
         });
         $this->expectStreamCollectionAttach();
-        $this->expectSocketStreamGetLocalName()->setReturn(function () {
-            return "127.0.0.1:12345";
+        $this->expectSocketStreamGetLocalName()->setReturn(function () use ($local) {
+            return "{$local}";
         });
         $this->expectSocketStreamGetRemoteName()->setReturn(function () use ($host, $port) {
             return "{$host}:{$port}";

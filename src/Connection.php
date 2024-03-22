@@ -62,14 +62,15 @@ class Connection implements LoggerAwareInterface, Stringable
     private $handshakeRequest;
     private $handshakeResponse;
     private $meta = [];
+    private $closed = false;
 
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
 
-    public function __construct(SocketStream $stream, bool $pushMasked, bool $pullMaskedRequired)
+    public function __construct(SocketStream $stream, bool $pushMasked, bool $pullMaskedRequired, bool $ssl = false)
     {
         $this->stream = $stream;
-        $this->httpHandler = new HttpHandler($this->stream);
+        $this->httpHandler = new HttpHandler($this->stream, $ssl);
         $this->messageHandler = new MessageHandler(new FrameHandler($this->stream, $pushMasked, $pullMaskedRequired));
         $this->middlewareHandler = new MiddlewareHandler($this->messageHandler, $this->httpHandler);
         $this->setLogger(new NullLogger());
@@ -79,7 +80,7 @@ class Connection implements LoggerAwareInterface, Stringable
 
     public function __destruct()
     {
-        if ($this->isConnected()) {
+        if (!$this->closed && $this->isConnected()) {
             $this->stream->close();
         }
     }
@@ -199,6 +200,7 @@ class Connection implements LoggerAwareInterface, Stringable
     {
         $this->logger->info('[connection] Closing connection');
         $this->stream->close();
+        $this->closed = true;
         return $this;
     }
 

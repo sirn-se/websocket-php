@@ -11,6 +11,7 @@ use Psr\Log\{
     LoggerAwareInterface,
     LoggerAwareTrait
 };
+use Stringable;
 use WebSocket\Connection;
 use WebSocket\Message\{
     Close,
@@ -22,7 +23,7 @@ use WebSocket\Trait\StringableTrait;
  * WebSocket\Middleware\CloseHandler class.
  * Handles close procedure.
  */
-class CloseHandler implements LoggerAwareInterface, ProcessIncomingInterface, ProcessOutgoingInterface
+class CloseHandler implements LoggerAwareInterface, ProcessIncomingInterface, ProcessOutgoingInterface, Stringable
 {
     use LoggerAwareTrait;
     use StringableTrait;

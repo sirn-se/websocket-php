@@ -18,6 +18,7 @@ use Phrity\Net\Mock\Stack\{
     ExpectStreamFactoryTrait
 };
 use Phrity\Net\StreamException;
+use Phrity\Net\Uri;
 use WebSocket\Client;
 use WebSocket\Exception\{
     BadOpcodeException,
@@ -26,7 +27,8 @@ use WebSocket\Exception\{
     ConnectionClosedException,
     ConnectionFailureException,
     ConnectionTimeoutException,
-    HandshakeException
+    HandshakeException,
+    ReconnectException,
 };
 use WebSocket\Http\Response;
 use WebSocket\Test\MockStreamTrait;
@@ -157,6 +159,34 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamClose();
         $client->connect();
 
+        unset($client);
+    }
+
+    public function testHandshakeReconnect(): void
+    {
+        $this->expectStreamFactory();
+        $client = new Client('ws://localhost:8000/my/mock/path');
+        $client->setStreamFactory(new StreamFactory());
+
+        $this->expectWsClientConnect();
+        $this->expectSocketStreamWrite();
+        $this->expectSocketStreamReadLine()->setReturn(function () {
+            throw new ReconnectException(new Uri('ws://localhost:8000/my/new/path'));
+        });
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
+
+        $this->expectWsClientConnect(local: '127.0.0.1:12346');
+        $this->expectWsClientPerformHandshake(path: '/my/new/path');
+        $client->connect();
+
+        $response = $client->getHandshakeResponse();
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertEquals(101, $response->getStatusCode());
+        $this->assertEquals('Switching Protocols', $response->getReasonPhrase());
+
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
         unset($client);
     }
 }
