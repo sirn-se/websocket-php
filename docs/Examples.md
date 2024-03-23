@@ -43,6 +43,7 @@ The `PingInterval` (possibly change interval) will keep conneciton open.
 If something goes wrong, it will in most cases be able to re-connect and resume subscription.
 
 ```php
+use Psr\Http\Message\ResponseInterface;
 use WebSocket\Client;
 use WebSocket\Connection;
 use WebSocket\Connection;
@@ -60,7 +61,7 @@ $client
     ->addMiddleware(new PingResponder())
     // Add ping interval middleware as heartbeat to keep connection open
     ->addMiddleware(new PingInterval(interval: 30))
-    ->onConnect(function (Client $client, Connection $connection, Message $message) {
+    ->onConnect(function (Client $client, Connection $connection, ResponseInterface $response) {
         // Initial message, typically some authorization or configuration
         // This will be called everytime the client connect or reconnect
         $client->text($initial_message);
