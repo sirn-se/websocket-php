@@ -6,6 +6,10 @@
 
  > PHP version `^7.4|^8.0`
 
+### `1.7.3`
+
+ * Fix dependency `psr/http-message` (@sirn-se)
+
 ### `1.7.2`
 
  * PSR compliance `psr/log v3` `psr/http-message v2` (@sirn-se)
