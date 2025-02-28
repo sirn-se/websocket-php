@@ -11,6 +11,6 @@ namespace WebSocket\Exception;
  * WebSocket\Exception\ConnectionLevelInterface interface.
  * Indicates error on connection level - connection should be closed
  */
-interface ConnectionLevelInterface
+interface ConnectionLevelInterface extends ExceptionInterface
 {
 }

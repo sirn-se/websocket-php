@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace WebSocket\Test\Server;
 
+use Error;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\StreamCollection;
 use Phrity\Net\Mock\StreamFactory;
@@ -826,6 +827,42 @@ class ServerTest extends TestCase
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
+        unset($server);
+    }
+
+    public function testUnresolvableError(): void
+    {
+        $this->expectStreamFactory();
+        $server = new Server(8000);
+        $server->setStreamFactory(new StreamFactory());
+
+        $server->onTick(function ($server) {
+            // Trigger unresolvable error
+            $fail = new UnexistingClass();
+        });
+
+        $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
+        $this->expectWsSelectConnections(['@server']);
+        // Accept connection
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
+            return 'fake-connection-1';
+        });
+        $this->expectStreamCollectionAttach();
+        $this->expectSocketStreamGetLocalName()->setReturn(function () {
+            return 'fake-connection-1';
+        });
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $this->expectWsServerPerformHandshake();
+        $this->expectSocketStreamClose();
+        $this->expectSocketServerClose();
+        $this->expectException(Error::class);
+        $this->expectExceptionMessage('Class "WebSocket\Test\Server\UnexistingClass" not found');
+        $server->start();
+
         unset($server);
     }
 }

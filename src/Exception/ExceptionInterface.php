@@ -8,9 +8,9 @@
 namespace WebSocket\Exception;
 
 /**
- * WebSocket\Exception\MessageLevelInterface interface.
- * Indicates issue reading/writing message.
+ * WebSocket\Exception\ExceptionInterface interface.
+ * Root interface for internal exceptions.
  */
-interface MessageLevelInterface extends ExceptionInterface
+interface ExceptionInterface
 {
 }

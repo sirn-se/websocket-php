@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace WebSocket\Test\Client;
 
+use Error;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\StreamCollection;
 use Phrity\Net\Mock\StreamFactory;
@@ -1062,6 +1063,32 @@ class ClientTest extends TestCase
         $this->expectExceptionMessage('Stream is detached.');
         $client->start();
 
+        unset($client);
+    }
+
+    public function testUnresolvableError(): void
+    {
+        $this->expectStreamFactory();
+        $client = new Client('ws://localhost:8000/my/mock/path');
+        $client->setStreamFactory(new StreamFactory());
+
+        $client->onTick(function ($client) {
+            // Trigger unresolvable error
+            $fail = new UnexistingClass();
+        });
+
+        $this->expectWsClientConnect();
+        $this->expectWsClientPerformHandshake();
+        $this->expectWsSelectConnections(['localhost:8000']);
+        $this->expectSocketStreamRead()->setReturn(function () {
+            return base64_decode('gQA=');
+        });
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
+        $this->expectException(Error::class);
+        $this->expectExceptionMessage('Class "WebSocket\Test\Client\UnexistingClass" not found');
+        $client->start();
         unset($client);
     }
 }

@@ -64,7 +64,7 @@ Connection might be null. The Exception thrown is present as last argument.
 ```php
 $client_or_server
     // When a resolvable error occurs, this listener will be called
-    ->onError(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection|null $connection, WebSocket\Exception\Exception $exception) {
+    ->onError(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection|null $connection, WebSocket\Exception\ExceptionInterface $exception) {
         // Act on exception
     })
     ;
@@ -76,6 +76,9 @@ Using above functions, your Client and Server will be able to receive incoming m
 
 But what if your implementation need to process other data, and send unsolicited messages?
 The coroutine implementation will regularly call the `onTick()` method, depending on workload and configuration.
+
+It will be called at the end of each coroutine loop.
+In other words, when all incoming messages has been read *or* timeout has been reached.
 
 ```php
 $client_or_server
