@@ -29,7 +29,7 @@ use WebSocket\Exception\{
     BadUriException,
     ClientException,
     ConnectionLevelInterface,
-    Exception,
+    ExceptionInterface,
     HandshakeException,
     MessageLevelInterface,
     ReconnectException
@@ -303,7 +303,7 @@ class Client implements LoggerAwareInterface, Stringable
                 }
                 $this->connection->tick();
                 $this->dispatch('tick', [$this]);
-            } catch (Exception $e) {
+            } catch (ExceptionInterface $e) {
                 $this->disconnect();
                 $this->running = false;
 

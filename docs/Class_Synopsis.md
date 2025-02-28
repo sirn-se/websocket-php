@@ -238,7 +238,7 @@ class WebSocket\Exception\ConnectionFailureException extends WebSocket\Exception
 ### ConnectionLevelInterface
 
 ```php
-interface WebSocket\Exception\ConnectionLevelInterface
+interface WebSocket\Exception\ConnectionLevelInterface extends WebSocket\Exception\ExceptionInterface
 {
 }
 ```
@@ -255,7 +255,15 @@ class WebSocket\Exception\ConnectionTimeoutException extends WebSocket\Exception
 ### Exception
 
 ```php
-abstract class WebSocket\Exception\Exception extends RuntimeException
+abstract class WebSocket\Exception\Exception extends RuntimeException implements WebSocket\Exception\ExceptionInterface
+{
+}
+```
+
+### ExceptionInterface
+
+```php
+interface WebSocket\Exception\ExceptionInterface
 {
 }
 ```
@@ -273,7 +281,7 @@ class WebSocket\Exception\HandshakeException extends WebSocket\Exception\Excepti
 ### MessageLevelInterface
 
 ```php
-interface WebSocket\Exception\MessageLevelInterface
+interface WebSocket\Exception\MessageLevelInterface extends WebSocket\Exception\ExceptionInterface
 {
 }
 ```

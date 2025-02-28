@@ -14,6 +14,7 @@ use Psr\Http\Message\{
 };
 use Throwable;
 use WebSocket\Connection;
+use WebSocket\Exception\ExceptionInterface;
 use WebSocket\Message\Message;
 
 /**
@@ -85,7 +86,7 @@ trait ListenerTrait
         return $this;
     }
 
-    /** @param Closure(T, Connection|null, Throwable): void $closure */
+    /** @param Closure(T, Connection|null, ExceptionInterface): void $closure */
     public function onError(Closure $closure): self
     {
         $this->listeners['error'] = $closure;
@@ -103,7 +104,7 @@ trait ListenerTrait
      * @param array{
      *   0: T,
      *   1?: Connection|null,
-     *   2?: Message|RequestInterface|ResponseInterface|Throwable|null,
+     *   2?: Message|RequestInterface|ResponseInterface|ExceptionInterface|null,
      *   3?: ResponseInterface|null
      * } $args
      */

@@ -13,6 +13,6 @@ use RuntimeException;
  * WebSocket\Exception\Exception abstract class.
  * Core exception for repo
  */
-abstract class Exception extends RuntimeException
+abstract class Exception extends RuntimeException implements ExceptionInterface
 {
 }

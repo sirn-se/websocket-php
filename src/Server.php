@@ -26,7 +26,7 @@ use WebSocket\Exception\{
     CloseException,
     ConnectionFailureException,
     ConnectionLevelInterface,
-    Exception,
+    ExceptionInterface,
     HandshakeException,
     MessageLevelInterface,
     ServerException
@@ -381,7 +381,7 @@ class Server implements LoggerAwareInterface, Stringable
                     $connection->tick();
                 }
                 $this->dispatch('tick', [$this]);
-            } catch (Exception $e) {
+            } catch (ExceptionInterface $e) {
                 // Low-level error
                 $this->logger->error("[server] {$e->getMessage()}");
                 $this->dispatch('error', [$this, null, $e]);
@@ -515,7 +515,7 @@ class Server implements LoggerAwareInterface, Stringable
                 $connection->getHandshakeResponse(),
             ]);
             $this->dispatch('connect', [$this, $connection, $request]);
-        } catch (Exception | StreamException $e) {
+        } catch (ExceptionInterface | StreamException $e) {
             /** @var Connection|null $connection */
             if (isset($connection)) {
                 $connection->disconnect();
