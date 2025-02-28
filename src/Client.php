@@ -316,7 +316,6 @@ class Client implements LoggerAwareInterface, Stringable
 
                 // Crash it
                 $this->logger->error("[client] {$e->getMessage()}");
-                $this->dispatch('error', [$this, null, $e]);
                 throw $e;
             }
             gc_collect_cycles(); // Collect garbage

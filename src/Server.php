@@ -388,7 +388,6 @@ class Server implements LoggerAwareInterface, Stringable
             } catch (Throwable $e) {
                 // Crash it
                 $this->logger->error("[server] {$e->getMessage()}");
-                $this->dispatch('error', [$this, null, $e]);
                 $this->disconnect();
                 throw $e;
             }
