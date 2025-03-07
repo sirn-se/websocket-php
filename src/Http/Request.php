@@ -35,7 +35,7 @@ class Request extends Message implements RequestInterface
         }
         $this->uri = $uri instanceof Uri ? $uri : new Uri((string)$uri);
         $this->method = $method;
-        $this->headers = ['host' => ['Host' => [$this->formatHostHeader($this->uri)]]];
+        $this->handleHeader('Host', $this->formatHostHeader($this->uri));
     }
 
     /**
@@ -109,10 +109,8 @@ class Request extends Message implements RequestInterface
         $new = clone $this;
         $new->uri = $uri instanceof Uri ? $uri : new Uri((string)$uri);
         if (!$preserveHost || !$new->hasHeader('host')) {
-            if (isset($new->headers['host'])) {
-                unset($new->headers['host']);
-            }
-            $new->headers = array_merge(['host' => ['Host' => [$this->formatHostHeader($uri)]]], $new->headers);
+            $new->removeHeader('host');
+            $new->handleHeader('Host', $this->formatHostHeader($uri));
         }
         return $new;
     }

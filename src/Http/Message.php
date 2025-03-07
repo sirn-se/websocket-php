@@ -26,7 +26,7 @@ abstract class Message implements MessageInterface, Stringable
 
     protected string $version = '1.1';
     /** @var array<string, array<mixed>> $headers */
-    protected array $headers = [];
+    private array $headers = [];
 
     /**
      * Retrieves the HTTP protocol version as a string.
@@ -100,9 +100,7 @@ abstract class Message implements MessageInterface, Stringable
     public function withHeader(string $name, mixed $value): self
     {
         $new = clone $this;
-        if ($this->hasHeader($name)) {
-            unset($new->headers[strtolower($name)]);
-        }
+        $new->removeHeader($name);
         $new->handleHeader($name, $value);
         return $new;
     }
@@ -130,9 +128,7 @@ abstract class Message implements MessageInterface, Stringable
     public function withoutHeader(string $name): self
     {
         $new = clone $this;
-        if ($this->hasHeader($name)) {
-            unset($new->headers[strtolower($name)]);
-        }
+        $new->removeHeader($name);
         return $new;
     }
 
@@ -164,7 +160,7 @@ abstract class Message implements MessageInterface, Stringable
         return $lines;
     }
 
-    private function handleHeader(string $name, mixed $value): void
+    protected function handleHeader(string $name, mixed $value): void
     {
         if (!preg_match('|^[0-9a-zA-Z#_-]+$|', $name)) {
             throw new InvalidArgumentException("'{$name}' is not a valid header field name.");
@@ -176,6 +172,13 @@ abstract class Message implements MessageInterface, Stringable
             }
             $content = trim($content);
             $this->headers[strtolower($name)][$name][] = $content;
+        }
+    }
+
+    protected function removeHeader(string $name): void
+    {
+        if ($this->hasHeader($name)) {
+            unset($this->headers[strtolower($name)]);
         }
     }
 }
