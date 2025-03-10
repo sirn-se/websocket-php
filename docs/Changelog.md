@@ -6,6 +6,10 @@
 
  > PHP version `^8.1`
 
+### `3.2.6`
+
+ * Fix for `3.2.5` (@carvefx)
+
 ### `3.2.5`
 
  * Allow additional content in Connection header during handshake - again (@sirn-se)

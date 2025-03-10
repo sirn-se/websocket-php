@@ -117,3 +117,4 @@ make stan
 * Dejan Levec
 * Pieter Oliver
 * Sebastian Hagens
+* Adrian Mihai
