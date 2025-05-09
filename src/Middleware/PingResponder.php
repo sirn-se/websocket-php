@@ -7,10 +7,7 @@
 
 namespace WebSocket\Middleware;
 
-use Psr\Log\{
-    LoggerAwareInterface,
-    LoggerAwareTrait
-};
+use Psr\Log\LoggerAwareInterface;
 use Stringable;
 use WebSocket\Connection;
 use WebSocket\Message\{
@@ -18,7 +15,10 @@ use WebSocket\Message\{
     Pong,
     Message
 };
-use WebSocket\Trait\StringableTrait;
+use WebSocket\Trait\{
+    LoggerAwareTrait,
+    StringableTrait,
+};
 
 /**
  * WebSocket\Middleware\PingResponder class.
@@ -28,6 +28,11 @@ class PingResponder implements LoggerAwareInterface, ProcessIncomingInterface, S
 {
     use StringableTrait;
     use LoggerAwareTrait;
+
+    public function __construct()
+    {
+        $this->initLogger();
+    }
 
     public function processIncoming(ProcessStack $stack, Connection $connection): Message
     {

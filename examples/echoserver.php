@@ -114,8 +114,8 @@ try {
                 $msg = "Connection info:\n";
                 $msg .= "  - Local:       {$connection->getName()}\n";
                 $msg .= "  - Remote:      {$connection->getRemoteName()}\n";
-                $msg .= "  - Request:     {$connection->getHandshakeRequest()->getUri()}\n";
-                $msg .= "  - Response:    {$connection->getHandshakeResponse()->getStatusCode()}\n";
+                $msg .= "  - Request:     {$connection->getHandshakeRequest()?->getUri()}\n";
+                $msg .= "  - Response:    {$connection->getHandshakeResponse()?->getStatusCode()}\n";
                 $msg .= "  - Connected:   " . json_encode($connection->isConnected()) . "\n";
                 $msg .= "  - Readable:    " . json_encode($connection->isReadable()) . "\n";
                 $msg .= "  - Writable:    " . json_encode($connection->isWritable()) . "\n";

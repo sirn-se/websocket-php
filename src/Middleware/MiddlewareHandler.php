@@ -12,7 +12,6 @@ use Psr\Http\Message\MessageInterface;
 use Psr\Log\{
     LoggerInterface,
     LoggerAwareInterface,
-    NullLogger
 };
 use Stringable;
 use WebSocket\Connection;
@@ -21,7 +20,10 @@ use WebSocket\Message\{
     Message,
     MessageHandler
 };
-use WebSocket\Trait\StringableTrait;
+use WebSocket\Trait\{
+    LoggerAwareTrait,
+    StringableTrait,
+};
 
 /**
  * WebSocket\Middleware\MiddlewareHandler class.
@@ -29,9 +31,12 @@ use WebSocket\Trait\StringableTrait;
  */
 class MiddlewareHandler implements LoggerAwareInterface, Stringable
 {
+    use LoggerAwareTrait;
     use StringableTrait;
 
     // Processor collections
+    /** @var array<MiddlewareInterface> */
+    private array $middlewares = [];
     /** @var array<ProcessIncomingInterface> */
     private array $incoming = [];
     /** @var array<ProcessOutgoingInterface> */
@@ -46,7 +51,6 @@ class MiddlewareHandler implements LoggerAwareInterface, Stringable
     // Handlers
     private HttpHandler $httpHandler;
     private MessageHandler $messageHandler;
-    private LoggerInterface $logger;
 
     /**
      * Create MiddlewareHandler.
@@ -57,26 +61,10 @@ class MiddlewareHandler implements LoggerAwareInterface, Stringable
     {
         $this->messageHandler = $messageHandler;
         $this->httpHandler = $httpHandler;
-        $this->setLogger(new NullLogger());
-    }
-
-    /**
-     * Set logger on MiddlewareHandler and all LoggerAware middlewares.
-     * @param LoggerInterface $logger
-     */
-    public function setLogger(LoggerInterface $logger): void
-    {
-        $this->logger = $logger;
-        foreach ($this->incoming as $middleware) {
-            if ($middleware instanceof LoggerAwareInterface) {
-                $middleware->setLogger($this->logger);
-            }
-        }
-        foreach ($this->outgoing as $middleware) {
-            if ($middleware instanceof LoggerAwareInterface) {
-                $middleware->setLogger($this->logger);
-            }
-        }
+        $this->initLogger(null, function () {
+            // If logger is changed, propagate to observed instances
+            return $this->middlewares;
+        });
     }
 
     /**
@@ -88,39 +76,26 @@ class MiddlewareHandler implements LoggerAwareInterface, Stringable
     {
         if ($middleware instanceof ProcessIncomingInterface) {
             $this->logger->info("[middleware-handler] Added incoming: {$middleware}");
-            if ($middleware instanceof LoggerAwareInterface) {
-                $middleware->setLogger($this->logger);
-            }
             $this->incoming[] = $middleware;
         }
         if ($middleware instanceof ProcessOutgoingInterface) {
             $this->logger->info("[middleware-handler] Added outgoing: {$middleware}");
-            if ($middleware instanceof LoggerAwareInterface) {
-                $middleware->setLogger($this->logger);
-            }
             $this->outgoing[] = $middleware;
         }
         if ($middleware instanceof ProcessHttpIncomingInterface) {
             $this->logger->info("[middleware-handler] Added http incoming: {$middleware}");
-            if ($middleware instanceof LoggerAwareInterface) {
-                $middleware->setLogger($this->logger);
-            }
             $this->httpIncoming[] = $middleware;
         }
         if ($middleware instanceof ProcessHttpOutgoingInterface) {
             $this->logger->info("[middleware-handler] Added http outgoing: {$middleware}");
-            if ($middleware instanceof LoggerAwareInterface) {
-                $middleware->setLogger($this->logger);
-            }
             $this->httpOutgoing[] = $middleware;
         }
         if ($middleware instanceof ProcessTickInterface) {
             $this->logger->info("[middleware-handler] Added tick: {$middleware}");
-            if ($middleware instanceof LoggerAwareInterface) {
-                $middleware->setLogger($this->logger);
-            }
             $this->tick[] = $middleware;
         }
+        $this->attachLogger($middleware);
+        $this->middlewares[] = $middleware;
         return $this;
     }
 

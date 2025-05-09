@@ -9,14 +9,14 @@ namespace WebSocket\Middleware;
 
 use Closure;
 use Psr\Http\Message\MessageInterface;
-use Psr\Log\{
-    LoggerAwareInterface,
-    LoggerAwareTrait
-};
+use Psr\Log\LoggerAwareInterface;
 use Stringable;
 use WebSocket\Connection;
 use WebSocket\Message\Message;
-use WebSocket\Trait\StringableTrait;
+use WebSocket\Trait\{
+    LoggerAwareTrait,
+    StringableTrait,
+};
 
 /**
  * WebSocket\Middleware\Callback class.
@@ -52,6 +52,7 @@ class Callback implements
         $this->httpIncoming = $httpIncoming;
         $this->httpOutgoing = $httpOutgoing;
         $this->tick = $tick;
+        $this->initLogger();
     }
 
     public function processIncoming(ProcessStack $stack, Connection $connection): Message
