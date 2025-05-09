@@ -11,6 +11,7 @@ use InvalidArgumentException;
 use Phrity\Net\{
     Context,
     SocketServer,
+    SocketStream,
     StreamCollection,
     StreamException,
     StreamFactory,
@@ -19,7 +20,6 @@ use Phrity\Net\{
 use Psr\Log\{
     LoggerAwareInterface,
     LoggerInterface,
-    NullLogger
 };
 use Stringable;
 use Throwable;
@@ -40,6 +40,7 @@ use WebSocket\Message\Message;
 use WebSocket\Middleware\MiddlewareInterface;
 use WebSocket\Trait\{
     ListenerTrait,
+    LoggerAwareTrait,
     SendMethodsTrait,
     StringableTrait
 };
@@ -52,15 +53,13 @@ class Server implements LoggerAwareInterface, Stringable
 {
     /** @use ListenerTrait<Server> */
     use ListenerTrait;
+    use LoggerAwareTrait;
     use SendMethodsTrait;
     use StringableTrait;
-
-    private const GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 
     // Settings
     private int $port;
     private string $scheme;
-    private LoggerInterface $logger;
     /** @var int<0, max> $timeout */
     private int $timeout = 60;
     /** @var int<1, max> $frameSize */
@@ -93,7 +92,7 @@ class Server implements LoggerAwareInterface, Stringable
         }
         $this->port = $port;
         $this->scheme = $ssl ? 'ssl' : 'tcp';
-        $this->logger = new NullLogger();
+        $this->initLogger();
         $this->context = new Context();
         $this->setStreamFactory(new StreamFactory());
     }
@@ -348,6 +347,9 @@ class Server implements LoggerAwareInterface, Stringable
         $this->running = true;
         $this->logger->info("[server] Server is running");
 
+        /** @var StreamCollection */
+        $streams = $this->streams;
+
         // Run handler
         while ($this->running) {
             try {
@@ -379,7 +381,7 @@ class Server implements LoggerAwareInterface, Stringable
                     } catch (ConnectionLevelInterface $e) {
                         // Error, disconnect connection
                         if ($connection) {
-                            $this->streams->detach($key);
+                            $this->streams()->detach($key);
                             unset($this->connections[$key]);
                             $connection->disconnect();
                         }
@@ -508,9 +510,10 @@ class Server implements LoggerAwareInterface, Stringable
             return;
         }
         try {
+            /** @var SocketStream $stream */
             $stream = $socket->accept();
             $name = $stream->getRemoteName();
-            $this->streams->attach($stream, $name);
+            $this->streams()->attach($stream, $name);
             $connection = new Connection($stream, false, true, $this->isSsl());
         } catch (StreamException $e) {
             throw new ConnectionFailureException("Server failed to accept: {$e->getMessage()}");
@@ -545,7 +548,7 @@ class Server implements LoggerAwareInterface, Stringable
     {
         foreach ($this->connections as $key => $connection) {
             if (!$connection->isConnected()) {
-                $this->streams->detach($key);
+                $this->streams()->detach($key);
                 unset($this->connections[$key]);
                 $this->logger->info("[server] Disconnected {$key}.");
                 $this->dispatch('disconnect', [$this, $connection]);
@@ -606,7 +609,7 @@ class Server implements LoggerAwareInterface, Stringable
                 );
             }
 
-            $responseKey = base64_encode(pack('H*', sha1($keyHeader . self::GUID)));
+            $responseKey = base64_encode(pack('H*', sha1($keyHeader . Constant::GUID)));
             $response = $response
                 ->withHeader('Upgrade', 'websocket')
                 ->withHeader('Connection', 'Upgrade')
@@ -633,5 +636,12 @@ class Server implements LoggerAwareInterface, Stringable
         $connection->setHandshakeResponse($response);
 
         return $request;
+    }
+
+    protected function streams(): StreamCollection
+    {
+        /** @var StreamCollection $streams */
+        $streams = $this->streams;
+        return $streams;
     }
 }

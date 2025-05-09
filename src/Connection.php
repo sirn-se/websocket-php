@@ -20,7 +20,6 @@ use Psr\Http\Message\{
 use Psr\Log\{
     LoggerAwareInterface,
     LoggerInterface,
-    NullLogger
 };
 use Stringable;
 use Throwable;
@@ -42,6 +41,7 @@ use WebSocket\Middleware\{
     MiddlewareInterface
 };
 use WebSocket\Trait\{
+    LoggerAwareTrait,
     SendMethodsTrait,
     StringableTrait
 };
@@ -52,6 +52,7 @@ use WebSocket\Trait\{
  */
 class Connection implements LoggerAwareInterface, Stringable
 {
+    use LoggerAwareTrait;
     use SendMethodsTrait;
     use StringableTrait;
 
@@ -59,7 +60,6 @@ class Connection implements LoggerAwareInterface, Stringable
     private HttpHandler $httpHandler;
     private MessageHandler $messageHandler;
     private MiddlewareHandler $middlewareHandler;
-    private LoggerInterface $logger;
     /** @var int<1, max> $frameSize */
     private int $frameSize = 4096;
     /** @var int<0, max> $timeout */
@@ -81,9 +81,9 @@ class Connection implements LoggerAwareInterface, Stringable
         $this->httpHandler = new HttpHandler($this->stream, $ssl);
         $this->messageHandler = new MessageHandler(new FrameHandler($this->stream, $pushMasked, $pullMaskedRequired));
         $this->middlewareHandler = new MiddlewareHandler($this->messageHandler, $this->httpHandler);
-        $this->setLogger(new NullLogger());
-        $this->localName = $this->stream->getLocalName();
-        $this->remoteName = $this->stream->getRemoteName();
+        $this->localName = $this->stream->getLocalName() ?? '<unknown>';
+        $this->remoteName = $this->stream->getRemoteName() ?? '<unknown>';
+        $this->initLogger();
     }
 
     public function __destruct()

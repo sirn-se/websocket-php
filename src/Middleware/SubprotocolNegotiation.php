@@ -15,14 +15,14 @@ use Psr\Http\Message\{
     ResponseInterface,
     ServerRequestInterface,
 };
-use Psr\Log\{
-    LoggerAwareInterface,
-    LoggerAwareTrait,
-};
+use Psr\Log\LoggerAwareInterface;
 use Stringable;
 use WebSocket\Connection;
 use WebSocket\Exception\HandshakeException;
-use WebSocket\Trait\StringableTrait;
+use WebSocket\Trait\{
+    LoggerAwareTrait,
+    StringableTrait,
+};
 
 /**
  * WebSocket\Middleware\CloseHandler class.
@@ -46,6 +46,7 @@ class SubprotocolNegotiation implements
     {
         $this->subprotocols = $subprotocols;
         $this->require = $require;
+        $this->initLogger();
     }
 
     public function processHttpOutgoing(

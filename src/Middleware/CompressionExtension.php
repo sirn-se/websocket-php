@@ -15,10 +15,7 @@ use Psr\Http\Message\{
     ResponseInterface,
     ServerRequestInterface,
 };
-use Psr\Log\{
-    LoggerAwareInterface,
-    LoggerAwareTrait,
-};
+use Psr\Log\LoggerAwareInterface;
 use Stringable;
 use WebSocket\Connection;
 use WebSocket\Message\{
@@ -27,7 +24,10 @@ use WebSocket\Message\{
     Text,
 };
 use WebSocket\Middleware\CompressionExtension\CompressorInterface;
-use WebSocket\Trait\StringableTrait;
+use WebSocket\Trait\{
+    LoggerAwareTrait,
+    StringableTrait,
+};
 
 /**
  * WebSocket\Middleware\CompressionExtension class.
@@ -51,6 +51,7 @@ class CompressionExtension implements
     public function __construct(CompressorInterface ...$compressors)
     {
         $this->compressors = $compressors;
+        $this->initLogger();
     }
 
     public function processHttpOutgoing(

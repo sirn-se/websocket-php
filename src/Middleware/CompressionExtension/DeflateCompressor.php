@@ -192,8 +192,10 @@ class DeflateCompressor implements CompressorInterface, Stringable
                 'strategy' => ZLIB_DEFAULT_STRATEGY
             ]) ?: null;
         }
+        /** @var DeflateContext $deflator */
+        $deflator = $configuration->deflator;
         /** @var string $deflated */
-        $deflated = deflate_add($configuration->deflator, $message->getPayload(), ZLIB_SYNC_FLUSH);
+        $deflated = deflate_add($deflator, $message->getPayload(), ZLIB_SYNC_FLUSH);
         $deflated = substr($deflated, 0, -4); // Remove 4 last chars
         $message->setCompress(true);
         $message->setPayload($deflated);
@@ -219,8 +221,10 @@ class DeflateCompressor implements CompressorInterface, Stringable
                 'strategy' => ZLIB_DEFAULT_STRATEGY
             ]) ?: null;
         }
+        /** @var InflateContext $inflator */
+        $inflator = $configuration->inflator;
         /** @var string $inflated */
-        $inflated = inflate_add($configuration->inflator, $message->getPayload() . "\x00\x00\xff\xff");
+        $inflated = inflate_add($inflator, $message->getPayload() . "\x00\x00\xff\xff");
         $message->setCompress(false);
         $message->setPayload($inflated);
         return $message;

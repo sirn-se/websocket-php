@@ -69,7 +69,9 @@ class HttpHandler implements LoggerAwareInterface, Stringable
             throw new RuntimeException('Invalid Http request.');
         }
 
-        $message = $message->withProtocolVersion($version);
+        if ($version) {
+            $message = $message->withProtocolVersion($version);
+        }
 
         while ($header = $this->readLine()) {
             $parts = explode(':', $header, 2);

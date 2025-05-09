@@ -8,15 +8,12 @@
 namespace WebSocket\Frame;
 
 use Phrity\Net\SocketStream;
-use Psr\Log\{
-    LoggerInterface,
-    LoggerAwareInterface,
-    NullLogger
-};
+use Psr\Log\LoggerAwareInterface;
 use RuntimeException;
 use Stringable;
 use WebSocket\Exception\CloseException;
 use WebSocket\Trait\{
+    LoggerAwareTrait,
     OpcodeTrait,
     StringableTrait
 };
@@ -27,11 +24,11 @@ use WebSocket\Trait\{
  */
 class FrameHandler implements LoggerAwareInterface, Stringable
 {
+    use LoggerAwareTrait;
     use OpcodeTrait;
     use StringableTrait;
 
     private SocketStream $stream;
-    private LoggerInterface $logger;
     private bool $pushMasked;
     private bool $pullMaskedRequired;
 
@@ -40,12 +37,7 @@ class FrameHandler implements LoggerAwareInterface, Stringable
         $this->stream = $stream;
         $this->pushMasked = $pushMasked;
         $this->pullMaskedRequired = $pullMaskedRequired;
-        $this->setLogger(new NullLogger());
-    }
-
-    public function setLogger(LoggerInterface $logger): void
-    {
-        $this->logger = $logger;
+        $this->initLogger();
     }
 
     // Pull frame from stream

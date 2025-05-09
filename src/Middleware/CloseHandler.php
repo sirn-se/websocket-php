@@ -7,17 +7,17 @@
 
 namespace WebSocket\Middleware;
 
-use Psr\Log\{
-    LoggerAwareInterface,
-    LoggerAwareTrait
-};
+use Psr\Log\LoggerAwareInterface;
 use Stringable;
 use WebSocket\Connection;
 use WebSocket\Message\{
     Close,
     Message
 };
-use WebSocket\Trait\StringableTrait;
+use WebSocket\Trait\{
+    LoggerAwareTrait,
+    StringableTrait,
+};
 
 /**
  * WebSocket\Middleware\CloseHandler class.
@@ -27,6 +27,11 @@ class CloseHandler implements LoggerAwareInterface, ProcessIncomingInterface, Pr
 {
     use LoggerAwareTrait;
     use StringableTrait;
+
+    public function __construct()
+    {
+        $this->initLogger();
+    }
 
     public function processIncoming(ProcessStack $stack, Connection $connection): Message
     {

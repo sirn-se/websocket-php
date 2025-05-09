@@ -7,17 +7,17 @@
 
 namespace WebSocket\Middleware;
 
-use Psr\Log\{
-    LoggerAwareInterface,
-    LoggerAwareTrait
-};
+use Psr\Log\LoggerAwareInterface;
 use Stringable;
 use WebSocket\Connection;
 use WebSocket\Message\{
     Ping,
     Message
 };
-use WebSocket\Trait\StringableTrait;
+use WebSocket\Trait\{
+    LoggerAwareTrait,
+    StringableTrait,
+};
 
 /**
  * WebSocket\Middleware\PingInterval class.
@@ -33,6 +33,7 @@ class PingInterval implements LoggerAwareInterface, ProcessOutgoingInterface, Pr
     public function __construct(int|null $interval = null)
     {
         $this->interval = $interval;
+        $this->initLogger();
     }
 
     public function processOutgoing(ProcessStack $stack, Connection $connection, Message $message): Message

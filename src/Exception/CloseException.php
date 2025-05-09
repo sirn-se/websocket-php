@@ -22,8 +22,8 @@ class CloseException extends Exception
         parent::__construct($content);
     }
 
-    public function getCloseStatus(): int|null
+    public function getCloseStatus(): int
     {
-        return $this->status;
+        return $this->status ?? 1000;
     }
 }

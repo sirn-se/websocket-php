@@ -14,17 +14,17 @@ use Psr\Http\Message\{
     MessageInterface,
     ResponseInterface,
 };
-use Psr\Log\{
-    LoggerAwareInterface,
-    LoggerAwareTrait,
-};
+use Psr\Log\LoggerAwareInterface;
 use Stringable;
 use WebSocket\Connection;
 use WebSocket\Exception\{
     HandshakeException,
     ReconnectException,
 };
-use WebSocket\Trait\StringableTrait;
+use WebSocket\Trait\{
+    LoggerAwareTrait,
+    StringableTrait,
+};
 
 /**
  * WebSocket\Middleware\CloseHandler class.
@@ -41,6 +41,7 @@ class FollowRedirect implements LoggerAwareInterface, ProcessHttpIncomingInterfa
     public function __construct(int $limit = 10)
     {
         $this->limit = $limit;
+        $this->initLogger();
     }
 
     public function processHttpIncoming(ProcessHttpStack $stack, Connection $connection): MessageInterface
