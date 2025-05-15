@@ -7,7 +7,10 @@
 
 namespace WebSocket\Message;
 
-use Psr\Log\LoggerAwareInterface;
+use Psr\Log\{
+    LoggerAwareInterface,
+    LoggerInterface,
+};
 use Stringable;
 use WebSocket\Exception\BadOpcodeException;
 use WebSocket\Frame\{
@@ -37,9 +40,13 @@ class MessageHandler implements LoggerAwareInterface, Stringable
     public function __construct(FrameHandler $frameHandler)
     {
         $this->frameHandler = $frameHandler;
-        $this->initLogger(null, function () {
-            return [$this->frameHandler];
-        });
+        $this->initLogger();
+    }
+
+    public function setLogger(LoggerInterface $logger): void
+    {
+        $this->logger = $logger;
+        $this->frameHandler->setLogger($logger);
     }
 
     /**

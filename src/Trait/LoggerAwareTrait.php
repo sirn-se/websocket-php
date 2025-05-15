@@ -21,26 +21,18 @@ use Psr\Log\{
 trait LoggerAwareTrait
 {
     protected LoggerInterface $logger;
-    protected Closure|null $observer;
 
     /**
      * @param LoggerInterface|null $logger
-     * @param Closure(): array<mixed> $observer
      */
-    public function initLogger(LoggerInterface|null $logger = null, Closure|null $observer = null): void
+    public function initLogger(LoggerInterface|null $logger = null): void
     {
         $this->logger = $logger ?? new NullLogger();
-        $this->observer = $observer;
     }
 
     public function setLogger(LoggerInterface $logger): void
     {
         $this->logger = $logger;
-        if ($this->observer instanceof Closure) {
-            foreach (call_user_func($this->observer) as $instance) {
-                $this->attachLogger($instance);
-            }
-        }
     }
 
     public function attachLogger(mixed $instance): void
