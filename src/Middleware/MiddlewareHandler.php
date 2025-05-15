@@ -61,10 +61,19 @@ class MiddlewareHandler implements LoggerAwareInterface, Stringable
     {
         $this->messageHandler = $messageHandler;
         $this->httpHandler = $httpHandler;
-        $this->initLogger(null, function () {
-            // If logger is changed, propagate to observed instances
-            return $this->middlewares;
-        });
+        $this->initLogger();
+    }
+
+    /**
+     * Set logger on MiddlewareHandler and all LoggerAware middlewares.
+     * @param LoggerInterface $logger
+     */
+    public function setLogger(LoggerInterface $logger): void
+    {
+        $this->logger = $logger;
+        foreach ($this->middlewares as $middleware) {
+            $this->attachLogger($middleware);
+        }
     }
 
     /**

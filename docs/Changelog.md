@@ -2,6 +2,17 @@
 
 # Websocket: Changelog
 
+## `v3.5`
+
+ > PHP version `^8.1`
+
+### `3.5.0`
+
+ * Internal LoggerAwareTrait for logger handling (@sirn-se)
+ * Constant in interface (@sirn-se)
+ * Frame pulling rewritten (@sirn-se)
+ * `phpstan` level 8, and fixes accordingly (@sirn-se)
+
 ## `v3.4`
 
  > PHP version `^8.1`
