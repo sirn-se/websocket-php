@@ -28,9 +28,9 @@ class PingInterval implements LoggerAwareInterface, ProcessOutgoingInterface, Pr
     use LoggerAwareTrait;
     use StringableTrait;
 
-    private int|null $interval;
+    private int|float|null $interval;
 
-    public function __construct(int|null $interval = null)
+    public function __construct(int|float|null $interval = null)
     {
         $this->interval = $interval;
         $this->initLogger();
@@ -45,7 +45,7 @@ class PingInterval implements LoggerAwareInterface, ProcessOutgoingInterface, Pr
     public function processTick(ProcessTickStack $stack, Connection $connection): void
     {
         // Push if time exceeds timestamp for next ping
-        if ($connection->isWritable() && time() >= $this->getNext($connection)) {
+        if ($connection->isWritable() && microtime(true) >= $this->getNext($connection)) {
             $this->logger->debug("[ping-interval] Auto-pushing ping");
             $connection->send(new Ping());
             $this->setNext($connection); // Update timestamp for next ping
@@ -53,14 +53,14 @@ class PingInterval implements LoggerAwareInterface, ProcessOutgoingInterface, Pr
         $stack->handleTick();
     }
 
-    private function getNext(Connection $connection): int
+    private function getNext(Connection $connection): float
     {
         return $connection->getMeta('pingInterval.next') ?? $this->setNext($connection);
     }
 
-    private function setNext(Connection $connection): int
+    private function setNext(Connection $connection): float
     {
-        $next = time() + ($this->interval ?? $connection->getTimeout());
+        $next = microtime(true) + ($this->interval ?? $connection->getTimeout());
         $connection->setMeta('pingInterval.next', $next);
         return $next;
     }

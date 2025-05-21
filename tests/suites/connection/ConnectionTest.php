@@ -73,9 +73,9 @@ class ConnectionTest extends TestCase
         $this->expectSocketStreamIsConnected();
         $this->assertTrue($connection->isConnected());
 
-        $this->assertEquals('', $connection->getName());
-        $this->assertEquals('', $connection->getRemoteName());
-        $this->assertEquals('WebSocket\Connection(:)', "{$connection}");
+        $this->assertEquals('<unknown>', $connection->getName());
+        $this->assertEquals('<unknown>', $connection->getRemoteName());
+        $this->assertEquals('WebSocket\Connection(<unknown>:<unknown>)', "{$connection}");
         $connection->tick();
         $connection->setMeta('test.meta.1', 'meta.data.1');
         $connection->setMeta('test.meta.2', 'meta.data.2');

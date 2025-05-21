@@ -80,22 +80,22 @@ class ResponseTest extends TestCase
     {
         $response = new Response();
 
-        $response_clone = $response->withProtocolVersion('1.0');
-        $this->assertNotSame($response_clone, $response);
-        $this->assertEquals('1.0', $response_clone->getProtocolVersion());
+        $responseClone = $response->withProtocolVersion('1.0');
+        $this->assertNotSame($responseClone, $response);
+        $this->assertEquals('1.0', $responseClone->getProtocolVersion());
 
-        $response_clone = $response->withStatus(500);
-        $this->assertNotSame($response_clone, $response);
-        $this->assertEquals(500, $response_clone->getStatusCode());
-        $this->assertEquals('Internal Server Error', $response_clone->getReasonPhrase());
+        $responseClone = $response->withStatus(500);
+        $this->assertNotSame($responseClone, $response);
+        $this->assertEquals(500, $responseClone->getStatusCode());
+        $this->assertEquals('Internal Server Error', $responseClone->getReasonPhrase());
 
-        $response_clone = $response->withHeader('Test-Header', 'Test-Value');
-        $this->assertNotSame($response_clone, $response);
-        $this->assertEquals(['Test-Value'], $response_clone->getHeader('Test-Header'));
+        $responseClone = $response->withHeader('Test-Header', 'Test-Value');
+        $this->assertNotSame($responseClone, $response);
+        $this->assertEquals(['Test-Value'], $responseClone->getHeader('Test-Header'));
         $this->assertEquals([
             'HTTP/1.1 200 OK',
             'Test-Header: Test-Value',
-        ], $response_clone->getAsArray());
+        ], $responseClone->getAsArray());
     }
 
     public function testConstructStatusError(): void

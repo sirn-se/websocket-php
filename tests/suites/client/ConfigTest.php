@@ -27,6 +27,7 @@ use WebSocket\{
     Client,
     Connection,
 };
+use WebSocket\Middleware\CloseHandler;
 use WebSocket\Test\{
     MockStreamTrait,
     MockUri
@@ -315,11 +316,10 @@ class ConfigTest extends TestCase
         $client->connect();
 
         $client->setLogger(new NullLogger());
-        $client->addMiddleware(new \WebSocket\Middleware\CloseHandler());
+        $client->addMiddleware(new CloseHandler());
 
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
             $this->assertEquals(300, $params[0]);
-            $this->assertEquals(0, $params[1]);
         });
         $client->setTimeout(300);
 

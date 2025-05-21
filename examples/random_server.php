@@ -12,7 +12,7 @@
  * Console options:
  *  --port <int> : The port to listen to, default 80
  *  --ssl : Use SSL, default false
- *  --timeout <int> : Timeout in seconds, random default
+ *  --timeout <int|float> : Timeout in seconds, random default
  *  --framesize <int> : Frame payload size in bytes, random default
  *  --connections <int> : Max number of connections, default unlimited
  *  --deflate : Add support for per-message deflate compression
@@ -58,7 +58,7 @@ echo "# Random server\n";
  * @var array{
  *     port: int<1, 32768>,
  *     ssl: bool,
- *     timeout: int<0, max>,
+ *     timeout: int<0, max>|float,
  *     framesize: int<1, max>,
  *     connections: int<0, max>|null,
  *     deflate: bool,
