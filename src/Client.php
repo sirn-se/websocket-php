@@ -60,8 +60,8 @@ class Client implements LoggerAwareInterface, Stringable
     use StringableTrait;
 
     // Settings
-    /** @var int<0, max> $timeout */
-    private int $timeout = 60;
+    /** @var int<0, max>|float $timeout */
+    private int|float $timeout = 60;
     /** @var int<1, max> $frameSize */
     private int $frameSize = 4096;
     private bool $persistent = false;
@@ -129,11 +129,11 @@ class Client implements LoggerAwareInterface, Stringable
 
     /**
      * Set timeout.
-     * @param int<0, max> $timeout Timeout in seconds
+     * @param int<0, max>|float $timeout Timeout in seconds
      * @return self
      * @throws InvalidArgumentException If invalid timeout provided
      */
-    public function setTimeout(int $timeout): self
+    public function setTimeout(int|float $timeout): self
     {
         if ($timeout < 0) {
             throw new InvalidArgumentException("Invalid timeout '{$timeout}' provided");
@@ -147,9 +147,9 @@ class Client implements LoggerAwareInterface, Stringable
 
     /**
      * Get timeout.
-     * @return int Timeout in seconds
+     * @return int<0, max>|float Timeout in seconds
      */
-    public function getTimeout(): int
+    public function getTimeout(): int|float
     {
         return $this->timeout;
     }
@@ -274,7 +274,7 @@ class Client implements LoggerAwareInterface, Stringable
      * Start client listener.
      * @throws Throwable On low level error
      */
-    public function start(): void
+    public function start(int|float|null $timeout = null): void
     {
         // Check if running
         if ($this->running) {
@@ -292,7 +292,7 @@ class Client implements LoggerAwareInterface, Stringable
         while ($this->running) {
             try {
                 // Get streams with readable content
-                $readables = $streams->waitRead($this->timeout);
+                $readables = $streams->waitRead($timeout ?? $this->timeout);
                 foreach ($readables as $key => $readable) {
                     try {
                         // Read from connection
@@ -391,7 +391,7 @@ class Client implements LoggerAwareInterface, Stringable
         $this->disconnect();
         $this->streams = $this->streamFactory->createStreamCollection();
 
-        $host_uri = (new Uri())
+        $hostUri = (new Uri())
             ->withScheme(match ($this->socketUri->getScheme()) {
                 'ws', 'http' => 'tcp',
                 'wss', 'https' => 'ssl',
@@ -403,18 +403,18 @@ class Client implements LoggerAwareInterface, Stringable
         $stream = null;
 
         try {
-            $client = $this->streamFactory->createSocketClient($host_uri, $this->context);
+            $client = $this->streamFactory->createSocketClient($hostUri, $this->context);
             $client->setPersistent($this->persistent);
             $client->setTimeout($this->timeout);
             $stream = $client->connect();
         } catch (Throwable $e) {
-            $error = "Could not open socket to \"{$host_uri}\": {$e->getMessage()}";
+            $error = "Could not open socket to \"{$hostUri}\": {$e->getMessage()}";
             $this->logger->error("[client] {$error}", ['exception' => $e]);
             throw new ClientException($error);
         }
         $name = $stream->getRemoteName();
         $this->streams->attach($stream, $name);
-        $this->connection = new Connection($stream, true, false, $host_uri->getScheme() === 'ssl');
+        $this->connection = new Connection($stream, true, false, $hostUri->getScheme() === 'ssl');
         $this->connection->setFrameSize($this->frameSize);
         $this->connection->setTimeout($this->timeout);
         $this->connection->setLogger($this->logger);
@@ -423,7 +423,7 @@ class Client implements LoggerAwareInterface, Stringable
         }
 
         if (!$this->isConnected()) {
-            $error = "Invalid stream on \"{$host_uri}\".";
+            $error = "Invalid stream on \"{$hostUri}\".";
             $this->logger->error("[client] {$error}");
             throw new ClientException($error);
         }
@@ -550,12 +550,12 @@ class Client implements LoggerAwareInterface, Stringable
                 );
             }
 
-            $response_key = trim($response->getHeaderLine('Sec-WebSocket-Accept'));
-            $expected_key = base64_encode(
+            $responseKey = trim($response->getHeaderLine('Sec-WebSocket-Accept'));
+            $expectedKey = base64_encode(
                 pack('H*', sha1($key . Constant::GUID))
             );
 
-            if ($response_key !== $expected_key) {
+            if ($responseKey !== $expectedKey) {
                 throw new HandshakeException("Server sent bad upgrade response.", $response);
             }
         } catch (HandshakeException $e) {
@@ -593,24 +593,24 @@ class Client implements LoggerAwareInterface, Stringable
     {
         try {
             if ($uri instanceof Uri) {
-                $uri_instance = $uri;
+                $uriInstance = $uri;
             } elseif ($uri instanceof UriInterface) {
-                $uri_instance = new Uri("{$uri}");
+                $uriInstance = new Uri("{$uri}");
             } else {
-                $uri_instance = new Uri($uri);
+                $uriInstance = new Uri($uri);
             }
         } catch (InvalidArgumentException $e) {
             throw new BadUriException("Invalid URI '{$uri}' provided.");
         }
 
 
-        if (!in_array($uri_instance->getScheme(), ['ws', 'wss'])) {
+        if (!in_array($uriInstance->getScheme(), ['ws', 'wss'])) {
             throw new BadUriException("Invalid URI scheme, must be 'ws' or 'wss'.");
         }
-        if (!$uri_instance->getHost()) {
+        if (!$uriInstance->getHost()) {
             throw new BadUriException("Invalid URI host.");
         }
-        return $uri_instance;
+        return $uriInstance;
     }
 
     protected function connection(): Connection

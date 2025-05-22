@@ -60,8 +60,8 @@ class Server implements LoggerAwareInterface, Stringable
     // Settings
     private int $port;
     private string $scheme;
-    /** @var int<0, max> $timeout */
-    private int $timeout = 60;
+    /** @var int<0, max>|float $timeout */
+    private int|float $timeout = 60;
     /** @var int<1, max> $frameSize */
     private int $frameSize = 4096;
     private Context $context;
@@ -134,11 +134,11 @@ class Server implements LoggerAwareInterface, Stringable
 
     /**
      * Set timeout.
-     * @param int<0, max> $timeout Timeout in seconds
+     * @param int<0, max>|float $timeout Timeout in seconds
      * @return self
      * @throws InvalidArgumentException If invalid timeout provided
      */
-    public function setTimeout(int $timeout): self
+    public function setTimeout(int|float $timeout): self
     {
         if ($timeout < 0) {
             throw new InvalidArgumentException("Invalid timeout '{$timeout}' provided");
@@ -152,9 +152,9 @@ class Server implements LoggerAwareInterface, Stringable
 
     /**
      * Get timeout.
-     * @return int Timeout in seconds
+     * @return int<0, max>|float Timeout in seconds
      */
-    public function getTimeout(): int
+    public function getTimeout(): int|float
     {
         return $this->timeout;
     }
@@ -332,7 +332,7 @@ class Server implements LoggerAwareInterface, Stringable
      * Start server listener.
      * @throws Throwable On low level error
      */
-    public function start(): void
+    public function start(int|float|null $timeout = null): void
     {
         // Create socket server
         if (empty($this->server)) {
@@ -361,7 +361,7 @@ class Server implements LoggerAwareInterface, Stringable
                 }
 
                 // Get streams with readable content
-                $readables = $this->streams->waitRead($this->timeout);
+                $readables = $this->streams->waitRead($timeout ?? $this->timeout);
                 foreach ($readables as $key => $readable) {
                     try {
                         $connection = null;

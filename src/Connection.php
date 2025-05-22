@@ -62,8 +62,8 @@ class Connection implements LoggerAwareInterface, Stringable
     private MiddlewareHandler $middlewareHandler;
     /** @var int<1, max> $frameSize */
     private int $frameSize = 4096;
-    /** @var int<0, max> $timeout */
-    private int $timeout = 60;
+    /** @var int<0, max>|float $timeout */
+    private int|float $timeout = 60;
     private string $localName;
     private string $remoteName;
     private RequestInterface|null $handshakeRequest = null;
@@ -116,25 +116,25 @@ class Connection implements LoggerAwareInterface, Stringable
 
     /**
      * Set time out on connection.
-     * @param int<0, max> $timeout Timeout part in seconds
+     * @param int<0, max>|float $timeout Timeout part in seconds
      * @return self
      */
-    public function setTimeout(int $timeout): self
+    public function setTimeout(int|float $timeout): self
     {
         if ($timeout < 0) {
             throw new InvalidArgumentException("Invalid timeout '{$timeout}' provided");
         }
         $this->timeout = $timeout;
-        $this->stream->setTimeout($timeout, 0);
+        $this->stream->setTimeout($timeout);
         $this->logger->debug("[connection] Setting timeout: {$timeout} seconds");
         return $this;
     }
 
     /**
      * Get timeout.
-     * @return int Timeout in seconds.
+     * @return int<0, max>|float Timeout in seconds.
      */
-    public function getTimeout(): int
+    public function getTimeout(): int|float
     {
         return $this->timeout;
     }

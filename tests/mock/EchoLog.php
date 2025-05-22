@@ -27,8 +27,8 @@ class EchoLog implements LoggerInterface
     public function log($level, $message, array $context = [])
     {
         $message = $this->interpolate($message, $context);
-        $context_string = json_encode($this->context($context), self::FLAGS);
-        echo str_pad($level, 8) . " | {$message} {$context_string}\n";
+        $contextString = json_encode($this->context($context), self::FLAGS);
+        echo str_pad($level, 8) . " | {$message} {$contextString}\n";
     }
 
     /** @param array<string, mixed> $context */

@@ -294,7 +294,6 @@ class ExceptionTest extends TestCase
         $this->expectExceptionMessage("Invalid timeout '-1' provided");
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        // @phpstan-ignore argument.type
         $connection->setTimeout(-1);
 
         unset($connection);

@@ -12,7 +12,7 @@
  * Console options:
  *  --uri <uri> : The URI to connect to, default ws://localhost:80
  *  --opcode <string> : Opcode to send, default 'text'
- *  --timeout <int> : Timeout in seconds
+ *  --timeout <int|float> : Timeout in seconds
  *  --framesize <int> : Frame payload size in bytes
  *  --deflate : Add support for per-message deflate compression
  *  --debug : Output log data (if logger is available)
@@ -40,7 +40,7 @@ echo "# Send client! [phrity/websocket]\n";
  * @var array{
  *     uri: string,
  *     opcode: string,
- *     timeout: int<0, max>,
+ *     timeout: int<0, max>|float,
  *     framesize: int<1, max>,
  *     deflate: bool,
  *     debug: bool,

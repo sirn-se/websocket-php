@@ -18,8 +18,8 @@ class WebSocket\Client implements Psr\Log\LoggerAwareInterface, Stringable
     // Configuration
     public function setStreamFactory(Phrity\Net\StreamFactory $streamFactory): self;
     public function setLogger(Psr\Log\LoggerInterface $logger): void;
-    public function setTimeout(int $timeout): self;
-    public function getTimeout(): int;
+    public function setTimeout(int|float $timeout): self;
+    public function getTimeout(): int|float;
     public function setFrameSize(int $frameSize): self;
     public function getFrameSize(): int;
     public function setPersistent(bool $persistent): self;
@@ -38,7 +38,7 @@ class WebSocket\Client implements Psr\Log\LoggerAwareInterface, Stringable
     public function close(int $status = 1000, string $message = 'ttfn'): WebSocket\Message\Close;
 
     // Listener operations
-    public function start(): void;
+    public function start(int|float|null $timeout = null): void;
     public function stop(): void;
     public function isRunning(): bool;
 
@@ -81,8 +81,8 @@ class WebSocket\Server implements Psr\Log\LoggerAwareInterface, Stringable
     // Configuration
     public function setStreamFactory(Phrity\Net\StreamFactory $streamFactory): self;
     public function setLogger(Psr\Log\LoggerInterface $logger): void;
-    public function setTimeout(int $timeout): self;
-    public function getTimeout(): int;
+    public function setTimeout(int|float $timeout): self;
+    public function getTimeout(): int|float;
     public function setFrameSize(int $frameSize): self;
     public function getFrameSize(): int;
     public function getPort(): int;
@@ -106,7 +106,7 @@ class WebSocket\Server implements Psr\Log\LoggerAwareInterface, Stringable
     public function close(int $status = 1000, string $message = 'ttfn'): WebSocket\Message\Close;
 
     // Listener operations
-    public function start(): void;
+    public function start(int|float|null $timeout = null): void;
     public function stop(): void;
     public function isRunning(): bool;
 
@@ -140,8 +140,8 @@ class WebSocket\Connection implements Psr\Log\LoggerAwareInterface, Stringable
 
     // Configuration
     public function setLogger(Psr\Log\LoggerInterface $logger): void;
-    public function setTimeout(int $timeout): self;
-    public function getTimeout(): int;
+    public function setTimeout(int|float $timeout): self;
+    public function getTimeout(): int|float;
     public function setFrameSize(int $frameSize): self;
     public function getFrameSize(): int;
     public function getContext(): Phrity\Net\Context;
