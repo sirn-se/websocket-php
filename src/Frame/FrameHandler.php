@@ -163,13 +163,18 @@ class FrameHandler implements LoggerAwareInterface, Stringable
         return $written;
     }
 
-    // Secured read op
+    /**
+     * Secured read op
+     * @param int<1, max> $length
+     */
     private function read(int $length): string
     {
         $data = '';
         $read = 0;
         while ($read < $length) {
-            $got = $this->stream->read($length - $read);
+            /** @var int<1, max> $readLength */
+            $readLength = $length - $read;
+            $got = $this->stream->read($readLength);
             if (empty($got)) {
                 throw new RuntimeException('Empty read; connection dead?');
             }
