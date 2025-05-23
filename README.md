@@ -1,15 +1,26 @@
+<p align="center"><img src="docs/logotype.png" alt="Phrity Websocket" width="100%"></p>
+
 # Websocket Client and Server for PHP
 
 [![Build Status](https://github.com/sirn-se/websocket-php/actions/workflows/acceptance.yml/badge.svg)](https://github.com/sirn-se/websocket-php/actions)
 [![Coverage Status](https://coveralls.io/repos/github/sirn-se/websocket-php/badge.svg?branch=v2.0-main)](https://coveralls.io/github/sirn-se/websocket-php)
 
 This library contains WebSocket client and server for PHP.
-Replaces `textalk/websocket`.
 
 The client and server provides methods for reading and writing to WebSocket streams.
 
 This repo replaces the abandoned `textalk/websocket` repo
 and is maintained by Sören Jensen, who has been maintaining the original since `v1.3`.
+
+## Some features
+
+* Client and multi-connection Server
+* `ws` (TCP) and `wss` (SSL) support
+* Listener callbacks on incoming messages and other events
+* Close and Ping/Pong handling (standard middlewares)
+* Deflate compression (middleware)
+* Additional optional middlewares and ability to create own middlewares
+* Support message fragmentation and payload masking
 
 ## Documentation
 

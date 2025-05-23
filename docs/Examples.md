@@ -90,6 +90,81 @@ $client
     ;
 ```
 
+## Running Client as Fiber
+
+When your application need to switch code context, using [Fibers](https://www.php.net/manual/en/class.fiber.php) for coroutine management can be a good idea. It is fully possible to run the Client as a Fiber.
+
+```php
+use Fiber;
+use WebSocket\Client;
+use WebSocket\Connection;
+use WebSocket\Message\Text;
+use WebSocket\Middleware\{
+    CloseHandler,
+    PingResponder,
+};
+
+// Create client
+$client = new Client("wss://echo.websocket.org/");
+$client
+    // Add standard middlewares
+    ->addMiddleware(new CloseHandler())
+    ->addMiddleware(new PingResponder())
+    // Timeout should have a pretty low value
+    ->setTimeout(1)
+    ->onText(function (Client $client, Connection $connection, Text $message) {
+        echo "> Received '{$message->getContent()}' [opcode: {$message->getOpcode()}]\n";
+    })
+    ->onTick(function () {
+        Fiber::suspend(); // Suspend after each listener loop
+    })
+    ;
+
+// Create array with fibers
+$fibres = [
+    'listener' => new Fiber(function () use ($client) {
+        $client->start(); // Start listener
+    }),
+    'sender' => new Fiber(function () use ($client) {
+        while ($client->isWritable()) {
+            if (rand(0, 10) == 0) {
+                // Random close
+                $message = $client->close(); // Send a message
+                echo "< Sent '{$message->getContent()}' [opcode: {$message->getOpcode()}]\n";
+                return; // Return from function to terminate
+            }
+
+            $message = $client->text("My message " . rand(1000, 9999)); // Send a message
+            echo "< Sent '{$message->getContent()}' [opcode: {$message->getOpcode()}]\n";
+            Fiber::suspend(); // Suspend after each sent mesage
+        }
+    }),
+    // + Any other Fiber you need to run
+];
+
+// Switching context by looping Fibers
+do {
+    foreach ($fibres as $name => $fiber) {
+        echo sprintf(
+            "Running fiber: %s [started: %s, running: %s, suspended: %s, terminated: %s]\n",
+            $name,
+            json_encode($fiber->isStarted()),
+            json_encode($fiber->isRunning()),
+            json_encode($fiber->isSuspended()),
+            json_encode($fiber->isTerminated()),
+        );
+        if ($fiber->isRunning() || $fiber->isTerminated()) {
+            continue;
+        }
+        if ($fiber->isSuspended()) {
+            $fiber->resume(); // Resume if suspended
+            continue;
+        }
+        $fiber->start(); // Start if not started
+    }
+} while ($client->isRunning());
+```
+
 ## Server using SSL certificate capture
 
 By setting `capture_peer_cert` the Server will capture SSL certificates.
@@ -223,6 +298,7 @@ php examples/random_server.php --debug #  Use runtime debugging
 Source: [examples/delegating_server.php](https://github.com/sirn-se/websocket-php/blob/v3.4-main/examples/delegating_server.php)
 
 By using context switching, the server will act as a proxy and forward incoming messages to a remote server.
+The example is a 1:1 setup, Server will only initiate a single Client and broadcast messages read from upstream to all connected clients.
 Please note that switching between listening context can appear slow.
 If you need better performance, use separate scripts for client and server and some kind of intermediate to connect them.
 

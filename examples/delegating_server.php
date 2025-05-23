@@ -112,13 +112,13 @@ try {
     // Bind
     $server
         ->onText(function ($server, $connection, $message) use ($client) {
-            // Broadcast received message to all connected clients
-            echo " -> Delegating {$message} to server \n";
+            // Forward received message to remote server
+            echo " -> Forward {$message} to remote server \n";
             $client->send($message);
         })
         ->onBinary(function ($server, $connection, $message) use ($client) {
-            // Broadcast received message to all connected clients
-            echo " -> Delegating {$message} to server \n";
+            // Forward received message to remote server
+            echo " -> Forward {$message} to remote server \n";
             $client->send($message);
         })
         ->onTick(function ($server) {
@@ -128,17 +128,17 @@ try {
     $client
         ->onText(function ($client, $connection, $message) use ($server) {
             // Broadcast received message to all connected clients
-            echo " <- Delegating {$message} to client \n";
+            echo " <- Delegating {$message} to client(s) \n";
             $server->send($message);
         })
         ->onBinary(function ($client, $connection, $message) use ($server) {
             // Broadcast received message to all connected clients
-            echo " <- Delegating {$message} to client \n";
+            echo " <- Delegating {$message} to client(s) \n";
             $server->send($message);
         })
         ->onClose(function ($client, $connection, $message) use ($server) {
             // Broadcast received message to all connected clients
-            echo " <- Delegating {$message} to client \n";
+            echo " <- Delegating {$message} to client(s) \n";
             $server->send($message);
         })
         ->onTick(function ($client) {
