@@ -13,7 +13,7 @@
  *  --remote <string> : Upstream server to delegate, required
  *  --port <int> : The port to listen to, default 80
  *  --ssl : Use SSL, default false
- *  --timeout <int> : Timeout in seconds
+ *  --timeout <int|float> : Timeout in seconds
  *  --framesize <int> : Frame payload size in bytes
  *  --connections <int> : Max number of connections, default unlimited
  *  --deflate : Add support for per-message deflate compression
@@ -49,7 +49,7 @@ echo "# Delegating server! [phrity/websocket]\n";
  *     remote: string,
  *     port: int<1, 32768>,
  *     ssl: bool,
- *     timeout: int<0, max>,
+ *     timeout: int<0, max>|float,
  *     framesize: int<1, max>,
  *     connections: int<0, max>|null,
  *     deflate: bool,

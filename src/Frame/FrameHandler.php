@@ -45,47 +45,47 @@ class FrameHandler implements LoggerAwareInterface, Stringable
     {
         // Read the frame "header" first, two bytes.
         $data = $this->read(2);
-        list ($byte_1, $byte_2) = array_values($this->unpack('C*', $data));
-        $final = (bool)($byte_1 & 0b10000000); // Final fragment marker.
-        $rsv1 = (bool)($byte_1 & 0b01000000);
-        $rsv2 = (bool)($byte_1 & 0b00100000);
-        $rsv3 = (bool)($byte_1 & 0b00010000);
+        list ($byte1, $byte2) = array_values($this->unpack('C*', $data));
+        $final = (bool)($byte1 & 0b10000000); // Final fragment marker.
+        $rsv1 = (bool)($byte1 & 0b01000000);
+        $rsv2 = (bool)($byte1 & 0b00100000);
+        $rsv3 = (bool)($byte1 & 0b00010000);
 
         // Parse opcode
-        $opcode_int = $byte_1 & 0b00001111;
-        $opcode_ints = array_flip(self::$opcodes);
-        $opcode = array_key_exists($opcode_int, $opcode_ints) ? $opcode_ints[$opcode_int] : strval($opcode_int);
+        $opcodeInt = $byte1 & 0b00001111;
+        $opcodeInts = array_flip(self::$opcodes);
+        $opcode = array_key_exists($opcodeInt, $opcodeInts) ? $opcodeInts[$opcodeInt] : strval($opcodeInt);
 
         // Masking bit
-        $masked = (bool)($byte_2 & 0b10000000);
+        $masked = (bool)($byte2 & 0b10000000);
 
         $payload = '';
 
         // Payload length
-        $payload_length = $byte_2 & 0b01111111;
+        $payloadLength = $byte2 & 0b01111111;
 
-        if ($payload_length > 125) {
-            if ($payload_length === 126) {
+        if ($payloadLength > 125) {
+            if ($payloadLength === 126) {
                 $data = $this->read(2); // 126: Payload length is a 16-bit unsigned int
-                $payload_length = current($this->unpack('n', $data));
+                $payloadLength = current($this->unpack('n', $data));
             } else {
                 $data = $this->read(8); // 127: Payload length is a 64-bit unsigned int
-                $payload_length = current($this->unpack('J', $data));
+                $payloadLength = current($this->unpack('J', $data));
             }
         }
 
         // Get masking key.
         if ($masked) {
-            $masking_key = $this->stream->read(4);
+            $maskingKey = $this->stream->read(4);
         }
 
         // Get the actual payload, if any (might not be for e.g. close frames).
-        if ($payload_length > 0) {
-            $data = $this->read($payload_length);
+        if ($payloadLength > 0) {
+            $data = $this->read($payloadLength);
             if ($masked) {
                 // Unmask payload.
-                for ($i = 0; $i < $payload_length; $i++) {
-                    $payload .= ($data[$i] ^ $masking_key[$i % 4]);
+                for ($i = 0; $i < $payloadLength; $i++) {
+                    $payload .= ($data[$i] ^ $maskingKey[$i % 4]);
                 }
             } else {
                 $payload = $data;
@@ -111,27 +111,27 @@ class FrameHandler implements LoggerAwareInterface, Stringable
     public function push(Frame $frame): int
     {
         $payload = $frame->getPayload();
-        $payload_length = $frame->getPayloadLength();
+        $payloadLength = $frame->getPayloadLength();
 
         $data = '';
-        $byte_1 = $frame->isFinal() ? 0b10000000 : 0b00000000; // Final fragment marker.
-        $byte_1 |= $frame->getRsv1() ? 0b01000000 : 0b00000000; // RSV1 bit.
-        $byte_1 |= $frame->getRsv2() ? 0b00100000 : 0b00000000; // RSV2 bit.
-        $byte_1 |= $frame->getRsv3() ? 0b00010000 : 0b00000000; // RSV3 bit.
-        $byte_1 |= self::$opcodes[$frame->getOpcode()]; // Set opcode.
-        $data .= pack('C', $byte_1);
+        $byte1 = $frame->isFinal() ? 0b10000000 : 0b00000000; // Final fragment marker.
+        $byte1 |= $frame->getRsv1() ? 0b01000000 : 0b00000000; // RSV1 bit.
+        $byte1 |= $frame->getRsv2() ? 0b00100000 : 0b00000000; // RSV2 bit.
+        $byte1 |= $frame->getRsv3() ? 0b00010000 : 0b00000000; // RSV3 bit.
+        $byte1 |= self::$opcodes[$frame->getOpcode()]; // Set opcode.
+        $data .= pack('C', $byte1);
 
-        $byte_2 = $this->pushMasked ? 0b10000000 : 0b00000000; // Masking bit marker.
+        $byte2 = $this->pushMasked ? 0b10000000 : 0b00000000; // Masking bit marker.
 
         // 7 bits of payload length
-        if ($payload_length > 65535) {
-            $data .= pack('C', $byte_2 | 0b01111111);
-            $data .= pack('J', $payload_length);
-        } elseif ($payload_length > 125) {
-            $data .= pack('C', $byte_2 | 0b01111110);
-            $data .= pack('n', $payload_length);
+        if ($payloadLength > 65535) {
+            $data .= pack('C', $byte2 | 0b01111111);
+            $data .= pack('J', $payloadLength);
+        } elseif ($payloadLength > 125) {
+            $data .= pack('C', $byte2 | 0b01111110);
+            $data .= pack('n', $payloadLength);
         } else {
-            $data .= pack('C', $byte_2 | $payload_length);
+            $data .= pack('C', $byte2 | $payloadLength);
         }
 
         // Handle masking.
@@ -144,7 +144,7 @@ class FrameHandler implements LoggerAwareInterface, Stringable
             $data .= $mask;
 
             // Append masked payload to frame.
-            for ($i = 0; $i < $payload_length; $i++) {
+            for ($i = 0; $i < $payloadLength; $i++) {
                 $data .= $payload[$i] ^ $mask[$i % 4];
             }
         } else {

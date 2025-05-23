@@ -45,7 +45,6 @@ class ConfigErrorTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionCode(0);
         $this->expectExceptionMessage("Invalid timeout '-1' provided");
-        // @phpstan-ignore argument.type
         $server->setTimeout(-1);
     }
 

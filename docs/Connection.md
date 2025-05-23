@@ -94,7 +94,7 @@ $connection->setLogger(Psr\Log\LoggerInterface $logger);
 
 Timeout for various operations can be specified in seconds.
 This affects how long a Connection will wait for read and write operations.
-Default is `60` seconds. Minimum is `0` seconds.
+Default is `60` seconds. Minimum is `0` seconds.  Accepts int or float value.
 Avoid setting very low values as it will cause a read loop to use all
 available processing power even when there's nothing to read.
 

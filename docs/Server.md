@@ -25,6 +25,8 @@ $server
     })
     ->start();
 ```
+Optionally, `start()` can take timeout argument as int or float.
+
 
 ## Middlewares
 
@@ -150,7 +152,7 @@ $server->setLogger(Psr\Log\LoggerInterface $logger);
 
 Timeout for various operations can be specified in seconds.
 This affects how long Server will wait for connection, read and write operations, and listener scope.
-Default is `60` seconds. Minimum is `0` seconds.
+Default is `60` seconds. Minimum is `0` seconds.  Accepts int or float value.
 Avoid setting very low values as it will cause a read loop to use all
 available processing power even when there's nothing to read.
 

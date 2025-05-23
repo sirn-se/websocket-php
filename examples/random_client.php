@@ -11,7 +11,7 @@
  *
  * Console options:
  *  --uri <uri> : The URI to connect to, default ws://localhost:8000
- *  --timeout <int> : Timeout in seconds, random default
+ *  --timeout <int|float> : Timeout in seconds, random default
  *  --framesize <int> : Frame payload size in bytes, random default
  *  --deflate : Add support for per-message deflate compression
  *  --debug : Output log data (if logger is available)
@@ -58,7 +58,7 @@ while (true) {
     /**
      * @var array{
      *     uri: string,
-     *     timeout: int<0, max>,
+     *     timeout: int<0, max>|float,
      *     framesize: int<1, max>,
      *     deflate: bool,
      *     debug: bool,
@@ -143,8 +143,9 @@ while (true) {
             }
         })->start();
     } catch (Throwable $e) {
+        $wait = rand(1, 10);
         echo "> ERROR: {$e->getMessage()}\n";
-        echo ">        Wait {$options['timeout']} seconds for next attempt.\n";
-        sleep($options['timeout']);
+        echo ">        Wait {$wait} seconds for next attempt.\n";
+        sleep($wait);
     }
 }

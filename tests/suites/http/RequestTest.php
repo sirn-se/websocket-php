@@ -96,105 +96,105 @@ class RequestTest extends TestCase
     public function testImmutability(): void
     {
         $request = new Request();
-        $request_clone = $request->withRequestTarget('/new/path?c=d');
-        $this->assertNotSame($request_clone, $request);
-        $this->assertEquals('/new/path?c=d', $request_clone->getRequestTarget());
+        $requestClone = $request->withRequestTarget('/new/path?c=d');
+        $this->assertNotSame($requestClone, $request);
+        $this->assertEquals('/new/path?c=d', $requestClone->getRequestTarget());
 
-        $request_clone = $request->withMethod('POST');
-        $this->assertNotSame($request_clone, $request);
-        $this->assertEquals('POST', $request_clone->getMethod());
+        $requestClone = $request->withMethod('POST');
+        $this->assertNotSame($requestClone, $request);
+        $this->assertEquals('POST', $requestClone->getMethod());
 
-        $request_clone = $request->withUri(new Uri('ws://test.com:123/a/path?a=b'));
-        $this->assertNotSame($request_clone, $request);
-        $this->assertEquals('/a/path?a=b', $request_clone->getRequestTarget());
-        $this->assertEquals(['Host' => ['test.com:123']], $request_clone->getHeaders());
+        $requestClone = $request->withUri(new Uri('ws://test.com:123/a/path?a=b'));
+        $this->assertNotSame($requestClone, $request);
+        $this->assertEquals('/a/path?a=b', $requestClone->getRequestTarget());
+        $this->assertEquals(['Host' => ['test.com:123']], $requestClone->getHeaders());
 
-        $request_clone = $request->withProtocolVersion('1.0');
-        $this->assertNotSame($request_clone, $request);
-        $this->assertEquals('1.0', $request_clone->getProtocolVersion());
+        $requestClone = $request->withProtocolVersion('1.0');
+        $this->assertNotSame($requestClone, $request);
+        $this->assertEquals('1.0', $requestClone->getProtocolVersion());
 
-        $request_clone = $request->withHeader('Test-Header', 'Test-Value');
-        $this->assertNotSame($request_clone, $request);
-        $this->assertEquals(['Test-Value'], $request_clone->getHeader('Test-Header'));
+        $requestClone = $request->withHeader('Test-Header', 'Test-Value');
+        $this->assertNotSame($requestClone, $request);
+        $this->assertEquals(['Test-Value'], $requestClone->getHeader('Test-Header'));
     }
 
     public function testHeaders(): void
     {
-        $request_1 = new Request('GET', 'ws://test.com:123/a/path?a=b');
+        $request1 = new Request('GET', 'ws://test.com:123/a/path?a=b');
         $this->assertEquals([
             'Host' => ['test.com:123'],
-        ], $request_1->getHeaders());
+        ], $request1->getHeaders());
         $this->assertEquals([
             'GET /a/path?a=b HTTP/1.1',
             'Host: test.com:123',
-        ], $request_1->getAsArray());
+        ], $request1->getAsArray());
 
-        $request_2 = $request_1->withHeader('Test-Header', 'Test-Value-1');
-        $this->assertNotSame($request_2, $request_1);
+        $request2 = $request1->withHeader('Test-Header', 'Test-Value-1');
+        $this->assertNotSame($request2, $request1);
         $this->assertEquals([
             'Host' => ['test.com:123'],
             'Test-Header' => ['Test-Value-1'],
-        ], $request_2->getHeaders());
+        ], $request2->getHeaders());
         $this->assertEquals([
             'GET /a/path?a=b HTTP/1.1',
             'Host: test.com:123',
             'Test-Header: Test-Value-1',
-        ], $request_2->getAsArray());
+        ], $request2->getAsArray());
 
-        $request_3 = $request_2->withHeader('Test-Header', 'Test-Value-2');
-        $this->assertNotSame($request_3, $request_2);
+        $request3 = $request2->withHeader('Test-Header', 'Test-Value-2');
+        $this->assertNotSame($request3, $request2);
         $this->assertEquals([
             'Host' => ['test.com:123'],
             'Test-Header' => ['Test-Value-2'],
-        ], $request_3->getHeaders());
+        ], $request3->getHeaders());
         $this->assertEquals([
             'GET /a/path?a=b HTTP/1.1',
             'Host: test.com:123',
             'Test-Header: Test-Value-2',
-        ], $request_3->getAsArray());
+        ], $request3->getAsArray());
 
-        $request_4 = $request_3->withAddedHeader('Test-Header', 'Test-Value-3');
-        $this->assertNotSame($request_4, $request_3);
+        $request4 = $request3->withAddedHeader('Test-Header', 'Test-Value-3');
+        $this->assertNotSame($request4, $request3);
         $this->assertEquals([
             'Host' => ['test.com:123'],
             'Test-Header' => ['Test-Value-2', 'Test-Value-3'],
-        ], $request_4->getHeaders());
+        ], $request4->getHeaders());
         $this->assertEquals([
             'GET /a/path?a=b HTTP/1.1',
             'Host: test.com:123',
             'Test-Header: Test-Value-2',
             'Test-Header: Test-Value-3',
-        ], $request_4->getAsArray());
+        ], $request4->getAsArray());
 
-        $request_5 = $request_4->withoutHeader('Test-Header');
-        $this->assertNotSame($request_5, $request_4);
+        $request5 = $request4->withoutHeader('Test-Header');
+        $this->assertNotSame($request5, $request4);
         $this->assertEquals([
             'Host' => ['test.com:123'],
-        ], $request_5->getHeaders());
+        ], $request5->getHeaders());
         $this->assertEquals([
             'GET /a/path?a=b HTTP/1.1',
             'Host: test.com:123',
-        ], $request_5->getAsArray());
+        ], $request5->getAsArray());
 
-        $request_6 = $request_5->withUri(new Uri('ws://another.com:456/new/path?a=b'));
-        $this->assertNotSame($request_6, $request_5);
+        $request6 = $request5->withUri(new Uri('ws://another.com:456/new/path?a=b'));
+        $this->assertNotSame($request6, $request5);
         $this->assertEquals([
             'Host' => ['another.com:456'],
-        ], $request_6->getHeaders());
+        ], $request6->getHeaders());
         $this->assertEquals([
             'GET /new/path?a=b HTTP/1.1',
             'Host: another.com:456',
-        ], $request_6->getAsArray());
+        ], $request6->getAsArray());
 
-        $request_7 = $request_6->withUri(new Uri('ws://yetanother.com:789/new/path?a=b'), true);
-        $this->assertNotSame($request_7, $request_6);
+        $request7 = $request6->withUri(new Uri('ws://yetanother.com:789/new/path?a=b'), true);
+        $this->assertNotSame($request7, $request6);
         $this->assertEquals([
             'Host' => ['another.com:456'],
-        ], $request_7->getHeaders());
+        ], $request7->getHeaders());
         $this->assertEquals([
             'GET /new/path?a=b HTTP/1.1',
             'Host: another.com:456',
-        ], $request_6->getAsArray());
+        ], $request6->getAsArray());
     }
 
     public function testGetBodyError(): void

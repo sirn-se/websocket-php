@@ -93,7 +93,7 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(
             function (string $method, array $params): void {
                 preg_match('/Sec-WebSocket-Key: ([\S]*)\r\n/', $params[0], $m);
-                $this->last_ws_key = $m[1] ?? '';
+                $this->lastWsKey = $m[1] ?? '';
             }
         );
         $this->expectSocketStreamReadLine()->setReturn(function (array $params) {
@@ -106,8 +106,8 @@ class HandshakeTest extends TestCase
             return "Connection: keep-alive, upgrade\r\n";
         });
         $this->expectSocketStreamReadLine()->setReturn(function (array $params) {
-            $ws_key_res = base64_encode(pack('H*', sha1($this->last_ws_key . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')));
-            return "Sec-WebSocket-Accept: {$ws_key_res}\r\n\r\n";
+            $wsKeyRes = base64_encode(pack('H*', sha1($this->lastWsKey . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')));
+            return "Sec-WebSocket-Accept: {$wsKeyRes}\r\n\r\n";
         });
         $this->expectSocketStreamReadLine()->setReturn(function (array $params) {
             return "\r\n";

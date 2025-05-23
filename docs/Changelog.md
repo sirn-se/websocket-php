@@ -2,6 +2,19 @@
 
 # Websocket: Changelog
 
+## `v3.5`
+
+ > PHP version `^8.1`
+
+### `3.5.0`
+
+ * Timeouts support float (@sirn-se)
+ * Client and Server start() can have specific timeout (@sirn-se)
+ * Internal LoggerAwareTrait for logger handling (@sirn-se)
+ * Constant in interface (@sirn-se)
+ * Frame pulling rewritten (@sirn-se)
+ * `phpstan` level 8, and fixes accordingly (@sirn-se)
+
 ## `v3.4`
 
  > PHP version `^8.1`

@@ -33,7 +33,7 @@ trait MockStreamTrait
 
     /** @var array<StackItem> $stack */
     private array $stack = [];
-    private string $last_ws_key = '';
+    private string $lastWsKey = '';
 
 
     /* ---------- WebSocket Client combinded asserts --------------------------------------------------------------- */
@@ -45,7 +45,7 @@ trait MockStreamTrait
         string $scheme = 'tcp',
         string $host = 'localhost',
         int $port = 8000,
-        int $timeout = 60,
+        int|float $timeout = 60,
         array $context = [],
         bool $persistent = false,
     ): void {
@@ -76,7 +76,7 @@ trait MockStreamTrait
         string $scheme = 'tcp',
         string $host = 'localhost',
         int $port = 8000,
-        int $timeout = 60,
+        int|float $timeout = 60,
         array $context = [],
         bool $persistent = false,
         string $local = '127.0.0.1:12345',
@@ -102,7 +102,6 @@ trait MockStreamTrait
 
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($timeout) {
             $this->assertEquals($timeout, $params[0]);
-            $this->assertEquals(0, $params[1]);
         });
         $this->expectSocketStreamIsConnected();
         if ($persistent) {
@@ -118,10 +117,10 @@ trait MockStreamTrait
         $this->expectSocketStreamWrite()->addAssert(
             function (string $method, array $params) use ($host, $path, $headers): void {
                 preg_match('/Sec-WebSocket-Key: ([\S]*)\r\n/', $params[0], $m);
-                $this->last_ws_key = $m[1] ?? '';
+                $this->lastWsKey = $m[1] ?? '';
                 $this->assertEquals(
                     "GET {$path} HTTP/1.1\r\nHost: {$host}\r\nUser-Agent: websocket-client-php\r\nConnection: Upgrade"
-                    . "\r\nUpgrade: websocket\r\nSec-WebSocket-Key: {$this->last_ws_key}\r\nSec-WebSocket-Version: 13"
+                    . "\r\nUpgrade: websocket\r\nSec-WebSocket-Key: {$this->lastWsKey}\r\nSec-WebSocket-Version: 13"
                     . "\r\n{$headers}\r\n",
                     $params[0]
                 );
@@ -145,8 +144,8 @@ trait MockStreamTrait
         $this->expectSocketStreamReadLine()->addAssert(function (string $method, array $params): void {
             $this->assertEquals(1024, $params[0]);
         })->setReturn(function (array $params) {
-            $ws_key_res = base64_encode(pack('H*', sha1($this->last_ws_key . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')));
-            return "Sec-WebSocket-Accept: {$ws_key_res}\r\n\r\n";
+            $wsKeyRes = base64_encode(pack('H*', sha1($this->lastWsKey . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')));
+            return "Sec-WebSocket-Accept: {$wsKeyRes}\r\n\r\n";
         });
         $this->expectSocketStreamReadLine()->addAssert(function (string $method, array $params): void {
             $this->assertEquals(1024, $params[0]);
