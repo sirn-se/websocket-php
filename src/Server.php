@@ -296,6 +296,7 @@ class Server implements LoggerAwareInterface, Stringable
      * Set maximum number of connections allowed, null means unlimited.
      * @param int|null $maxConnections
      * @return self
+     * @throws InvalidArgumentException If number provided
      */
     public function setMaxConnections(int|null $maxConnections): self
     {
@@ -527,6 +528,7 @@ class Server implements LoggerAwareInterface, Stringable
             foreach ($this->middlewares as $middleware) {
                 $connection->addMiddleware($middleware);
             }
+            /** @throws StreamException */
             $request = $this->performHandshake($connection);
             $this->connections[$name] = $connection;
             $this->logger->info("[server] Accepted connection from {$name}.");

@@ -40,7 +40,10 @@ class FrameHandler implements LoggerAwareInterface, Stringable
         $this->initLogger();
     }
 
-    // Pull frame from stream
+    /**
+     * Pull frame from stream
+     * @throws CloseException
+     */
     public function pull(): Frame
     {
         // Read the frame "header" first, two bytes.
@@ -166,6 +169,7 @@ class FrameHandler implements LoggerAwareInterface, Stringable
     /**
      * Secured read op
      * @param int<1, max> $length
+     * @throws RuntimeException
      */
     private function read(int $length): string
     {
@@ -184,7 +188,10 @@ class FrameHandler implements LoggerAwareInterface, Stringable
         return $data;
     }
 
-    // Secured write op
+    /**
+     * Secured write op
+     * @throws RuntimeException
+     */
     private function write(string $data): int
     {
         $length = strlen($data);
