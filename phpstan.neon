@@ -5,3 +5,7 @@ parameters:
 		- examples
 		- tests
 	treatPhpDocTypesAsCertain: false
+	exceptions:
+	    check:
+	        tooWideThrowType: true
+	    implicitThrows: false

@@ -272,6 +272,7 @@ class Client implements LoggerAwareInterface, Stringable
 
     /**
      * Start client listener.
+     * @throws ExceptionInterface On high level error
      * @throws Throwable On low level error
      */
     public function start(int|float|null $timeout = null): void
@@ -429,6 +430,7 @@ class Client implements LoggerAwareInterface, Stringable
         }
         try {
             if (!$this->persistent || $stream->tell() == 0) {
+                /** @throws ReconnectException */
                 $response = $this->performHandshake($this->socketUri, $this->connection);
             }
         } catch (ReconnectException $e) {
@@ -507,7 +509,6 @@ class Client implements LoggerAwareInterface, Stringable
     /**
      * Perform upgrade handshake on new connections.
      * @throws HandshakeException On failed handshake
-     * @throws ReconnectException On reconnect/redirect requirement
      */
     protected function performHandshake(Uri $uri, Connection $connection): ResponseInterface
     {

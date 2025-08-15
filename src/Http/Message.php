@@ -95,7 +95,6 @@ abstract class Message implements MessageInterface, Stringable
      * @param string $name Case-insensitive header field name.
      * @param string|string[] $value Header value(s).
      * @return static
-     * @throws \InvalidArgumentException for invalid header names or values.
      */
     public function withHeader(string $name, mixed $value): self
     {
@@ -110,8 +109,6 @@ abstract class Message implements MessageInterface, Stringable
      * @param string $name Case-insensitive header field name to add.
      * @param string|string[] $value Header value(s).
      * @return static
-     * @throws \InvalidArgumentException for invalid header names.
-     * @throws \InvalidArgumentException for invalid header values.
      */
     public function withAddedHeader(string $name, mixed $value): self
     {
@@ -134,6 +131,7 @@ abstract class Message implements MessageInterface, Stringable
 
     /**
      * Not implemented, WebSocket only use headers.
+     * @throws BadMethodCallException
      */
     public function getBody(): StreamInterface
     {
@@ -142,6 +140,7 @@ abstract class Message implements MessageInterface, Stringable
 
     /**
      * Not implemented, WebSocket only use headers.
+     * @throws BadMethodCallException
      */
     public function withBody(StreamInterface $body): self
     {
@@ -160,6 +159,9 @@ abstract class Message implements MessageInterface, Stringable
         return $lines;
     }
 
+    /**
+     * @throws InvalidArgumentException
+     */
     protected function handleHeader(string $name, mixed $value): void
     {
         if (!preg_match('|^[0-9a-zA-Z#_-]+$|', $name)) {

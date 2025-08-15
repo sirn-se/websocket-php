@@ -7,11 +7,13 @@
 
 namespace WebSocket\Exception;
 
+use Throwable;
+
 /**
  * WebSocket\Exception\ExceptionInterface interface.
  * Root interface for internal exceptions.
  */
-interface ExceptionInterface
+interface ExceptionInterface extends Throwable
 {
     public function getMessage(): string;
 }

@@ -12,7 +12,6 @@ use Psr\Http\Message\{
     RequestInterface,
     ResponseInterface,
 };
-use Throwable;
 use WebSocket\Connection;
 use WebSocket\Exception\ExceptionInterface;
 use WebSocket\Message\{

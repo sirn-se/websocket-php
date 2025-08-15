@@ -85,12 +85,8 @@ jobs:
         restore-keys: ${{ runner.os }}-composer-
     - name: Install dependencies
       run: composer install --prefer-dist
-    - name: Code coverage build
-      run: XDEBUG_MODE=coverage vendor/bin/phpunit --coverage-clover build/logs/clover.xml
-    - name: Code coverage upload
-      env:
-        COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: vendor/bin/php-coveralls -v
+    - name: Code coverage
+      run: vendor/bin/phpunit --coverage-clover coverage/clover.xml -d --min-coverage=100
 
   stan:
     runs-on: ubuntu-latest

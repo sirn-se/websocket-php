@@ -78,6 +78,7 @@ abstract class Message implements Stringable
         return false;
     }
 
+    /** @throws ConnectionFailureException */
     public function setCompress(bool $compress): void
     {
         if ($compress) {

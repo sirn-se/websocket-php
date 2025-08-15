@@ -45,6 +45,9 @@ class HttpHandler implements LoggerAwareInterface, Stringable
     {
     }
 
+    /**
+     * @throws RuntimeException
+     */
     public function pull(): MessageInterface
     {
         $status = $this->readLine();
@@ -95,6 +98,7 @@ class HttpHandler implements LoggerAwareInterface, Stringable
     /**
      * @param MessageInterface $message
      * @return MessageInterface
+     * @throws RuntimeException
      */
     public function push(MessageInterface $message): MessageInterface
     {
@@ -106,6 +110,9 @@ class HttpHandler implements LoggerAwareInterface, Stringable
         return $message;
     }
 
+    /**
+     * @throws RuntimeException
+     */
     private function readLine(): string
     {
         $data = '';

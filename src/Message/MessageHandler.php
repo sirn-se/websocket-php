@@ -91,6 +91,7 @@ class MessageHandler implements LoggerAwareInterface, Stringable
 
     /**
      * @param non-empty-array<Frame> $frames
+     * @throws BadOpcodeException
      */
     private function createMessage(array $frames): Message
     {

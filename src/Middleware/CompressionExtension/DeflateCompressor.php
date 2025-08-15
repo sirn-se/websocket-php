@@ -52,6 +52,10 @@ class DeflateCompressor implements CompressorInterface, Stringable
     /** @var int<self::MIN_WINDOW_SIZE, self::MAX_WINDOW_SIZE> $clientMaxWindowBits */
     private int $clientMaxWindowBits;
 
+    /**
+     * @throws RuntimeException
+     * @throws RangeException
+     */
     public function __construct(
         bool $serverNoContextTakeover = false,
         bool $clientNoContextTakeover = false,
