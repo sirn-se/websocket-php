@@ -29,7 +29,7 @@ use WebSocket\Exception\{
     ConnectionClosedException,
     ConnectionFailureException,
     ConnectionTimeoutException,
-    Exception,
+    ExceptionInterface,
     ReconnectException,
 };
 use WebSocket\Message\{
@@ -118,6 +118,7 @@ class Connection implements LoggerAwareInterface, Stringable
      * Set time out on connection.
      * @param int<0, max>|float $timeout Timeout part in seconds
      * @return self
+     * @throws InvalidArgumentException
      */
     public function setTimeout(int|float $timeout): self
     {
@@ -143,6 +144,7 @@ class Connection implements LoggerAwareInterface, Stringable
      * Set frame size.
      * @param int<1, max> $frameSize Frame size in bytes.
      * @return self
+     * @throws InvalidArgumentException
      */
     public function setFrameSize(int $frameSize): self
     {
@@ -319,16 +321,21 @@ class Connection implements LoggerAwareInterface, Stringable
     public function pushMessage(Message $message): Message
     {
         try {
+            /** @throws Throwable */
             return $this->middlewareHandler->processOutgoing($this, $message);
         } catch (Throwable $e) {
             $this->throwException($e);
         }
     }
 
-    // Pull a message from stream
+    /**
+     * Pull a message from stream
+     * @throws ExceptionInterface
+     */
     public function pullMessage(): Message
     {
         try {
+            /** @throws Throwable */
             return $this->middlewareHandler->processIncoming($this);
         } catch (Throwable $e) {
             $this->throwException($e);
@@ -341,6 +348,7 @@ class Connection implements LoggerAwareInterface, Stringable
     public function pushHttp(MessageInterface $message): MessageInterface
     {
         try {
+            /** @throws Throwable */
             return $this->middlewareHandler->processHttpOutgoing($this, $message);
         } catch (Throwable $e) {
             $this->throwException($e);
@@ -350,6 +358,7 @@ class Connection implements LoggerAwareInterface, Stringable
     public function pullHttp(): MessageInterface
     {
         try {
+            /** @throws Throwable */
             return $this->middlewareHandler->processHttpIncoming($this);
         } catch (Throwable $e) {
             $this->throwException($e);
@@ -381,6 +390,13 @@ class Connection implements LoggerAwareInterface, Stringable
 
     /* ---------- Internal helper methods -------------------------------------------------------------------------- */
 
+    /**
+     * @throws ReconnectException
+     * @throws ExceptionInterface
+     * @throws ConnectionTimeoutException
+     * @throws ConnectionClosedException
+     * @throws ConnectionFailureException
+     */
     protected function throwException(Throwable $e): never
     {
         // Internal exceptions are handled and re-thrown
@@ -388,7 +404,7 @@ class Connection implements LoggerAwareInterface, Stringable
             $this->logger->info("[connection] {$e->getMessage()}", ['exception' => $e]);
             throw $e;
         }
-        if ($e instanceof Exception) {
+        if ($e instanceof ExceptionInterface) {
             $this->logger->error("[connection] {$e->getMessage()}", ['exception' => $e]);
             throw $e;
         }

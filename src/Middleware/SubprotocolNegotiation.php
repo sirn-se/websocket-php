@@ -75,6 +75,9 @@ class SubprotocolNegotiation implements
         return $stack->handleHttpOutgoing($message);
     }
 
+    /**
+     * @throws HandshakeException
+     */
     public function processHttpIncoming(ProcessHttpStack $stack, Connection $connection): MessageInterface
     {
         $connection->setMeta('subprotocolNegotiation.selected', null);

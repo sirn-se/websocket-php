@@ -44,6 +44,10 @@ class FollowRedirect implements LoggerAwareInterface, ProcessHttpIncomingInterfa
         $this->initLogger();
     }
 
+    /**
+     * @throws HandshakeException
+     * @throws ReconnectException
+     */
     public function processHttpIncoming(ProcessHttpStack $stack, Connection $connection): MessageInterface
     {
         $message = $stack->handleHttpIncoming();

@@ -1,0 +1,102 @@
+[
+    {
+        "name": "Overview",
+        "source": "README.md"
+    },
+    {
+        "name": "Entry points",
+        "content": [
+            {
+                "name": "Client",
+                "source": "docs/Client.md"
+            },
+            {
+                "name": "Server",
+                "source": "docs/Server.md"
+            },
+        ],
+        "name": "Resources",
+        "content": [
+            {
+                "name": "Connection",
+                "source": "docs/Connection.md"
+            },
+            {
+                "name": "Listener",
+                "source": "docs/Listener.md"
+            },
+            {
+                "name": "Message",
+                "source": "docs/Message.md"
+            },
+            {
+                "name": "Middleware",
+                "source": "docs/Middleware.md",
+                "content": [
+                    {
+                        "name": "Callback",
+                        "source": "docs/Middleware/Callback.md"
+                    },
+                    {
+                        "name": "Close Handler",
+                        "source": "docs/Middleware/CloseHandler.md"
+                    },
+                    {
+                        "name": "Compression Extension",
+                        "source": "docs/Middleware/CompressionExtension.md"
+                    },
+                    {
+                        "name": "Follow Redirect",
+                        "source": "docs/Middleware/FollowRedirect.md"
+                    },
+                    {
+                        "name": "Ping Interval",
+                        "source": "docs/Middleware/PingInterval.md"
+                    },
+                    {
+                        "name": "Ping Responder",
+                        "source": "docs/Middleware/PingResponder.md"
+                    },
+                    {
+                        "name": "Subprotocol Negotiation",
+                        "source": "docs/Middleware/SubprotocolNegotiation.md"
+                    },
+                    {
+                        "name": "Creating your own middleware",
+                        "source": "docs/Middleware/Creating.md"
+                    },
+                ]
+            },
+        ],
+        "name": "Developer resources",
+        "content": [
+            {
+                "name": "Changelog",
+                "source": "docs/Changelog.md"
+            },
+            {
+                "name": "Contributing",
+                "source": "docs/Contributing.md"
+            },
+            {
+                "name": "Examples",
+                "source": "docs/Examples.md"
+            },
+            {
+                "name": "Class synopsis",
+                "source": "docs/Class_Synopsis.md"
+            },
+        ],
+        "name": "Migration",
+        "content": [
+            {
+                "name": "Migration v2 -> v3",
+                "source": "docs/Migrate_2_3.md"
+            },
+        ]
+    },
+    {
+        "name": "License",
+        "source": "LICENSE.md"
+    }
+]
