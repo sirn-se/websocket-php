@@ -43,6 +43,7 @@ class HttpHandler implements LoggerAwareInterface, Stringable
      */
     public function setLogger(LoggerInterface $logger): void
     {
+        trigger_error('HttpHandler.setLogger is deprecated and will be removed in v4.', E_USER_DEPRECATED);
     }
 
     /**

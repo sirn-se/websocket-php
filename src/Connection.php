@@ -108,7 +108,6 @@ class Connection implements LoggerAwareInterface, Stringable
     public function setLogger(LoggerInterface $logger): void
     {
         $this->logger = $logger;
-        $this->httpHandler->setLogger($logger);
         $this->messageHandler->setLogger($logger);
         $this->middlewareHandler->setLogger($logger);
         $this->logger->debug("[connection] Setting logger: " . get_class($logger));

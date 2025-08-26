@@ -4,15 +4,15 @@
 
 Here are some examples on how to use the WebSocket library.
 
-##  Echo logger
+##  Logger
 
-In dev environment (as in having run composer to include dev dependencies) you have
-access to a simple echo logger that print out information synchronously.
+Client and Server accepts a [PSR-3](https://www.php-fig.org/psr/psr-3/) compatible logger to be attached.
 
-This is usable for debugging. For production, use a proper logger.
+The ConsoleLogger in example is useful for debugging.
+For production, use a logger that stores or accumulates log data.
 
 ```php
-$logger = new WebSocket\Test\EchoLog();
+$logger = new Phrity\Logger\Console\ConsoleLogger(Phrity\Logger\Console\Verbosity::Debug);
 
 $client = new WebSocket\Client('wss://echo.websocket.org/');
 $client->setLogger($logger);
@@ -23,16 +23,16 @@ $server->setLogger($logger);
 
 An example of server output;
 ```
-info     | Server listening to port 80 []
-debug    | Wrote 129 of 129 bytes. []
-info     | Server connected to port 80 []
-info     | Received 'text' message []
-debug    | Wrote 9 of 9 bytes. []
-info     | Sent 'text' message []
-debug    | Received 'close', status: 1000. []
-debug    | Wrote 32 of 32 bytes. []
-info     | Sent 'close' message []
-info     | Received 'close' message []
+info | Server listening to port 80
+debug | Wrote 129 of 129 bytes.
+info | Server connected to port 80
+info | Received 'text' message
+debug | Wrote 9 of 9 bytes.
+info | Sent 'text' message
+debug | Received 'close', status: 1000.
+debug | Wrote 32 of 32 bytes.
+info | Sent 'close' message
+info | Received 'close' message
 ```
 
 ## Self-resuming continuous subscription Client

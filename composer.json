@@ -36,6 +36,7 @@
         "php-coveralls/php-coveralls": "^2.0",
         "phpstan/phpstan": "^2.0",
         "phpunit/phpunit": "^10.0 | ^11.0 | ^12.0",
+        "phrity/logger-console": "^1.0",
         "phrity/net-mock": "^2.3",
         "phrity/util-errorhandler": "^1.1",
         "robiningelbrecht/phpunit-coverage-tools": "^1.9",

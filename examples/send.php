@@ -20,6 +20,10 @@
 
 namespace WebSocket;
 
+use Phrity\Logger\Console\{
+    ConsoleLogger,
+    Verbosity,
+};
 use Throwable;
 use WebSocket\Middleware\{
     CloseHandler,
@@ -27,7 +31,6 @@ use WebSocket\Middleware\{
     PingResponder,
 };
 use WebSocket\Middleware\CompressionExtension\DeflateCompressor;
-use WebSocket\Test\EchoLog;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -43,13 +46,12 @@ echo "# Send client! [phrity/websocket]\n";
  *     timeout: int<0, max>|float,
  *     framesize: int<1, max>,
  *     deflate: bool,
- *     debug: bool,
  * } $options
  */
 $options = array_merge([
     'uri'       => 'ws://localhost:80',
     'opcode'    => 'text',
-], getopt('', ['uri:', 'opcode:', 'timeout:', 'framesize:', 'deflate', 'debug']));
+], getopt('', ['uri:', 'opcode:', 'timeout:', 'framesize:', 'deflate']));
 
 $message = array_pop($argv);
 
@@ -89,8 +91,8 @@ try {
     }
 
     // If debug mode and logger is available
-    if (isset($options['debug']) && class_exists('WebSocket\Test\EchoLog')) {
-        $client->setLogger(new EchoLog());
+    if (class_exists(ConsoleLogger::class)) {
+        $client->setLogger(new ConsoleLogger(format: '{level} | {message}', cliOptions: true));
         echo "# Using logger\n";
     }
     if (isset($options['timeout'])) {
