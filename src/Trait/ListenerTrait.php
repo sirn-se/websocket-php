@@ -33,8 +33,10 @@ trait ListenerTrait
     /** @var array<string, Closure> $listeners */
     private array $listeners = [];
 
-    /* @todo: Deprecate and remove in v4 */
-    /** @param Closure(T, Connection, RequestInterface|ResponseInterface): void $closure */
+    /**
+     * @param Closure(T, Connection, RequestInterface|ResponseInterface): void $closure
+     * @deprecated Will be removed in v4
+     */
     public function onConnect(Closure $closure): self
     {
         $msg = 'onConnect() is deprecated and will be removed in v4. Use onHandshake() instead.';

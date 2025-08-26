@@ -22,6 +22,10 @@
 
 namespace WebSocket;
 
+use Phrity\Logger\Console\{
+    ConsoleLogger,
+    Verbosity,
+};
 use Throwable;
 use WebSocket\Message\{
     Close,
@@ -35,7 +39,6 @@ use WebSocket\Middleware\{
     PingResponder,
 };
 use WebSocket\Middleware\CompressionExtension\DeflateCompressor;
-use WebSocket\Test\EchoLog;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -53,14 +56,13 @@ echo "# Delegating server! [phrity/websocket]\n";
  *     framesize: int<1, max>,
  *     connections: int<0, max>|null,
  *     deflate: bool,
- *     debug: bool,
  * } $options
  */
 $options = array_merge([
     'remote'    => null,
     'port'      => 80,
     'timeout'   => 1,
-], getopt('', ['remote:', 'port:', 'ssl', 'timeout:', 'framesize:', 'connections:', 'deflate', 'debug']));
+], getopt('', ['remote:', 'port:', 'ssl', 'timeout:', 'framesize:', 'connections:', 'deflate']));
 
 if (is_null($options['remote'])) {
     die("Remote URI must be provided: php delegating-server.php --remote=ws://example-server.com\n");
@@ -88,8 +90,8 @@ try {
 
     // Configuration
     echo "# Set timeout: {$options['timeout']}\n";
-    if (isset($options['debug']) && class_exists('WebSocket\Test\EchoLog')) {
-        $logger = new EchoLog();
+    if (class_exists(ConsoleLogger::class)) {
+        $logger = new ConsoleLogger(format: '{level} | {message}', cliOptions: true);
         $server->setLogger($logger);
         $client->setLogger($logger);
         echo "# Using logger\n";

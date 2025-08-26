@@ -12,6 +12,7 @@ namespace WebSocket\Test\Http;
 use BadMethodCallException;
 use GuzzleHttp\Psr7\Request as GuzzleRequest;
 use PHPUnit\Framework\TestCase;
+use Phrity\Logger\Console\ConsoleLogger;
 use Phrity\Net\Mock\SocketStream;
 use Phrity\Net\Mock\Stack\{
     ExpectContextTrait,
@@ -19,6 +20,7 @@ use Phrity\Net\Mock\Stack\{
 };
 use Phrity\Net\StreamFactory;
 use Phrity\Net\Uri;
+use Phrity\Util\ErrorHandler;
 use Psr\Http\Message\{
     RequestInterface,
     UriInterface
@@ -296,6 +298,30 @@ class HttpHandlerTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage("Generic MessageInterface currently not supported.");
         $handler->push($request);
+
+        fclose($temp);
+    }
+
+    public function testDeprecatedLogger(): void
+    {
+        $temp = tmpfile();
+
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectContext();
+        $stream = new SocketStream($temp);
+        $httpHandler = new HttpHandler($stream);
+
+        $logger = new ConsoleLogger();
+        $errorHandler = new ErrorHandler();
+        $errorHandler->withAll(function () use ($httpHandler, $logger) {
+            $httpHandler->setLogger($logger);
+        }, function (array $errors) {
+            $this->assertEquals(
+                'HttpHandler.setLogger is deprecated and will be removed in v4.',
+                $errors[0]->getMessage()
+            );
+        });
 
         fclose($temp);
     }

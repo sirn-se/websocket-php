@@ -2,6 +2,16 @@
 
 # Websocket: Changelog
 
+## `v3.6`
+
+ > PHP version `^8.1`
+
+### `3.6.0`
+
+ * v4 deprecation warnings (@sirn-se)
+ * Improved phpdoc (@sirn-se)
+ * Code coverage improvement (@sirn-se)
+
 ## `v3.5`
 
  > PHP version `^8.1`

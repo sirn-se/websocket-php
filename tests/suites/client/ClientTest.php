@@ -719,7 +719,6 @@ class ClientTest extends TestCase
 
         $this->assertNull($client->getName());
         $this->assertNull($client->getRemoteName());
-        $this->assertNull($client->getMeta('metadata'));
         $this->assertEquals('WebSocket\Client(closed)', "{$client}");
 
         $this->expectWsClientConnect();
@@ -1075,6 +1074,24 @@ class ClientTest extends TestCase
         $this->expectException(Error::class);
         $this->expectExceptionMessage('Class "WebSocket\Test\Client\UnexistingClass" not found');
         $client->start();
+        unset($client);
+    }
+
+    public function testDeprecatedMeta(): void
+    {
+        $this->expectStreamFactory();
+        $client = new Client('ws://localhost:8000/my/mock/path');
+        $client->setStreamFactory(new StreamFactory());
+
+        $errorHandler = new ErrorHandler();
+        $errorHandler->withAll(function () use ($client) {
+            $this->assertNull($client->getMeta('metadata'));
+        }, function (array $errors) {
+            $this->assertEquals(
+                'Client.getMeta is deprecated and will be removed in v4.',
+                $errors[0]->getMessage()
+            );
+        });
         unset($client);
     }
 }
