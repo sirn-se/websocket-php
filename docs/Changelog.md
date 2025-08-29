@@ -8,6 +8,7 @@
 
 ### `3.6.0`
 
+ * CloseConnection and ReconnectException in Client listener (@sirn-se)
  * v4 deprecation warnings (@sirn-se)
  * Improved phpdoc (@sirn-se)
  * Code coverage improvement (@sirn-se)

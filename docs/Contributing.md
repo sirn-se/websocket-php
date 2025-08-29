@@ -55,7 +55,7 @@ make cs
 
 ## Unit testing
 
-Unit tests with [PHPUnit](https://phpunit.readthedocs.io/), coverage with [Coveralls](https://github.com/php-coveralls/php-coveralls)
+Unit tests with [PHPUnit](https://phpunit.readthedocs.io/), coverage using PCOV.
 ```
 # Run unit tests
 make test
