@@ -24,7 +24,11 @@ use Phrity\Logger\Console\{
     Verbosity,
 };
 use Throwable;
-use WebSocket\Exception\ExceptionInterface;
+use WebSocket\Exception\{
+    CloseException,
+    ExceptionInterface,
+    ReconnectException,
+};
 use WebSocket\Message\{
     Binary,
     Close,
@@ -121,7 +125,7 @@ while (true) {
                 return;
             }
             // Random actions
-            switch (rand(1, 5)) {
+            switch (rand(1, 7)) {
                 case 1:
                     echo "< Sending text\n";
                     $client->text("Text message {$randStr()}");
@@ -142,6 +146,12 @@ while (true) {
                     echo "< Sending pong\n";
                     $client->pong("Pong message {$randStr(8)}");
                     break;
+                case 6:
+                    echo "< Throw CloseException\n";
+                    throw new CloseException(1008, 'Closing with exception');
+                case 7:
+                    echo "< Throw ReconnectException\n";
+                    throw new ReconnectException();
             }
         })->start();
     } catch (Throwable $e) {

@@ -13,7 +13,7 @@ use Phrity\Net\Uri;
  * WebSocket\Exception\ReconnectException class.
  * Reconnect requested.
  */
-class ReconnectException extends Exception implements ConnectionLevelInterface
+class ReconnectException extends Exception
 {
     private Uri|null $uri;
 
