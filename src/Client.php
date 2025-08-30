@@ -28,11 +28,12 @@ use Throwable;
 use WebSocket\Exception\{
     BadUriException,
     ClientException,
+    CloseException,
     ConnectionLevelInterface,
     ExceptionInterface,
     HandshakeException,
     MessageLevelInterface,
-    ReconnectException
+    ReconnectException,
 };
 use WebSocket\Http\{
     Request,
@@ -283,14 +284,15 @@ class Client implements LoggerAwareInterface, Stringable
             return;
         }
         $this->running = true;
+        $reconnect = false;
         $this->logger->info("[client] Client is running");
 
         $connection = $this->connection();
-        /** @var StreamCollection */
-        $streams = $this->streams;
 
         // Run handler
         while ($this->running) {
+            /** @var StreamCollection */
+            $streams = $this->streams;
             try {
                 // Get streams with readable content
                 $readables = $streams->waitRead($timeout ?? $this->timeout);
@@ -315,6 +317,20 @@ class Client implements LoggerAwareInterface, Stringable
                 }
                 $connection->tick();
                 $this->dispatch('tick', [$this]);
+            } catch (CloseException $e) {
+                // Close connection
+                $connection->close($e->getCloseStatus(), $e->getMessage());
+                $this->logger->error("[server] {$e->getMessage()}", ['exception' => $e]);
+                $this->dispatch('error', [$this, $connection, $e]);
+            } catch (ReconnectException $e) {
+                // Reconnect connection
+                $reconnect = true;
+                if ($uri = $e->getUri()) {
+                    $this->socketUri = $uri;
+                }
+                $connection->close();
+                $this->logger->error("[server] {$e->getMessage()}", ['exception' => $e]);
+                $this->dispatch('error', [$this, $connection, $e]);
             } catch (ExceptionInterface $e) {
                 $this->disconnect();
                 $this->running = false;
@@ -331,6 +347,11 @@ class Client implements LoggerAwareInterface, Stringable
                 throw $e;
             }
             gc_collect_cycles(); // Collect garbage
+
+            if ($reconnect && !$connection->isConnected()) {
+                $reconnect = false;
+                $this->running = true;
+            }
         }
     }
 

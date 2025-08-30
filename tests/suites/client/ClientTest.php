@@ -35,7 +35,9 @@ use WebSocket\{
 use WebSocket\Exception\{
     BadOpcodeException,
     ConnectionClosedException,
-    ClientException
+    ClientException,
+    CloseException,
+    ReconnectException,
 };
 use WebSocket\Http\{
     Request,
@@ -1043,6 +1045,89 @@ class ClientTest extends TestCase
         $this->expectSocketStreamClose();
         $this->expectException(StreamException::class);
         $this->expectExceptionMessage('Stream is detached.');
+        $client->start();
+
+        unset($client);
+    }
+
+    public function testCloseException(): void
+    {
+        $this->expectStreamFactory();
+        $client = new Client('ws://localhost:8000/my/mock/path');
+        $client->setStreamFactory(new StreamFactory());
+        $client->addMiddleware(new CloseHandler());
+        $client->onText(function ($client, $connection, $message) {
+            throw new CloseException();
+        });
+
+        $this->expectWsClientConnect();
+        $this->expectWsClientPerformHandshake();
+        $this->expectWsSelectConnections(['localhost:8000']);
+        $this->expectSocketStreamRead()->setReturn(function () {
+            return base64_decode('gQA=');
+        });
+        $this->expectSocketStreamWrite();
+        $this->expectSocketStreamIsReadable();
+        $this->expectSocketStreamCloseWrite();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectWsSelectConnections(['localhost:8000']);
+        $this->expectSocketStreamRead()->setReturn(function () {
+            return base64_decode('iIk=');
+        });
+        $this->expectSocketStreamRead()->setReturn(function () {
+            return base64_decode('Nk/p9A==');
+        });
+        $this->expectSocketStreamRead()->setReturn(function () {
+            return base64_decode('dSOqmFk8gJpR');
+        });
+        $this->expectSocketStreamIsWritable();
+        $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
+        $client->start();
+
+        unset($client);
+    }
+
+    public function testReconnectException(): void
+    {
+        $this->expectStreamFactory();
+        $client = new Client('ws://localhost:8000/my/mock/path');
+        $client->setStreamFactory(new StreamFactory());
+        $client->addMiddleware(new CloseHandler());
+        $client->onText(function ($client, $connection, $message) {
+            throw new ReconnectException(new Uri('ws://localhost:8000/my/mock/path'));
+        });
+        $client->onBinary(function ($client, $connection, $message) {
+            $client->disconnect();
+        });
+        $this->expectWsClientConnect();
+        $this->expectWsClientPerformHandshake();
+        $this->expectWsSelectConnections(['localhost:8000']);
+        $this->expectSocketStreamRead()->setReturn(function () {
+            return base64_decode('gQA='); // text
+        });
+        $this->expectSocketStreamWrite();
+        $this->expectSocketStreamIsReadable();
+        $this->expectSocketStreamCloseWrite();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectSocketStreamIsConnected();
+        $this->expectWsSelectConnections(['localhost:8000']);
+        $this->expectSocketStreamRead()->setReturn(function () {
+            return base64_decode('iBo='); // close
+        });
+        $this->expectSocketStreamRead()->setReturn(function () {
+            return base64_decode('A+hDbG9zZSBhY2tub3dsZWRnZWQ6IDEwMDA=');
+        }); // close
+        $this->expectSocketStreamIsWritable();
+        $this->expectSocketStreamClose();
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamIsConnected();
+        $this->expectWsSelectConnections(['localhost:8000']);
+        $this->expectSocketStreamRead()->setReturn(function () {
+            return base64_decode('ggA='); // binary
+        });
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamIsConnected();
         $client->start();
 
         unset($client);

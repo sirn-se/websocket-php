@@ -292,10 +292,9 @@ interface WebSocket\Exception\MessageLevelInterface extends WebSocket\Exception\
 ### ReconnectException
 
 ```php
-class WebSocket\Exception\ReconnectException extends WebSocket\Exception\Exception implements WebSocket\Exception\ConnectionLevelInterface
+class WebSocket\Exception\ReconnectException extends WebSocket\Exception\Exception
 {
-    public function __construct(string $message, WebSocket\Http\Response $response);
-    public function getResponse(): WebSocket\Http\Response;
+    public function __construct(Uri|null $uri = null);
 }
 ```
 
