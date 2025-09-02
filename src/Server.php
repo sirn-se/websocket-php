@@ -17,6 +17,13 @@ use Phrity\Net\{
     StreamFactory,
     Uri
 };
+use Psr\Http\Message\{
+    ResponseFactoryInterface,
+    ResponseInterface,
+    ServerRequestFactoryInterface,
+    UriInterface,
+    UriFactoryInterface,
+};
 use Psr\Log\{
     LoggerAwareInterface,
     LoggerInterface,
@@ -33,8 +40,9 @@ use WebSocket\Exception\{
     ServerException
 };
 use WebSocket\Http\{
+    HttpFactory,
     Response,
-    ServerRequest
+    ServerRequest,
 };
 use WebSocket\Message\Message;
 use WebSocket\Middleware\MiddlewareInterface;
@@ -77,6 +85,10 @@ class Server implements LoggerAwareInterface, Stringable
     private array $middlewares = [];
     private int|null $maxConnections = null;
 
+    private ResponseFactoryInterface $responseFactory;
+    private ServerRequestFactoryInterface $serverRequestFactory;
+    private UriFactoryInterface $uriFactory;
+
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
 
@@ -95,6 +107,7 @@ class Server implements LoggerAwareInterface, Stringable
         $this->initLogger();
         $this->context = new Context();
         $this->setStreamFactory(new StreamFactory());
+        $this->responseFactory = $this->serverRequestFactory = $this->uriFactory = new HttpFactory();
     }
 
     /**
@@ -130,6 +143,36 @@ class Server implements LoggerAwareInterface, Stringable
         foreach ($this->connections as $connection) {
             $connection->setLogger($this->logger);
         }
+    }
+
+    /**
+     * Set ResponseFactory.
+     * @param ResponseFactoryInterface $responseFactory ResponseFactory to use
+     */
+    public function setResponseFactory(ResponseFactoryInterface $responseFactory): self
+    {
+        $this->responseFactory = $responseFactory;
+        return $this;
+    }
+
+    /**
+     * Set ServerRequestFactory.
+     * @param ServerRequestFactoryInterface $serverRequestFactory ServerRequestFactory to use
+     */
+    public function setServerRequestFactory(ServerRequestFactoryInterface $serverRequestFactory): self
+    {
+        $this->serverRequestFactory = $serverRequestFactory;
+        return $this;
+    }
+
+    /**
+     * Set UriFactory.
+     * @param UriFactoryInterface $uriFactory UriFactory to use
+     */
+    public function setUriFactory(UriFactoryInterface $uriFactory): self
+    {
+        $this->uriFactory = $uriFactory;
+        return $this;
     }
 
     /**
@@ -515,7 +558,15 @@ class Server implements LoggerAwareInterface, Stringable
             $stream = $socket->accept();
             $name = $stream->getRemoteName();
             $this->streams()->attach($stream, $name);
-            $connection = new Connection($stream, false, true, $this->isSsl());
+            $connection = new Connection(
+                $stream,
+                false,
+                true,
+                $this->isSsl(),
+                $this->responseFactory,
+                $this->serverRequestFactory,
+                $this->uriFactory
+            );
         } catch (StreamException $e) {
             throw new ConnectionFailureException("Server failed to accept: {$e->getMessage()}");
         }
@@ -561,7 +612,7 @@ class Server implements LoggerAwareInterface, Stringable
     // Perform upgrade handshake on new connections.
     protected function performHandshake(Connection $connection): ServerRequest
     {
-        $response = new Response(101);
+        $response = $this->responseFactory->createResponse(101);
         $exception = null;
 
         // Read handshake request

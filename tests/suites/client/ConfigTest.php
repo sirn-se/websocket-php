@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace WebSocket\Test\Client;
 
+use GuzzleHttp\Psr7\HttpFactory;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\{
@@ -328,6 +329,20 @@ class ConfigTest extends TestCase
         $this->assertEquals(64, $client->getFrameSize());
 
         $this->expectSocketStreamClose();
+        unset($client);
+    }
+
+    public function testHttpFactories(): void
+    {
+        $httpFactory = new HttpFactory();
+        $this->expectStreamFactory();
+        $client = new Client('ws://localhost:8000/my/mock/path');
+        $client->setStreamFactory(new StreamFactory());
+
+        $this->assertSame($client, $client->setResponseFactory($httpFactory));
+        $this->assertSame($client, $client->setRequestFactory($httpFactory));
+        $this->assertSame($client, $client->setUriFactory($httpFactory));
+
         unset($client);
     }
 }

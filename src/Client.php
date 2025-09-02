@@ -15,9 +15,13 @@ use Phrity\Net\{
     Uri
 };
 use Psr\Http\Message\{
+    RequestFactoryInterface,
     RequestInterface,
+    ResponseFactoryInterface,
     ResponseInterface,
+    ServerRequestFactoryInterface,
     UriInterface,
+    UriFactoryInterface,
 };
 use Psr\Log\{
     LoggerAwareInterface,
@@ -35,10 +39,7 @@ use WebSocket\Exception\{
     MessageLevelInterface,
     ReconnectException,
 };
-use WebSocket\Http\{
-    Request,
-    Response
-};
+use WebSocket\Http\HttpFactory;
 use WebSocket\Message\Message;
 use WebSocket\Middleware\MiddlewareInterface;
 use WebSocket\Trait\{
@@ -79,6 +80,11 @@ class Client implements LoggerAwareInterface, Stringable
     private StreamCollection|null $streams = null;
     private bool $running = false;
 
+    private RequestFactoryInterface $requestFactory;
+    private ResponseFactoryInterface $responseFactory;
+    private ServerRequestFactoryInterface $serverRequestFactory;
+    private UriFactoryInterface $uriFactory;
+
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
 
@@ -91,6 +97,11 @@ class Client implements LoggerAwareInterface, Stringable
         $this->initLogger();
         $this->context = new Context();
         $this->setStreamFactory(new StreamFactory());
+        $this->requestFactory
+            = $this->responseFactory
+            = $this->serverRequestFactory
+            = $this->uriFactory
+            = new HttpFactory();
     }
 
     /**
@@ -126,6 +137,36 @@ class Client implements LoggerAwareInterface, Stringable
         if ($this->connection) {
             $this->connection->setLogger($this->logger);
         }
+    }
+
+    /**
+     * Set ResponseFactory.
+     * @param ResponseFactoryInterface $responseFactory ResponseFactory to use
+     */
+    public function setResponseFactory(ResponseFactoryInterface $responseFactory): self
+    {
+        $this->responseFactory = $responseFactory;
+        return $this;
+    }
+
+    /**
+     * Set RequestFactory.
+     * @param RequestFactoryInterface $requestFactory RequestFactory to use
+     */
+    public function setRequestFactory(RequestFactoryInterface $requestFactory): self
+    {
+        $this->requestFactory = $requestFactory;
+        return $this;
+    }
+
+    /**
+     * Set UriFactory.
+     * @param UriFactoryInterface $uriFactory UriFactory to use
+     */
+    public function setUriFactory(UriFactoryInterface $uriFactory): self
+    {
+        $this->uriFactory = $uriFactory;
+        return $this;
     }
 
     /**
@@ -436,7 +477,15 @@ class Client implements LoggerAwareInterface, Stringable
         }
         $name = $stream->getRemoteName();
         $this->streams->attach($stream, $name);
-        $this->connection = new Connection($stream, true, false, $hostUri->getScheme() === 'ssl');
+        $this->connection = new Connection(
+            $stream,
+            true,
+            false,
+            $hostUri->getScheme() === 'ssl',
+            $this->responseFactory,
+            $this->serverRequestFactory,
+            $this->uriFactory
+        );
         $this->connection->setFrameSize($this->frameSize);
         $this->connection->setTimeout($this->timeout);
         $this->connection->setLogger($this->logger);
@@ -538,7 +587,7 @@ class Client implements LoggerAwareInterface, Stringable
         // Generate the WebSocket key.
         $key = $this->generateKey();
 
-        $request = new Request('GET', $uri);
+        $request = $this->requestFactory->createRequest('GET', $uri);
 
         $request = $request
             ->withHeader('User-Agent', 'websocket-client-php')

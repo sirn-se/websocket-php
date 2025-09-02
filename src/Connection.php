@@ -15,7 +15,10 @@ use Phrity\Net\{
 use Psr\Http\Message\{
     MessageInterface,
     RequestInterface,
+    ResponseFactoryInterface,
     ResponseInterface,
+    ServerRequestFactoryInterface,
+    UriFactoryInterface,
 };
 use Psr\Log\{
     LoggerAwareInterface,
@@ -75,10 +78,17 @@ class Connection implements LoggerAwareInterface, Stringable
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
 
-    public function __construct(SocketStream $stream, bool $pushMasked, bool $pullMaskedRequired, bool $ssl = false)
-    {
+    public function __construct(
+        SocketStream $stream,
+        bool $pushMasked,
+        bool $pullMaskedRequired,
+        bool $ssl = false,
+        ResponseFactoryInterface|null $responseFactory = null,
+        ServerRequestFactoryInterface|null $serverRequestFactory = null,
+        UriFactoryInterface|null $uriFactory = null,
+    ) {
         $this->stream = $stream;
-        $this->httpHandler = new HttpHandler($this->stream, $ssl);
+        $this->httpHandler = new HttpHandler($this->stream, $ssl, $responseFactory, $serverRequestFactory, $uriFactory);
         $this->messageHandler = new MessageHandler(new FrameHandler($this->stream, $pushMasked, $pullMaskedRequired));
         $this->middlewareHandler = new MiddlewareHandler($this->messageHandler, $this->httpHandler);
         $this->localName = $this->stream->getLocalName() ?? '<unknown>';

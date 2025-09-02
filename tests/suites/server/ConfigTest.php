@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace WebSocket\Test\Server;
 
+use GuzzleHttp\Psr7\HttpFactory;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\{
     Context,
@@ -209,6 +210,26 @@ class ConfigTest extends TestCase
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
+        unset($server);
+    }
+
+    public function testHttpFactories(): void
+    {
+        $httpFactory = new HttpFactory();
+        $this->expectContext();
+        $context = new Context();
+        $this->expectContextSetOptions();
+        $this->expectContextSetOption();
+        $context->setOptions(['ssl' => ['verify_peer' => false]]);
+
+        $this->expectStreamFactory();
+        $server = new Server(8000);
+        $server->setStreamFactory(new StreamFactory());
+
+        $this->assertSame($server, $server->setResponseFactory($httpFactory));
+        $this->assertSame($server, $server->setServerRequestFactory($httpFactory));
+        $this->assertSame($server, $server->setUriFactory($httpFactory));
+
         unset($server);
     }
 }
