@@ -26,14 +26,14 @@ class Request extends Message implements RequestInterface
 
     private string $target = '';
     private string $method;
-    private Uri $uri;
+    private UriInterface $uri;
 
-    public function __construct(string $method = 'GET', UriInterface|string|null $uri = null)
+    public function __construct(string $method = 'GET', UriInterface|string $uri = '')
     {
         if (!in_array($method, self::$methods)) {
             throw new InvalidArgumentException("Invalid method '{$method}' provided.");
         }
-        $this->uri = $uri instanceof Uri ? $uri : new Uri((string)$uri);
+        $this->uri = $uri instanceof UriInterface ? $uri : new Uri($uri);
         $this->method = $method;
         $this->handleHeader('Host', $this->formatHostHeader($this->uri));
     }

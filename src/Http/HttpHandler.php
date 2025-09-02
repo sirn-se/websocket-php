@@ -11,7 +11,12 @@ use Phrity\Net\{
     SocketStream,
     Uri
 };
-use Psr\Http\Message\MessageInterface;
+use Psr\Http\Message\{
+    MessageInterface,
+    ResponseFactoryInterface,
+    ServerRequestFactoryInterface,
+    UriFactoryInterface,
+};
 use Psr\Log\{
     LoggerInterface,
     LoggerAwareInterface,
@@ -31,11 +36,22 @@ class HttpHandler implements LoggerAwareInterface, Stringable
 
     private SocketStream $stream;
     private bool $ssl;
+    private ResponseFactoryInterface $responseFactory;
+    private ServerRequestFactoryInterface $serverRequestFactory;
+    private UriFactoryInterface $uriFactory;
 
-    public function __construct(SocketStream $stream, bool $ssl = false)
-    {
+    public function __construct(
+        SocketStream $stream,
+        bool $ssl = false,
+        ResponseFactoryInterface|null $responseFactory = null,
+        ServerRequestFactoryInterface|null $serverRequestFactory = null,
+        UriFactoryInterface|null $uriFactory = null,
+    ) {
         $this->stream = $stream;
         $this->ssl = $ssl;
+        $this->responseFactory = $responseFactory ?? new DefaultHttpFactory();
+        $this->serverRequestFactory = $serverRequestFactory ?? new DefaultHttpFactory();
+        $this->uriFactory = $uriFactory ?? new DefaultHttpFactory();
     }
 
     /**
@@ -57,7 +73,7 @@ class HttpHandler implements LoggerAwareInterface, Stringable
         // Pulling server request
         preg_match('!^(?P<method>[A-Z]+) (?P<path>[^ ]*) HTTP/(?P<version>[0-9/.]+)!', $status, $matches);
         if (!empty($matches)) {
-            $message = new ServerRequest($matches['method']);
+            $message = $this->serverRequestFactory->createServerRequest($matches['method'], '');
             $path = $matches['path'];
             $version = $matches['version'];
         }
@@ -65,7 +81,7 @@ class HttpHandler implements LoggerAwareInterface, Stringable
         // Pulling response
         preg_match('!^HTTP/(?P<version>[0-9/.]+) (?P<code>[0-9]*)($|\s(?P<reason>.*))!', $status, $matches);
         if (!empty($matches)) {
-            $message = new Response((int)$matches['code'], $matches['reason'] ?? '');
+            $message = $this->responseFactory->createResponse((int)$matches['code'], $matches['reason'] ?? '');
             $version = $matches['version'];
         }
 
@@ -89,7 +105,7 @@ class HttpHandler implements LoggerAwareInterface, Stringable
         }
         if ($message instanceof Request) {
             $scheme = $this->ssl ? 'wss' : 'ws';
-            $uri = new Uri("{$scheme}://{$message->getHeaderLine('Host')}{$path}");
+            $uri = $this->uriFactory->createUri("{$scheme}://{$message->getHeaderLine('Host')}{$path}");
             $message = $message->withUri($uri, true);
         }
 

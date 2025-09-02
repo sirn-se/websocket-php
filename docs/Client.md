@@ -198,6 +198,18 @@ $client->setContext($context); // set context
 $client->getContext(); // => currently used Phrity\Net\Context
 ```
 
+### HTTP factories
+
+By default the Client uses a minimal [PSR-7 HTTP message](https://www.php-fig.org/psr/psr-7/) implementation.
+To use complete implementations such as `nyholm/psr7` or `guzzlehttp/psr7`, add their [PSR-17 HTTP factories](https://www.php-fig.org/psr/psr-17/) during setup.
+```php
+$httpFactory = new Nyholm\Psr7\Factory\Psr17Factory(); // Or any other PSR-17 factory
+$client
+    ->setResponseFactory($httpFactory)
+    ->setRequestFactory($httpFactory)
+    ->setUriFactory($httpFactory);
+```
+
 ### Handshake headers
 
 Extra HTTP headers can be added, and used during handshake.
