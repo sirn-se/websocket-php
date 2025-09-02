@@ -49,9 +49,9 @@ class HttpHandler implements LoggerAwareInterface, Stringable
     ) {
         $this->stream = $stream;
         $this->ssl = $ssl;
-        $this->responseFactory = $responseFactory ?? new HttpFactory();
-        $this->serverRequestFactory = $serverRequestFactory ?? new HttpFactory();
-        $this->uriFactory = $uriFactory ?? new HttpFactory();
+        $this->responseFactory = $responseFactory ?? new DefaultHttpFactory();
+        $this->serverRequestFactory = $serverRequestFactory ?? new DefaultHttpFactory();
+        $this->uriFactory = $uriFactory ?? new DefaultHttpFactory();
     }
 
     /**

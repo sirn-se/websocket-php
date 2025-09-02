@@ -39,7 +39,7 @@ use WebSocket\Exception\{
     MessageLevelInterface,
     ReconnectException,
 };
-use WebSocket\Http\HttpFactory;
+use WebSocket\Http\DefaultHttpFactory;
 use WebSocket\Message\Message;
 use WebSocket\Middleware\MiddlewareInterface;
 use WebSocket\Trait\{
@@ -101,7 +101,7 @@ class Client implements LoggerAwareInterface, Stringable
             = $this->responseFactory
             = $this->serverRequestFactory
             = $this->uriFactory
-            = new HttpFactory();
+            = new DefaultHttpFactory();
     }
 
     /**

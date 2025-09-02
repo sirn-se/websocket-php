@@ -20,18 +20,14 @@ use Psr\Http\Message\{
 };
 
 /**
- * WebSocket\Http\HttpFactory
+ * WebSocket\Http\DefaultHttpFactory
  * Only used for handshake procedure.
  */
-class HttpFactory extends UriFactory implements
+class DefaultHttpFactory extends UriFactory implements
     RequestFactoryInterface,
     ResponseFactoryInterface,
     ServerRequestFactoryInterface
 {
-    public function __construct()
-    {
-    }
-
     /**
      * Create a new request.
      * @param string $method

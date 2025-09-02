@@ -40,7 +40,7 @@ use WebSocket\Exception\{
     ServerException
 };
 use WebSocket\Http\{
-    HttpFactory,
+    DefaultHttpFactory,
     Response,
     ServerRequest,
 };
@@ -107,7 +107,7 @@ class Server implements LoggerAwareInterface, Stringable
         $this->initLogger();
         $this->context = new Context();
         $this->setStreamFactory(new StreamFactory());
-        $this->responseFactory = $this->serverRequestFactory = $this->uriFactory = new HttpFactory();
+        $this->responseFactory = $this->serverRequestFactory = $this->uriFactory = new DefaultHttpFactory();
     }
 
     /**
