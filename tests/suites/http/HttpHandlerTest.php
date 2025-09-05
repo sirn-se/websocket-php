@@ -301,28 +301,4 @@ class HttpHandlerTest extends TestCase
 
         fclose($temp);
     }
-
-    public function testDeprecatedLogger(): void
-    {
-        $temp = tmpfile();
-
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-        $this->expectContext();
-        $stream = new SocketStream($temp);
-        $httpHandler = new HttpHandler($stream);
-
-        $logger = new ConsoleLogger();
-        $errorHandler = new ErrorHandler();
-        $errorHandler->withAll(function () use ($httpHandler, $logger) {
-            $httpHandler->setLogger($logger);
-        }, function (array $errors) {
-            $this->assertEquals(
-                'HttpHandler.setLogger is deprecated and will be removed in v4.',
-                $errors[0]->getMessage()
-            );
-        });
-
-        fclose($temp);
-    }
 }

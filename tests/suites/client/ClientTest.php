@@ -815,20 +815,7 @@ class ClientTest extends TestCase
             $this->assertInstanceOf(Request::class, $request);
             $this->assertInstanceOf(Response::class, $response);
             $this->assertTrue($client->isRunning());
-        });
-        $handler->withAll(function () use ($client) {
-            $client->onConnect(function ($client, $connection, $response) {
-                $this->assertInstanceOf(Client::class, $client);
-                $this->assertInstanceOf(Connection::class, $connection);
-                $this->assertInstanceOf(Response::class, $response);
-                $this->assertTrue($client->isRunning());
-                $client->stop();
-            });
-        }, function (array $errors) {
-            $this->assertEquals(
-                'onConnect() is deprecated and will be removed in v4. Use onHandshake() instead.',
-                $errors[0]->getMessage()
-            );
+            $client->stop();
         });
         $client->onText(function ($client, $connection, $message) {
             $this->assertInstanceOf(Client::class, $client);
@@ -1159,24 +1146,6 @@ class ClientTest extends TestCase
         $this->expectException(Error::class);
         $this->expectExceptionMessage('Class "WebSocket\Test\Client\UnexistingClass" not found');
         $client->start();
-        unset($client);
-    }
-
-    public function testDeprecatedMeta(): void
-    {
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
-
-        $errorHandler = new ErrorHandler();
-        $errorHandler->withAll(function () use ($client) {
-            $this->assertNull($client->getMeta('metadata'));
-        }, function (array $errors) {
-            $this->assertEquals(
-                'Client.getMeta is deprecated and will be removed in v4.',
-                $errors[0]->getMessage()
-            );
-        });
         unset($client);
     }
 }

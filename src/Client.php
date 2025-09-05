@@ -555,18 +555,6 @@ class Client implements LoggerAwareInterface, Stringable
     }
 
     /**
-     * Get meta value on connection.
-     * @param string $key Meta key
-     * @return mixed Meta value
-     * @deprecated Will be removed in v4
-     */
-    public function getMeta(string $key): mixed
-    {
-        trigger_error('Client.getMeta is deprecated and will be removed in v4.', E_USER_DEPRECATED);
-        return $this->isConnected() ? $this->connection?->getMeta($key) : null;
-    }
-
-    /**
      * Get Response for handshake procedure.
      * @return ResponseInterface|null Handshake.
      */

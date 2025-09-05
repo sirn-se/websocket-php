@@ -91,19 +91,7 @@ class ServerTest extends TestCase
             $this->assertInstanceOf(Connection::class, $connection);
             $this->assertInstanceOf(ServerRequest::class, $request);
             $this->assertInstanceOf(Response::class, $response);
-        });
-        $handler->withAll(function () use ($server) {
-            $server->onConnect(function ($server, $connection, $request) {
-                $this->assertInstanceOf(Server::class, $server);
-                $this->assertInstanceOf(Connection::class, $connection);
-                $this->assertInstanceOf(ServerRequest::class, $request);
-                $server->stop();
-            });
-        }, function (array $errors) {
-            $this->assertEquals(
-                'onConnect() is deprecated and will be removed in v4. Use onHandshake() instead.',
-                $errors[0]->getMessage()
-            );
+            $server->stop();
         });
         $server->onText(function ($server, $connection, $message) {
             $this->assertInstanceOf(Server::class, $server);
