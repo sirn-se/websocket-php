@@ -52,11 +52,9 @@ class WebSocket\Client implements Psr\Log\LoggerAwareInterface, Stringable
     // Connection wrapper methods
     public function getName(): string|null;
     public function getRemoteName(): string|null;
-    public function getMeta(string $key): mixed; // @deprecated
     public function getHandshakeResponse(): WebSocket\Http\Response|null;
 
     // Listener methods
-    public function onConnect(Closure $closure): self; // @deprecated
     public function onDisconnect(Closure $closure): self;
     public function onHandshake(Closure $closure): self;
     public function onText(Closure $closure): self;
@@ -115,7 +113,6 @@ class WebSocket\Server implements Psr\Log\LoggerAwareInterface, Stringable
     public function disconnect(): void;
 
     // Listener methods
-    public function onConnect(Closure $closure): self; // @deprecated
     public function onDisconnect(Closure $closure): self;
     public function onHandshake(Closure $closure): self;
     public function onText(Closure $closure): self;
@@ -315,7 +312,6 @@ class WebSocket\Frame\FrameHandler implements LoggerAwareInterface, Stringable
 {
     public function __construct(Phrity\Net\SocketStream $stream, bool $pushMasked, bool $pullMaskedRequired);
     public function __toString(): string;
-    public function setLogger(Psr\Log\LoggerInterface $logger): void; // @deprecated
     public function pull(): WebSocket\Frame\Frame;
     public function push(WebSocket\Frame\Frame $frame): int;
 }

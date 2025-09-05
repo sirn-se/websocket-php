@@ -2,6 +2,14 @@
 
 # Websocket: Changelog
 
+## `v4.0`
+
+ > PHP version `^8.1`
+
+### `4.0.0`
+
+ * Remove deprecated code (@sirn-se)
+
 ## `v3.6`
 
  > PHP version `^8.1`
