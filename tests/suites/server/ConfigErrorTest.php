@@ -28,6 +28,7 @@ class ConfigErrorTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionCode(0);
         $this->expectExceptionMessage("Invalid port '-1' provided");
+        // @phpstan-ignore argument.type
         $server = new Server(-1);
     }
 
@@ -36,6 +37,7 @@ class ConfigErrorTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionCode(0);
         $this->expectExceptionMessage("Invalid port '65536' provided");
+        // @phpstan-ignore argument.type
         $server = new Server(65536);
     }
 

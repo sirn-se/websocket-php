@@ -157,6 +157,13 @@ trait MockStreamTrait
 
     /* ---------- WebSocket Server combinded asserts --------------------------------------------------------------- */
 
+    private function expectWsServerCreate(): void
+    {
+        $this->expectStreamFactory();
+        $this->expectStreamFactoryCreateStreamCollection();
+        $this->expectStreamCollection();
+    }
+
     /**
      * @param array<mixed> $context
      */
@@ -177,8 +184,6 @@ trait MockStreamTrait
         }
 
         $this->expectSocketServerGetMetadata();
-        $this->expectStreamFactoryCreateStreamCollection();
-        $this->expectStreamCollection();
         $this->expectStreamCollectionAttach()->addAssert(function ($method, $params) {
             $this->assertEquals('@server', $params[1]);
         });
@@ -188,6 +193,29 @@ trait MockStreamTrait
      * @param array<mixed> $keys
      */
     private function expectWsSelectConnections(array $keys = []): StackItem
+    {
+        $this->expectStreamCollectionCount();
+        $this->expectStreamCollectionWaitRead()->setReturn(function ($params, $default, $collection) use ($keys) {
+            $keys = array_flip($keys);
+            $selected = new StreamCollection();
+            foreach ($collection as $key => $stream) {
+                if (array_key_exists($key, $keys)) {
+                    $selected->attach($stream, $key);
+                }
+            }
+            return $selected;
+        });
+        $last = $this->expectStreamCollection();
+        foreach ($keys as $key) {
+            $last = $this->expectStreamCollectionAttach();
+        }
+        return $last;
+    }
+
+    /**
+     * @param array<mixed> $keys
+     */
+    private function expectWsClientSelectConnections(array $keys = []): StackItem
     {
         $this->expectStreamCollectionWaitRead()->setReturn(function ($params, $default, $collection) use ($keys) {
             $keys = array_flip($keys);

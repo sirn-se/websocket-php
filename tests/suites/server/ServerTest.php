@@ -11,47 +11,49 @@ namespace WebSocket\Test\Server;
 
 use Error;
 use PHPUnit\Framework\TestCase;
-use Phrity\Net\Mock\StreamCollection;
-use Phrity\Net\Mock\StreamFactory;
+use Phrity\Net\Mock\{
+    StreamCollection,
+    StreamFactory,
+};
 use Phrity\Net\Mock\Stack\{
     ExpectContextTrait,
     ExpectSocketServerTrait,
     ExpectSocketStreamTrait,
     ExpectStreamCollectionTrait,
-    ExpectStreamFactoryTrait
+    ExpectStreamFactoryTrait,
 };
 use Phrity\Net\StreamException;
 use Phrity\Util\ErrorHandler;
-use Psr\Log\NullLogger;
+use RuntimeException;
 use Stringable;
 use WebSocket\{
     Connection,
-    Server
+    Server,
 };
 use WebSocket\Exception\{
     BadOpcodeException,
     CloseException,
     ConnectionClosedException,
-    ServerException
+    ServerException,
 };
 use WebSocket\Http\{
     Response,
-    ServerRequest
+    ServerRequest,
 };
 use WebSocket\Message\{
     Binary,
     Close,
     Ping,
     Pong,
-    Text
+    Text,
 };
 use WebSocket\Middleware\{
     Callback,
-    CloseHandler
+    CloseHandler,
 };
 use WebSocket\Test\{
     MockStreamTrait,
-    MockUri
+    MockUri,
 };
 
 /**
@@ -79,9 +81,9 @@ class ServerTest extends TestCase
 
     public function testListeners(): void
     {
-        $this->expectStreamFactory();
-        $server = new Server(8000);
-        $server->setStreamFactory(new StreamFactory());
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
+
         $handler = new ErrorHandler();
         $this->assertInstanceOf(Stringable::class, $server);
         $this->assertEquals('WebSocket\Server(closed)', "{$server}");
@@ -240,6 +242,7 @@ class ServerTest extends TestCase
         });
         $server->start();
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
         $this->expectSocketServerClose();
         $server->disconnect();
@@ -249,9 +252,8 @@ class ServerTest extends TestCase
 
     public function testMiddlewares(): void
     {
-        $this->expectStreamFactory();
-        $server = new Server(8000);
-        $server->setStreamFactory(new StreamFactory());
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
 
         $server->addMiddleware(new Callback());
 
@@ -278,17 +280,18 @@ class ServerTest extends TestCase
 
         $server->addMiddleware(new Callback());
 
-        $this->expectSocketStreamIsConnected();
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
+        $this->expectSocketServerClose();
+        $server->disconnect();
 
         unset($server);
     }
 
     public function testBroadcastSend(): void
     {
-        $this->expectStreamFactory();
-        $server = new Server(8000);
-        $server->setStreamFactory(new StreamFactory());
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
         $this->expectWsSelectConnections(['@server']);
@@ -336,17 +339,18 @@ class ServerTest extends TestCase
         $message = $server->close(1000, 'Close message');
         $this->assertInstanceOf(Close::class, $message);
 
-        $this->expectSocketStreamIsConnected();
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
+        $this->expectSocketServerClose();
+        $server->disconnect();
 
         unset($server);
     }
 
     public function testDetachConnection(): void
     {
-        $this->expectStreamFactory();
-        $server = new Server(8000);
-        $server->setStreamFactory(new StreamFactory());
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
 
         $server->onHandshake(function ($server, $connection, $request, $response) {
             $connection->disconnect();
@@ -394,14 +398,18 @@ class ServerTest extends TestCase
         $this->expectSocketStreamClose();
         $server->start();
 
+        $this->expectStreamCollectionDetach();
+        $this->expectSocketStreamClose();
+        $this->expectSocketServerClose();
+        $server->disconnect();
+
         unset($server);
     }
 
     public function testShutdown(): void
     {
-        $this->expectStreamFactory();
-        $server = new Server(8000);
-        $server->setStreamFactory(new StreamFactory());
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
         $server->addMiddleware(new CloseHandler());
 
         $server->onHandshake(function ($server, $connection, $request, $response) {
@@ -498,18 +506,21 @@ class ServerTest extends TestCase
         $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectStreamCollectionDetach();
-
+        $this->expectStreamCollectionDetach();
         $this->expectSocketServerClose();
-
+        $this->expectStreamCollectionCount();
         $server->start();
+
+        $this->expectStreamCollectionDetach();
+        $server->disconnect();
+
         unset($server);
     }
 
     public function testShutdownEmpty(): void
     {
-        $this->expectStreamFactory();
-        $server = new Server(8000);
-        $server->setStreamFactory(new StreamFactory());
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
         $server->addMiddleware(new CloseHandler());
 
         $server->onTick(function ($server) {
@@ -517,16 +528,20 @@ class ServerTest extends TestCase
         });
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
         $this->expectWsSelectConnections([]);
+        $this->expectStreamCollectionDetach();
         $this->expectSocketServerClose();
-
         $server->start();
+
+        $this->expectStreamCollectionDetach();
+        $server->disconnect();
+
+        unset($server);
     }
 
     public function testAlreadyStarted(): void
     {
-        $this->expectStreamFactory();
-        $server = new Server(8000);
-        $server->setStreamFactory(new StreamFactory());
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
 
         $server->onHandshake(function ($server, $connection, $request, $response) {
             $connection->disconnect();
@@ -554,30 +569,56 @@ class ServerTest extends TestCase
         $this->expectSocketStreamClose();
         $server->start();
 
+        $this->expectStreamCollectionDetach();
+        $this->expectSocketStreamClose();
+        $this->expectSocketServerClose();
+        $server->disconnect();
+
         unset($server);
     }
 
     public function testCreateServerError(): void
     {
-        $this->expectStreamFactory();
-        $server = new Server(8000);
-        $server->setStreamFactory(new StreamFactory());
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectStreamFactoryCreateSocketServer()->addAssert(function ($method, $params) {
             throw new StreamException(StreamException::SERVER_SOCKET_ERR, ['uri' => 'test']);
         });
         $this->expectException(ServerException::class);
-        $this->expectExceptionMessage('Server failed to start:');
+        $this->expectExceptionMessage('Server failed to start: Could not create socket');
         $server->start();
+
+        $this->expectStreamCollectionDetach();
+        $this->expectSocketServerClose();
+        $server->disconnect();
+
+        unset($server);
+    }
+
+    public function testCreateServerExternalError(): void
+    {
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
+
+        $this->expectStreamFactoryCreateSocketServer()->addAssert(function ($method, $params) {
+            throw new RuntimeException('Random exception');
+        });
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Random exception');
+        $server->start();
+
+        $this->expectStreamCollectionDetach();
+        $this->expectSocketServerClose();
+        $server->disconnect();
 
         unset($server);
     }
 
     public function testServerAccessError(): void
     {
-        $this->expectStreamFactory();
-        $server = new Server(8000);
-        $server->setStreamFactory(new StreamFactory());
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
         $this->expectWsSelectConnections(['@server']);
@@ -587,14 +628,17 @@ class ServerTest extends TestCase
         });
         $server->start();
 
+        $this->expectStreamCollectionDetach();
+        $this->expectSocketServerClose();
+        $server->disconnect();
+
         unset($server);
     }
 
     public function testRunBadOpcodeException(): void
     {
-        $this->expectStreamFactory();
-        $server = new Server(8000);
-        $server->setStreamFactory(new StreamFactory());
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
         $this->expectWsSelectConnections(['@server']);
@@ -631,6 +675,7 @@ class ServerTest extends TestCase
         $this->expectSocketStreamIsWritable();
         $this->assertCount(1, $server->getWritableConnections());
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
         $this->expectSocketServerClose();
         $server->disconnect();
@@ -640,9 +685,8 @@ class ServerTest extends TestCase
 
     public function testRunConnectionClosedException(): void
     {
-        $this->expectStreamFactory();
-        $server = new Server(8000);
-        $server->setStreamFactory(new StreamFactory());
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
         $this->expectWsSelectConnections(['@server']);
@@ -679,6 +723,7 @@ class ServerTest extends TestCase
         $this->assertEmpty($server->getReadableConnections());
         $this->assertEmpty($server->getWritableConnections());
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketServerClose();
         $server->disconnect();
 
@@ -687,9 +732,8 @@ class ServerTest extends TestCase
 
     public function testRunServerException(): void
     {
-        $this->expectStreamFactory();
-        $server = new Server(8000);
-        $server->setStreamFactory(new StreamFactory());
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
         $this->expectWsSelectConnections(['@server']);
@@ -726,6 +770,7 @@ class ServerTest extends TestCase
         $this->expectSocketStreamIsWritable();
         $this->assertCount(1, $server->getWritableConnections());
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
         $this->expectSocketServerClose();
         $server->disconnect();
@@ -735,9 +780,8 @@ class ServerTest extends TestCase
 
     public function testRunExternalException(): void
     {
-        $this->expectStreamFactory();
-        $server = new Server(8000);
-        $server->setStreamFactory(new StreamFactory());
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
         $this->expectWsSelectConnections(['@server']);
@@ -761,18 +805,20 @@ class ServerTest extends TestCase
             $server->stop();
             throw new StreamException(1000);
         });
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
         $this->expectSocketServerClose();
         $this->expectException(StreamException::class);
         $this->expectExceptionMessage('Stream is detached.');
         $server->start();
+
+        $server->disconnect();
     }
 
     public function testUnmaskedException(): void
     {
-        $this->expectStreamFactory();
-        $server = new Server(8000);
-        $server->setStreamFactory(new StreamFactory());
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
 
         $server->onError(function ($server, $connection, $exception) {
             $this->assertInstanceOf(Server::class, $server);
@@ -808,18 +854,20 @@ class ServerTest extends TestCase
             return base64_decode('gQA=');
         });
         $this->expectSocketStreamWrite();
-        $this->expectSocketStreamIsConnected();
         $server->start();
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
+        $this->expectSocketServerClose();
+        $server->disconnect();
+
         unset($server);
     }
 
     public function testMaxConnectionsOverflow(): void
     {
-        $this->expectStreamFactory();
-        $server = new Server(8000);
-        $server->setStreamFactory(new StreamFactory());
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
         $server->setMaxConnections(1);
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
@@ -846,16 +894,18 @@ class ServerTest extends TestCase
         $server->start();
         $this->assertEquals(1, $server->getConnectionCount());
 
-        $this->expectSocketStreamIsConnected();
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
+        $this->expectSocketServerClose();
+        $server->disconnect();
+
         unset($server);
     }
 
     public function testUnresolvableError(): void
     {
-        $this->expectStreamFactory();
-        $server = new Server(8000);
-        $server->setStreamFactory(new StreamFactory());
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
 
         $server->onTick(function ($server) {
             /**
@@ -882,6 +932,7 @@ class ServerTest extends TestCase
         $this->expectSocketStreamGetRemoteName();
         $this->expectSocketStreamSetTimeout();
         $this->expectWsServerPerformHandshake();
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
         $this->expectSocketServerClose();
         $this->expectException(Error::class);
