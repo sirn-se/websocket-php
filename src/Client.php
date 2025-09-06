@@ -236,17 +236,13 @@ class Client implements LoggerAwareInterface, Stringable
 
     /**
      * Set stream context.
-     * @param Context|array<string, mixed> $context Context or options as array
+     * @param Context $context Context or options as array
      * @see https://www.php.net/manual/en/context.php
      * @return self
      */
-    public function setContext(Context|array $context): self
+    public function setContext(Context $context): self
     {
-        if ($context instanceof Context) {
-            $this->context = $context;
-        } else {
-            $this->context->setOptions($context);
-        }
+        $this->context = $context;
         return $this;
     }
 

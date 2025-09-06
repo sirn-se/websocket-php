@@ -868,7 +868,7 @@ class ClientTest extends TestCase
         $client->start();
 
         $this->expectSocketStreamIsConnected();
-        $this->expectWsSelectConnections(['localhost:8000']);
+        $this->expectWsClientSelectConnections(['localhost:8000']);
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
@@ -878,7 +878,7 @@ class ClientTest extends TestCase
         $client->start();
 
         $this->expectSocketStreamIsConnected();
-        $this->expectWsSelectConnections(['localhost:8000']);
+        $this->expectWsClientSelectConnections(['localhost:8000']);
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
@@ -888,7 +888,7 @@ class ClientTest extends TestCase
         $client->start();
 
         $this->expectSocketStreamIsConnected();
-        $this->expectWsSelectConnections(['localhost:8000']);
+        $this->expectWsClientSelectConnections(['localhost:8000']);
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
@@ -898,7 +898,7 @@ class ClientTest extends TestCase
         $client->start();
 
         $this->expectSocketStreamIsConnected();
-        $this->expectWsSelectConnections(['localhost:8000']);
+        $this->expectWsClientSelectConnections(['localhost:8000']);
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
@@ -908,7 +908,7 @@ class ClientTest extends TestCase
         $client->start();
 
         $this->expectSocketStreamIsConnected();
-        $this->expectWsSelectConnections(['localhost:8000']);
+        $this->expectWsClientSelectConnections(['localhost:8000']);
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
@@ -918,7 +918,7 @@ class ClientTest extends TestCase
         $client->start();
 
         $this->expectSocketStreamIsConnected();
-        $this->expectWsSelectConnections(['localhost:8000']);
+        $this->expectWsClientSelectConnections(['localhost:8000']);
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
@@ -928,7 +928,7 @@ class ClientTest extends TestCase
         $client->start();
 
         $this->expectSocketStreamIsConnected();
-        $this->expectWsSelectConnections(['localhost:8000']);
+        $this->expectWsClientSelectConnections(['localhost:8000']);
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
@@ -976,7 +976,7 @@ class ClientTest extends TestCase
 
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake();
-        $this->expectWsSelectConnections(['localhost:8000']);
+        $this->expectWsClientSelectConnections(['localhost:8000']);
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
@@ -1005,7 +1005,7 @@ class ClientTest extends TestCase
 
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake();
-        $this->expectWsSelectConnections(['localhost:8000']);
+        $this->expectWsClientSelectConnections(['localhost:8000']);
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
@@ -1025,7 +1025,7 @@ class ClientTest extends TestCase
 
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake();
-        $this->expectWsSelectConnections(['localhost:8000'])->setReturn(function () {
+        $this->expectWsClientSelectConnections(['localhost:8000'])->setReturn(function () {
             throw new StreamException(1000);
         });
         $this->expectSocketStreamIsConnected();
@@ -1049,7 +1049,7 @@ class ClientTest extends TestCase
 
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake();
-        $this->expectWsSelectConnections(['localhost:8000']);
+        $this->expectWsClientSelectConnections(['localhost:8000']);
         $this->expectSocketStreamRead()->setReturn(function () {
             return base64_decode('gQA=');
         });
@@ -1057,7 +1057,7 @@ class ClientTest extends TestCase
         $this->expectSocketStreamIsReadable();
         $this->expectSocketStreamCloseWrite();
         $this->expectSocketStreamGetMetadata();
-        $this->expectWsSelectConnections(['localhost:8000']);
+        $this->expectWsClientSelectConnections(['localhost:8000']);
         $this->expectSocketStreamRead()->setReturn(function () {
             return base64_decode('iIk=');
         });
@@ -1089,7 +1089,7 @@ class ClientTest extends TestCase
         });
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake();
-        $this->expectWsSelectConnections(['localhost:8000']);
+        $this->expectWsClientSelectConnections(['localhost:8000']);
         $this->expectSocketStreamRead()->setReturn(function () {
             return base64_decode('gQA='); // text
         });
@@ -1098,7 +1098,7 @@ class ClientTest extends TestCase
         $this->expectSocketStreamCloseWrite();
         $this->expectSocketStreamGetMetadata();
         $this->expectSocketStreamIsConnected();
-        $this->expectWsSelectConnections(['localhost:8000']);
+        $this->expectWsClientSelectConnections(['localhost:8000']);
         $this->expectSocketStreamRead()->setReturn(function () {
             return base64_decode('iBo='); // close
         });
@@ -1109,7 +1109,7 @@ class ClientTest extends TestCase
         $this->expectSocketStreamClose();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamIsConnected();
-        $this->expectWsSelectConnections(['localhost:8000']);
+        $this->expectWsClientSelectConnections(['localhost:8000']);
         $this->expectSocketStreamRead()->setReturn(function () {
             return base64_decode('ggA='); // binary
         });
@@ -1136,7 +1136,7 @@ class ClientTest extends TestCase
 
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake();
-        $this->expectWsSelectConnections(['localhost:8000']);
+        $this->expectWsClientSelectConnections(['localhost:8000']);
         $this->expectSocketStreamRead()->setReturn(function () {
             return base64_decode('gQA=');
         });
