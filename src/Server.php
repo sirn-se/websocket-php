@@ -8,6 +8,7 @@
 namespace WebSocket;
 
 use InvalidArgumentException;
+use Phrity\Http\HttpFactory;
 use Phrity\Net\{
     Context,
     SocketServer,
@@ -89,7 +90,9 @@ class Server implements LoggerAwareInterface, Stringable
     private UriFactoryInterface $uriFactory;
 
     private StreamFactory $streamFactory;
+    private HttpFactory $httpFactory;
     private Watcher $watcher;
+
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
 
@@ -97,13 +100,17 @@ class Server implements LoggerAwareInterface, Stringable
      * @param int<0, 65535> $port Socket port to listen to
      * @param bool $ssl If SSL should be used
      * @param StreamFactory|null $streamFactory
+     * @param HttpFactory|null $httpFactory
      * @param Watcher|null $watcher
      * @throws InvalidArgumentException If invalid port provided
      */
     public function __construct(
         int $port = 80,
         bool $ssl = false,
+        LoggerInterface|null $logger = null,
+        Context|null $context = null,
         StreamFactory|null $streamFactory = null,
+        HttpFactory|null $httpFactory = null,
         Watcher|null $watcher = null,
     ) {
         if ($port < 0 || $port > 65535) {
@@ -111,11 +118,13 @@ class Server implements LoggerAwareInterface, Stringable
         }
         $this->port = $port;
         $this->scheme = $ssl ? 'ssl' : 'tcp';
-        $this->initLogger();
-        $this->context = new Context();
+        $this->initLogger($logger);
+        $this->context = $context ?? new Context();
+// @todo Get rid off
         $this->responseFactory = $this->serverRequestFactory = $this->uriFactory = new DefaultHttpFactory();
 
         $this->streamFactory = $streamFactory ?? new StreamFactory();
+        $this->httpFactory = $httpFactory ?? new DefaultHttpFactory();
         $this->watcher = $watcher ?? new Watcher($this->streamFactory->createStreamCollection());
     }
 
@@ -139,6 +148,17 @@ class Server implements LoggerAwareInterface, Stringable
     public function setStreamFactory(StreamFactory $streamFactory): self
     {
         $this->streamFactory = $streamFactory;
+        return $this;
+    }
+
+    /**
+     * Set HTTP factory to use.
+     * @param HttpFactory $httpFactory
+     * @return self
+     */
+    public function setHttpFactory(HttpFactory $httpFactory): self
+    {
+        $this->httpFactory = $httpFactory;
         return $this;
     }
 
