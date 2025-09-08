@@ -192,13 +192,22 @@ $server->getContext(); // => currently used Phrity\Net\Context
 ### HTTP factories
 
 By default the Server uses a minimal [PSR-7 HTTP message](https://www.php-fig.org/psr/psr-7/) implementation.
-To use complete implementations such as `nyholm/psr7` or `guzzlehttp/psr7`, add their [PSR-17 HTTP factories](https://www.php-fig.org/psr/psr-17/) during setup.
+Other (more complete) implementations can be used by setting [PSR-17 HTTP factories](https://www.php-fig.org/psr/psr-17/) on the Server.
+
+Set a configured HttpFactory class on the Client.
 ```php
-$httpFactory = new Nyholm\Psr7\Factory\Psr17Factory(); // Or any other PSR-17 factory
-$server
-    ->setResponseFactory($httpFactory)
-    ->setServerRequestFactory($httpFactory)
-    ->setUriFactory($httpFactory);
+$factory = new Phrity\Http\HttpFactory(
+    serverRequestFactory: $myServerRequestFactory,
+    responseFactory: $myResponseFactory,
+    uriFactory: $myUriFactory,
+);
+$server->setHttpFactory($factory);
+```
+
+Or if you use factories that support multiple interfaces, available in libraries such as `nyholm/psr7` or `guzzlehttp/psr7`.
+```php
+$psrFactory = new Nyholm\Psr7\Factory\Psr17Factory(); // Or any other PSR-17 factory
+$server->setHttpFactory(Phrity\Http\HttpFactory::create($psrFactory));
 ```
 
 ### Max connections

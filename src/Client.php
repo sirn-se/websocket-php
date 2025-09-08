@@ -8,6 +8,7 @@
 namespace WebSocket;
 
 use InvalidArgumentException;
+use Phrity\Http\HttpFactory;
 use Phrity\Net\{
     Context,
     StreamCollection,
@@ -15,13 +16,9 @@ use Phrity\Net\{
     Uri
 };
 use Psr\Http\Message\{
-    RequestFactoryInterface,
     RequestInterface,
-    ResponseFactoryInterface,
     ResponseInterface,
-    ServerRequestFactoryInterface,
     UriInterface,
-    UriFactoryInterface,
 };
 use Psr\Log\{
     LoggerAwareInterface,
@@ -79,11 +76,7 @@ class Client implements LoggerAwareInterface, Stringable
     private array $middlewares = [];
     private StreamCollection|null $streams = null;
     private bool $running = false;
-
-    private RequestFactoryInterface $requestFactory;
-    private ResponseFactoryInterface $responseFactory;
-    private ServerRequestFactoryInterface $serverRequestFactory;
-    private UriFactoryInterface $uriFactory;
+    private HttpFactory $httpFactory;
 
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
@@ -97,11 +90,7 @@ class Client implements LoggerAwareInterface, Stringable
         $this->initLogger();
         $this->context = new Context();
         $this->setStreamFactory(new StreamFactory());
-        $this->requestFactory
-            = $this->responseFactory
-            = $this->serverRequestFactory
-            = $this->uriFactory
-            = new DefaultHttpFactory();
+        $this->httpFactory = new DefaultHttpFactory();
     }
 
     /**
@@ -128,6 +117,17 @@ class Client implements LoggerAwareInterface, Stringable
     }
 
     /**
+     * Set HTTP factory to use.
+     * @param HttpFactory $httpFactory
+     * @return self
+     */
+    public function setHttpFactory(HttpFactory $httpFactory): self
+    {
+        $this->httpFactory = $httpFactory;
+        return $this;
+    }
+
+    /**
      * Set logger.
      * @param LoggerInterface $logger Logger implementation
      */
@@ -137,36 +137,6 @@ class Client implements LoggerAwareInterface, Stringable
         if ($this->connection) {
             $this->connection->setLogger($this->logger);
         }
-    }
-
-    /**
-     * Set ResponseFactory.
-     * @param ResponseFactoryInterface $responseFactory ResponseFactory to use
-     */
-    public function setResponseFactory(ResponseFactoryInterface $responseFactory): self
-    {
-        $this->responseFactory = $responseFactory;
-        return $this;
-    }
-
-    /**
-     * Set RequestFactory.
-     * @param RequestFactoryInterface $requestFactory RequestFactory to use
-     */
-    public function setRequestFactory(RequestFactoryInterface $requestFactory): self
-    {
-        $this->requestFactory = $requestFactory;
-        return $this;
-    }
-
-    /**
-     * Set UriFactory.
-     * @param UriFactoryInterface $uriFactory UriFactory to use
-     */
-    public function setUriFactory(UriFactoryInterface $uriFactory): self
-    {
-        $this->uriFactory = $uriFactory;
-        return $this;
     }
 
     /**
@@ -246,6 +216,7 @@ class Client implements LoggerAwareInterface, Stringable
             $this->context = $context;
         } else {
             $this->context->setOptions($context);
+            trigger_error('Calling Client.setContext with array is deprecated, use Context class.', E_USER_DEPRECATED);
         }
         return $this;
     }
@@ -482,9 +453,7 @@ class Client implements LoggerAwareInterface, Stringable
             true,
             false,
             $hostUri->getScheme() === 'ssl',
-            $this->responseFactory,
-            $this->serverRequestFactory,
-            $this->uriFactory
+            $this->httpFactory
         );
         $this->connection->setFrameSize($this->frameSize);
         $this->connection->setTimeout($this->timeout);
@@ -587,7 +556,7 @@ class Client implements LoggerAwareInterface, Stringable
         // Generate the WebSocket key.
         $key = $this->generateKey();
 
-        $request = $this->requestFactory->createRequest('GET', $uri);
+        $request = $this->httpFactory->createRequest('GET', $uri);
 
         $request = $request
             ->withHeader('User-Agent', 'websocket-client-php')

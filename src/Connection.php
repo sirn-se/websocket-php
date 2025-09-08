@@ -8,6 +8,7 @@
 namespace WebSocket;
 
 use InvalidArgumentException;
+use Phrity\Http\HttpFactory;
 use Phrity\Net\{
     Context,
     SocketStream,
@@ -83,12 +84,10 @@ class Connection implements LoggerAwareInterface, Stringable
         bool $pushMasked,
         bool $pullMaskedRequired,
         bool $ssl = false,
-        ResponseFactoryInterface|null $responseFactory = null,
-        ServerRequestFactoryInterface|null $serverRequestFactory = null,
-        UriFactoryInterface|null $uriFactory = null,
+        HttpFactory|null $httpFactory = null
     ) {
         $this->stream = $stream;
-        $this->httpHandler = new HttpHandler($this->stream, $ssl, $responseFactory, $serverRequestFactory, $uriFactory);
+        $this->httpHandler = new HttpHandler($this->stream, $ssl, $httpFactory);
         $this->messageHandler = new MessageHandler(new FrameHandler($this->stream, $pushMasked, $pullMaskedRequired));
         $this->middlewareHandler = new MiddlewareHandler($this->messageHandler, $this->httpHandler);
         $this->localName = $this->stream->getLocalName() ?? '<unknown>';
