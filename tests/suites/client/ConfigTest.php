@@ -9,9 +9,10 @@ declare(strict_types=1);
 
 namespace WebSocket\Test\Client;
 
-use GuzzleHttp\Psr7\HttpFactory;
+use GuzzleHttp\Psr7\HttpFactory as GuzzleFactory;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Phrity\Http\HttpFactory;
 use Phrity\Net\Mock\{
     Context,
     StreamFactory,
@@ -23,6 +24,7 @@ use Phrity\Net\Mock\Stack\{
     ExpectStreamFactoryTrait
 };
 use Phrity\Net\Uri;
+use Phrity\Util\ErrorHandler;
 use Psr\Log\NullLogger;
 use WebSocket\{
     Client,
@@ -209,10 +211,19 @@ class ConfigTest extends TestCase
 
     public function testContextOption(): void
     {
+        $errorHandler = new ErrorHandler();
         $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');
         $client->setStreamFactory(new StreamFactory());
-        $client->setContext(['ssl' => ['verify_peer' => false]]);
+
+        $errorHandler->withAll(function () use ($client) {
+            $client->setContext(['ssl' => ['verify_peer' => false]]);
+        }, function (array $errors) {
+            $this->assertEquals(
+                'Calling Client.setContext with array is deprecated, use Context class.',
+                $errors[0]->getMessage()
+            );
+        });
 
         $this->expectWsClientConnect(context: ['ssl' => ['verify_peer' => false]]);
         $this->expectWsClientPerformHandshake('localhost:8000', '/my/mock/path');
@@ -334,14 +345,12 @@ class ConfigTest extends TestCase
 
     public function testHttpFactories(): void
     {
-        $httpFactory = new HttpFactory();
+        $httpFactory = new GuzzleFactory();
         $this->expectStreamFactory();
         $client = new Client('ws://localhost:8000/my/mock/path');
         $client->setStreamFactory(new StreamFactory());
 
-        $this->assertSame($client, $client->setResponseFactory($httpFactory));
-        $this->assertSame($client, $client->setRequestFactory($httpFactory));
-        $this->assertSame($client, $client->setUriFactory($httpFactory));
+        $this->assertSame($client, $client->setHttpFactory(HttpFactory::create($httpFactory)));
 
         unset($client);
     }

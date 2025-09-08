@@ -8,6 +8,7 @@
 namespace WebSocket;
 
 use InvalidArgumentException;
+use Phrity\Http\HttpFactory;
 use Phrity\Net\{
     Context,
     SocketServer,
@@ -16,13 +17,6 @@ use Phrity\Net\{
     StreamException,
     StreamFactory,
     Uri
-};
-use Psr\Http\Message\{
-    ResponseFactoryInterface,
-    ResponseInterface,
-    ServerRequestFactoryInterface,
-    UriInterface,
-    UriFactoryInterface,
 };
 use Psr\Log\{
     LoggerAwareInterface,
@@ -84,10 +78,7 @@ class Server implements LoggerAwareInterface, Stringable
     /** @var array<MiddlewareInterface> $middlewares */
     private array $middlewares = [];
     private int|null $maxConnections = null;
-
-    private ResponseFactoryInterface $responseFactory;
-    private ServerRequestFactoryInterface $serverRequestFactory;
-    private UriFactoryInterface $uriFactory;
+    private HttpFactory $httpFactory;
 
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
@@ -106,8 +97,8 @@ class Server implements LoggerAwareInterface, Stringable
         $this->scheme = $ssl ? 'ssl' : 'tcp';
         $this->initLogger();
         $this->context = new Context();
+        $this->httpFactory = new DefaultHttpFactory();
         $this->setStreamFactory(new StreamFactory());
-        $this->responseFactory = $this->serverRequestFactory = $this->uriFactory = new DefaultHttpFactory();
     }
 
     /**
@@ -134,6 +125,17 @@ class Server implements LoggerAwareInterface, Stringable
     }
 
     /**
+     * Set HTTP factory to use.
+     * @param HttpFactory $httpFactory
+     * @return self
+     */
+    public function setHttpFactory(HttpFactory $httpFactory): self
+    {
+        $this->httpFactory = $httpFactory;
+        return $this;
+    }
+
+    /**
      * Set logger.
      * @param LoggerInterface $logger Logger implementation
      */
@@ -143,36 +145,6 @@ class Server implements LoggerAwareInterface, Stringable
         foreach ($this->connections as $connection) {
             $connection->setLogger($this->logger);
         }
-    }
-
-    /**
-     * Set ResponseFactory.
-     * @param ResponseFactoryInterface $responseFactory ResponseFactory to use
-     */
-    public function setResponseFactory(ResponseFactoryInterface $responseFactory): self
-    {
-        $this->responseFactory = $responseFactory;
-        return $this;
-    }
-
-    /**
-     * Set ServerRequestFactory.
-     * @param ServerRequestFactoryInterface $serverRequestFactory ServerRequestFactory to use
-     */
-    public function setServerRequestFactory(ServerRequestFactoryInterface $serverRequestFactory): self
-    {
-        $this->serverRequestFactory = $serverRequestFactory;
-        return $this;
-    }
-
-    /**
-     * Set UriFactory.
-     * @param UriFactoryInterface $uriFactory UriFactory to use
-     */
-    public function setUriFactory(UriFactoryInterface $uriFactory): self
-    {
-        $this->uriFactory = $uriFactory;
-        return $this;
     }
 
     /**
@@ -308,6 +280,7 @@ class Server implements LoggerAwareInterface, Stringable
             $this->context = $context;
         } else {
             $this->context->setOptions($context);
+            trigger_error('Calling Server.setContext with array is deprecated, use Context class.', E_USER_DEPRECATED);
         }
         return $this;
     }
@@ -563,9 +536,7 @@ class Server implements LoggerAwareInterface, Stringable
                 false,
                 true,
                 $this->isSsl(),
-                $this->responseFactory,
-                $this->serverRequestFactory,
-                $this->uriFactory
+                $this->httpFactory
             );
         } catch (StreamException $e) {
             throw new ConnectionFailureException("Server failed to accept: {$e->getMessage()}");
@@ -612,7 +583,7 @@ class Server implements LoggerAwareInterface, Stringable
     // Perform upgrade handshake on new connections.
     protected function performHandshake(Connection $connection): ServerRequest
     {
-        $response = $this->responseFactory->createResponse(101);
+        $response = $this->httpFactory->createResponse(101);
         $exception = null;
 
         // Read handshake request

@@ -9,8 +9,9 @@ declare(strict_types=1);
 
 namespace WebSocket\Test\Server;
 
-use GuzzleHttp\Psr7\HttpFactory;
+use GuzzleHttp\Psr7\HttpFactory as GuzzleFactory;
 use PHPUnit\Framework\TestCase;
+use Phrity\Http\HttpFactory;
 use Phrity\Net\Mock\{
     Context,
     StreamFactory,
@@ -21,6 +22,7 @@ use Phrity\Net\Mock\Stack\{
     ExpectStreamCollectionTrait,
     ExpectStreamFactoryTrait
 };
+use Phrity\Util\ErrorHandler;
 use Psr\Log\NullLogger;
 use WebSocket\{
     Connection,
@@ -145,10 +147,19 @@ class ConfigTest extends TestCase
 
     public function testContextOption(): void
     {
+        $errorHandler = new ErrorHandler();
         $this->expectStreamFactory();
         $server = new Server(8000);
         $this->assertSame($server, $server->setStreamFactory(new StreamFactory()));
-        $this->assertSame($server, $server->setContext(['ssl' => ['verify_peer' => false]]));
+
+        $errorHandler->withAll(function () use ($server) {
+            $server->setContext(['ssl' => ['verify_peer' => false]]);
+        }, function (array $errors) {
+            $this->assertEquals(
+                'Calling Server.setContext with array is deprecated, use Context class.',
+                $errors[0]->getMessage()
+            );
+        });
 
         $this->expectWsServerSetup();
         $this->expectStreamCollectionWaitRead()->addAssert(function ($method, $params) {
@@ -215,7 +226,7 @@ class ConfigTest extends TestCase
 
     public function testHttpFactories(): void
     {
-        $httpFactory = new HttpFactory();
+        $httpFactory = new GuzzleFactory();
         $this->expectContext();
         $context = new Context();
         $this->expectContextSetOptions();
@@ -226,9 +237,7 @@ class ConfigTest extends TestCase
         $server = new Server(8000);
         $server->setStreamFactory(new StreamFactory());
 
-        $this->assertSame($server, $server->setResponseFactory($httpFactory));
-        $this->assertSame($server, $server->setServerRequestFactory($httpFactory));
-        $this->assertSame($server, $server->setUriFactory($httpFactory));
+        $this->assertSame($server, $server->setHttpFactory(HttpFactory::create($httpFactory)));
 
         unset($server);
     }
