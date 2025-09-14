@@ -9,8 +9,9 @@ declare(strict_types=1);
 
 namespace WebSocket\Test\Server;
 
-use GuzzleHttp\Psr7\HttpFactory;
+use GuzzleHttp\Psr7\HttpFactory as GuzzleFactory;
 use PHPUnit\Framework\TestCase;
+use Phrity\Http\HttpFactory;
 use Phrity\Net\Mock\{
     Context,
     StreamFactory,
@@ -205,7 +206,7 @@ class ConfigTest extends TestCase
 
     public function testHttpFactories(): void
     {
-        $httpFactory = new HttpFactory();
+        $httpFactory = new GuzzleFactory();
         $this->expectContext();
         $context = new Context();
         $this->expectContextSetOptions();
@@ -215,9 +216,7 @@ class ConfigTest extends TestCase
         $this->expectWsServerCreate();
         $server = new Server(8000, streamFactory: new StreamFactory());
 
-        $this->assertSame($server, $server->setResponseFactory($httpFactory));
-        $this->assertSame($server, $server->setServerRequestFactory($httpFactory));
-        $this->assertSame($server, $server->setUriFactory($httpFactory));
+        $this->assertSame($server, $server->setHttpFactory(HttpFactory::create($httpFactory)));
 
         $this->expectStreamCollectionDetach();
         $server->disconnect();

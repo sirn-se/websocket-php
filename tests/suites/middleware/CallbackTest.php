@@ -72,8 +72,6 @@ class CallbackTest extends TestCase
         $message = $connection->pullMessage();
         $this->assertEquals('Changed message', $message->getContent());
 
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         unset($stream);
     }
 
@@ -101,8 +99,6 @@ class CallbackTest extends TestCase
         $this->expectSocketStreamWrite();
         $connection->send(new Text('Test message'));
 
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         unset($stream);
     }
 
@@ -138,8 +134,6 @@ class CallbackTest extends TestCase
         $message = $connection->pullHttp();
         $this->assertEquals('POST', $message->getMethod());
 
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         unset($stream);
     }
 
@@ -167,8 +161,6 @@ class CallbackTest extends TestCase
         $message = $connection->pushHttp(new Response(200));
         $this->assertEquals(400, $message->getStatusCode());
 
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         unset($stream);
     }
 
@@ -190,8 +182,6 @@ class CallbackTest extends TestCase
         }));
         $connection->tick();
 
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         unset($stream);
     }
 }

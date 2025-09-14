@@ -38,6 +38,13 @@ trait MockStreamTrait
 
     /* ---------- WebSocket Client combinded asserts --------------------------------------------------------------- */
 
+    private function expectWsClientCreate(): void
+    {
+        $this->expectStreamFactory();
+        $this->expectStreamFactoryCreateStreamCollection();
+        $this->expectStreamCollection();
+    }
+
     /**
      * @param array<mixed> $context
      */
@@ -49,8 +56,6 @@ trait MockStreamTrait
         array $context = [],
         bool $persistent = false,
     ): void {
-        $this->expectStreamFactoryCreateStreamCollection();
-        $this->expectStreamCollection();
         $this->expectStreamFactoryCreateSocketClient()->addAssert(
             function ($method, $params) use ($scheme, $host, $port) {
                 $this->assertInstanceOf('Phrity\Net\Uri', $params[0]);

@@ -18,13 +18,6 @@ use Phrity\Net\{
     StreamFactory,
     Uri
 };
-use Psr\Http\Message\{
-    ResponseFactoryInterface,
-    ResponseInterface,
-    ServerRequestFactoryInterface,
-    UriInterface,
-    UriFactoryInterface,
-};
 use Psr\Log\{
     LoggerAwareInterface,
     LoggerInterface,
@@ -85,10 +78,6 @@ class Server implements LoggerAwareInterface, Stringable
     private array $middlewares = [];
     private int|null $maxConnections = null;
 
-    private ResponseFactoryInterface $responseFactory;
-    private ServerRequestFactoryInterface $serverRequestFactory;
-    private UriFactoryInterface $uriFactory;
-
     private StreamFactory $streamFactory;
     private HttpFactory $httpFactory;
     private Watcher $watcher;
@@ -99,6 +88,8 @@ class Server implements LoggerAwareInterface, Stringable
     /**
      * @param int<0, 65535> $port Socket port to listen to
      * @param bool $ssl If SSL should be used
+     * @param LoggerInterface|null $logger
+     * @param Context|null $context $logger
      * @param StreamFactory|null $streamFactory
      * @param HttpFactory|null $httpFactory
      * @param Watcher|null $watcher
@@ -120,9 +111,6 @@ class Server implements LoggerAwareInterface, Stringable
         $this->scheme = $ssl ? 'ssl' : 'tcp';
         $this->initLogger($logger);
         $this->context = $context ?? new Context();
-// @todo Get rid off
-        $this->responseFactory = $this->serverRequestFactory = $this->uriFactory = new DefaultHttpFactory();
-
         $this->streamFactory = $streamFactory ?? new StreamFactory();
         $this->httpFactory = $httpFactory ?? new DefaultHttpFactory();
         $this->watcher = $watcher ?? new Watcher($this->streamFactory->createStreamCollection());
@@ -172,36 +160,6 @@ class Server implements LoggerAwareInterface, Stringable
         foreach ($this->connections as $connection) {
             $connection->setLogger($this->logger);
         }
-    }
-
-    /**
-     * Set ResponseFactory.
-     * @param ResponseFactoryInterface $responseFactory ResponseFactory to use
-     */
-    public function setResponseFactory(ResponseFactoryInterface $responseFactory): self
-    {
-        $this->responseFactory = $responseFactory;
-        return $this;
-    }
-
-    /**
-     * Set ServerRequestFactory.
-     * @param ServerRequestFactoryInterface $serverRequestFactory ServerRequestFactory to use
-     */
-    public function setServerRequestFactory(ServerRequestFactoryInterface $serverRequestFactory): self
-    {
-        $this->serverRequestFactory = $serverRequestFactory;
-        return $this;
-    }
-
-    /**
-     * Set UriFactory.
-     * @param UriFactoryInterface $uriFactory UriFactory to use
-     */
-    public function setUriFactory(UriFactoryInterface $uriFactory): self
-    {
-        $this->uriFactory = $uriFactory;
-        return $this;
     }
 
     /**
@@ -443,6 +401,24 @@ class Server implements LoggerAwareInterface, Stringable
         }
     }
 
+    /**
+     * Stop server listener (resumable).
+     */
+    public function stop(): void
+    {
+        $this->running = false;
+        $this->logger->info("[server] Server is stopped");
+    }
+
+    /**
+     * If server is running (accepting connections and messages).
+     * @return bool
+     */
+    public function isRunning(): bool
+    {
+        return $this->running;
+    }
+
     private function selectHandler(string $key, SocketStream $stream): void
     {
         try {
@@ -471,24 +447,6 @@ class Server implements LoggerAwareInterface, Stringable
             $this->logger->error("[server] {$e->getMessage()}", ['exception' => $e]);
             $this->dispatch('error', [$this, $connection, $e]);
         }
-    }
-
-    /**
-     * Stop server listener (resumable).
-     */
-    public function stop(): void
-    {
-        $this->running = false;
-        $this->logger->info("[server] Server is stopped");
-    }
-
-    /**
-     * If server is running (accepting connections and messages).
-     * @return bool
-     */
-    public function isRunning(): bool
-    {
-        return $this->running;
     }
 
 
@@ -588,9 +546,7 @@ class Server implements LoggerAwareInterface, Stringable
                 false,
                 true,
                 $this->isSsl(),
-                $this->responseFactory,
-                $this->serverRequestFactory,
-                $this->uriFactory,
+                $this->httpFactory,
             );
         } catch (StreamException $e) {
             throw new ConnectionFailureException("Server failed to accept: {$e->getMessage()}");
@@ -637,7 +593,7 @@ class Server implements LoggerAwareInterface, Stringable
     // Perform upgrade handshake on new connections.
     protected function performHandshake(Connection $connection): ServerRequest
     {
-        $response = $this->responseFactory->createResponse(101);
+        $response = $this->httpFactory->createResponse(101);
         $exception = null;
 
         // Read handshake request

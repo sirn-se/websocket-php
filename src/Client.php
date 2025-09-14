@@ -8,20 +8,18 @@
 namespace WebSocket;
 
 use InvalidArgumentException;
+use Phrity\Http\HttpFactory;
 use Phrity\Net\{
     Context,
+    SocketStream,
     StreamCollection,
     StreamFactory,
     Uri
 };
 use Psr\Http\Message\{
-    RequestFactoryInterface,
     RequestInterface,
-    ResponseFactoryInterface,
     ResponseInterface,
-    ServerRequestFactoryInterface,
     UriInterface,
-    UriFactoryInterface,
 };
 use Psr\Log\{
     LoggerAwareInterface,
@@ -48,6 +46,7 @@ use WebSocket\Trait\{
     SendMethodsTrait,
     StringableTrait
 };
+use WebSocket\Runtime\Watcher;
 
 /**
  * WebSocket\Client class.
@@ -72,36 +71,41 @@ class Client implements LoggerAwareInterface, Stringable
     private array $headers = [];
 
     // Internal resources
-    private StreamFactory $streamFactory;
     private Uri $socketUri;
     private Connection|null $connection = null;
     /** @var array<MiddlewareInterface> $middlewares */
     private array $middlewares = [];
-    private StreamCollection|null $streams = null;
     private bool $running = false;
 
-    private RequestFactoryInterface $requestFactory;
-    private ResponseFactoryInterface $responseFactory;
-    private ServerRequestFactoryInterface $serverRequestFactory;
-    private UriFactoryInterface $uriFactory;
+    private StreamFactory $streamFactory;
+    private HttpFactory $httpFactory;
+    private Watcher $watcher;
 
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
 
     /**
      * @param UriInterface|string $uri A ws/wss-URI
+     * @param LoggerInterface|null $logger
+     * @param Context|null $context $logger
+     * @param StreamFactory|null $streamFactory
+     * @param HttpFactory|null $httpFactory
+     * @param Watcher|null $watcher
      */
-    public function __construct(UriInterface|string $uri)
-    {
+    public function __construct(
+        UriInterface|string $uri,
+        LoggerInterface|null $logger = null,
+        Context|null $context = null,
+        StreamFactory|null $streamFactory = null,
+        HttpFactory|null $httpFactory = null,
+        Watcher|null $watcher = null,
+    ) {
         $this->socketUri = $this->parseUri($uri);
-        $this->initLogger();
-        $this->context = new Context();
-        $this->setStreamFactory(new StreamFactory());
-        $this->requestFactory
-            = $this->responseFactory
-            = $this->serverRequestFactory
-            = $this->uriFactory
-            = new DefaultHttpFactory();
+        $this->initLogger($logger);
+        $this->context = $context ?? new Context();
+        $this->streamFactory = $streamFactory ?? new StreamFactory();
+        $this->httpFactory = $httpFactory ?? new DefaultHttpFactory();
+        $this->watcher = $watcher ?? new Watcher($this->streamFactory->createStreamCollection());
     }
 
     /**
@@ -128,6 +132,17 @@ class Client implements LoggerAwareInterface, Stringable
     }
 
     /**
+     * Set HTTP factory to use.
+     * @param HttpFactory $httpFactory
+     * @return self
+     */
+    public function setHttpFactory(HttpFactory $httpFactory): self
+    {
+        $this->httpFactory = $httpFactory;
+        return $this;
+    }
+
+    /**
      * Set logger.
      * @param LoggerInterface $logger Logger implementation
      */
@@ -137,36 +152,6 @@ class Client implements LoggerAwareInterface, Stringable
         if ($this->connection) {
             $this->connection->setLogger($this->logger);
         }
-    }
-
-    /**
-     * Set ResponseFactory.
-     * @param ResponseFactoryInterface $responseFactory ResponseFactory to use
-     */
-    public function setResponseFactory(ResponseFactoryInterface $responseFactory): self
-    {
-        $this->responseFactory = $responseFactory;
-        return $this;
-    }
-
-    /**
-     * Set RequestFactory.
-     * @param RequestFactoryInterface $requestFactory RequestFactory to use
-     */
-    public function setRequestFactory(RequestFactoryInterface $requestFactory): self
-    {
-        $this->requestFactory = $requestFactory;
-        return $this;
-    }
-
-    /**
-     * Set UriFactory.
-     * @param UriFactoryInterface $uriFactory UriFactory to use
-     */
-    public function setUriFactory(UriFactoryInterface $uriFactory): self
-    {
-        $this->uriFactory = $uriFactory;
-        return $this;
     }
 
     /**
@@ -328,27 +313,8 @@ class Client implements LoggerAwareInterface, Stringable
 
         // Run handler
         while ($this->running) {
-            /** @var StreamCollection */
-            $streams = $this->streams;
             try {
-                // Get streams with readable content
-                $readables = $streams->waitRead($timeout ?? $this->timeout);
-                foreach ($readables as $key => $readable) {
-                    try {
-                        // Read from connection
-                        $message = $connection->pullMessage();
-                        $this->dispatch($message->getOpcode(), [$this, $connection, $message]);
-                    } catch (MessageLevelInterface $e) {
-                        // Error, but keep connection open
-                        $this->logger->error("[client] {$e->getMessage()}", ['exception' => $e]);
-                        $this->dispatch('error', [$this, $connection, $e]);
-                    } catch (ConnectionLevelInterface $e) {
-                        // Error, disconnect connection
-                        $this->disconnect();
-                        $this->logger->error("[client] {$e->getMessage()}", ['exception' => $e]);
-                        $this->dispatch('error', [$this, $connection, $e]);
-                    }
-                }
+                $this->watcher->watch($timeout ?? $this->timeout);
                 if (!$connection->isConnected()) {
                     $this->running = false;
                 }
@@ -391,6 +357,27 @@ class Client implements LoggerAwareInterface, Stringable
             }
         }
     }
+
+    private function selectHandler(string $key, SocketStream $stream): void
+    {
+        /** @var Connection $connection */
+        $connection = $this->connection;
+        try {
+            // Read from connection
+            $message = $connection->pullMessage();
+            $this->dispatch($message->getOpcode(), [$this, $connection, $message]);
+        } catch (MessageLevelInterface $e) {
+            // Error, but keep connection open
+            $this->logger->error("[client] {$e->getMessage()}", ['exception' => $e]);
+            $this->dispatch('error', [$this, $connection, $e]);
+        } catch (ConnectionLevelInterface $e) {
+            // Error, disconnect connection
+            $this->disconnect();
+            $this->logger->error("[client] {$e->getMessage()}", ['exception' => $e]);
+            $this->dispatch('error', [$this, $connection, $e]);
+        }
+    }
+
 
     /**
      * Stop client listener (resumable).
@@ -448,7 +435,6 @@ class Client implements LoggerAwareInterface, Stringable
     public function connect(): void
     {
         $this->disconnect();
-        $this->streams = $this->streamFactory->createStreamCollection();
 
         $hostUri = (new Uri())
             ->withScheme(match ($this->socketUri->getScheme()) {
@@ -471,16 +457,16 @@ class Client implements LoggerAwareInterface, Stringable
             $this->logger->error("[client] {$error}", ['exception' => $e]);
             throw new ClientException($error);
         }
-        $name = $stream->getRemoteName();
-        $this->streams->attach($stream, $name);
+        $name = $stream->getRemoteName() ?? 'unknown';
+        $this->watcher->attach($name, $stream, function (string $key, SocketStream $stream) {
+            $this->selectHandler($key, $stream);
+        });
         $this->connection = new Connection(
             $stream,
             true,
             false,
             $hostUri->getScheme() === 'ssl',
-            $this->responseFactory,
-            $this->serverRequestFactory,
-            $this->uriFactory
+            $this->httpFactory
         );
         $this->connection->setFrameSize($this->frameSize);
         $this->connection->setTimeout($this->timeout);
@@ -492,6 +478,7 @@ class Client implements LoggerAwareInterface, Stringable
         if (!$this->isConnected()) {
             $error = "Invalid stream on \"{$hostUri}\".";
             $this->logger->error("[client] {$error}");
+            $this->disconnect();
             throw new ClientException($error);
         }
         try {
@@ -522,6 +509,9 @@ class Client implements LoggerAwareInterface, Stringable
      */
     public function disconnect(): void
     {
+        if ($this->connection) {
+            $this->watcher->detach($this->connection->getRemoteName());
+        }
         if ($this->connection && $this->isConnected()) {
             $this->connection->disconnect();
             $this->logger->info('[client] Client disconnected');
@@ -571,7 +561,7 @@ class Client implements LoggerAwareInterface, Stringable
         // Generate the WebSocket key.
         $key = $this->generateKey();
 
-        $request = $this->requestFactory->createRequest('GET', $uri);
+        $request = $this->httpFactory->createRequest('GET', $uri);
 
         $request = $request
             ->withHeader('User-Agent', 'websocket-client-php')

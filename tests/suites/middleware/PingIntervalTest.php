@@ -69,8 +69,6 @@ class PingIntervalTest extends TestCase
         });
         $connection->tick();
 
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         unset($stream);
     }
 }

@@ -117,28 +117,6 @@ class ConnectionTest extends TestCase
         unset($connection);
     }
 
-    public function testDestruct(): void
-    {
-        $temp = tmpfile();
-
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-        $this->expectContext();
-        $stream = new SocketStream($temp);
-
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
-        $connection = new Connection($stream, false, false);
-
-        $this->expectSocketStreamIsConnected();
-        $this->assertTrue($connection->isConnected());
-
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
-
-        unset($connection);
-    }
-
     public function testHttpMessages(): void
     {
         $temp = tmpfile();
@@ -234,8 +212,6 @@ class ConnectionTest extends TestCase
         });
         $this->expectException(ConnectionClosedException::class);
         $this->expectExceptionMessage('Connection has unexpectedly closed');
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $connection->pushHttp(new Request());
 
         unset($connection);
@@ -259,8 +235,6 @@ class ConnectionTest extends TestCase
         });
         $this->expectException(ConnectionClosedException::class);
         $this->expectExceptionMessage('Connection has unexpectedly closed');
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $connection->pullHttp();
 
         unset($connection);
@@ -284,8 +258,6 @@ class ConnectionTest extends TestCase
         });
         $this->expectException(ConnectionClosedException::class);
         $this->expectExceptionMessage('Connection has unexpectedly closed');
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $connection->send(new Text('Connection error'));
 
         unset($connection);
@@ -309,8 +281,6 @@ class ConnectionTest extends TestCase
         });
         $this->expectException(ConnectionClosedException::class);
         $this->expectExceptionMessage('Connection has unexpectedly closed');
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $connection->pullMessage();
 
         unset($connection);
