@@ -15,7 +15,6 @@ use Psr\Http\Message\{
     ResponseInterface,
     ServerRequestInterface,
 };
-use Psr\Log\LoggerAwareInterface;
 use Stringable;
 use WebSocket\Connection;
 use WebSocket\Message\{
@@ -25,7 +24,7 @@ use WebSocket\Message\{
 };
 use WebSocket\Middleware\CompressionExtension\CompressorInterface;
 use WebSocket\Trait\{
-    LoggerAwareTrait,
+    ConfigurationTrait,
     StringableTrait,
 };
 
@@ -35,14 +34,13 @@ use WebSocket\Trait\{
  * @see https://datatracker.ietf.org/doc/html/rfc7692
  */
 class CompressionExtension implements
-    LoggerAwareInterface,
     ProcessHttpOutgoingInterface,
     ProcessHttpIncomingInterface,
     ProcessIncomingInterface,
     ProcessOutgoingInterface,
     Stringable
 {
-    use LoggerAwareTrait;
+    use ConfigurationTrait;
     use StringableTrait;
 
     /** @var array<CompressorInterface> $compressors */
@@ -51,7 +49,7 @@ class CompressionExtension implements
     public function __construct(CompressorInterface ...$compressors)
     {
         $this->compressors = $compressors;
-        $this->initLogger();
+        $this->initConfiguration();
     }
 
     public function processHttpOutgoing(
@@ -91,7 +89,7 @@ class CompressionExtension implements
             if ($preferred = $this->getPreferred($message)) {
                 $connection->setMeta('compressionExtension.compressor', $preferred->compressor);
                 $connection->setMeta('compressionExtension.configuration', $preferred->configuration);
-                $this->logger->debug(
+                $this->configuration->getLogger()->debug(
                     "[permessage-compression] Using {$preferred->compressor}",
                     (array)$preferred->configuration
                 );
@@ -101,7 +99,7 @@ class CompressionExtension implements
             if ($preferred = $this->getPreferred($message)) {
                 $connection->setMeta('compressionExtension.compressor', $preferred->compressor);
                 $connection->setMeta('compressionExtension.configuration', $preferred->configuration);
-                $this->logger->debug(
+                $this->configuration->getLogger()->debug(
                     "[permessage-compression] Using {$preferred->compressor}",
                     (array)$preferred->configuration
                 );

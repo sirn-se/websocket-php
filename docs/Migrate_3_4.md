@@ -14,7 +14,21 @@ Version 4.x has few changes compared to previous version.
 * Client `setContext()` - no longer accepts array input
 * Server `onConnect()` - use `onHandshake()` instead
 * Server `setContext()` - no longer accepts array input
-* FrameHandler `setLogger()` - removed
+
+v4 uses the Configuration class to propagate configurations throughout internal classes.
+
+This affects the following classes;
+* Connection
+* FrameHandler
+* MessageHandler
+* MiddlewareHandler
+* All middlewares
+
+He following methods (when applicable) are removed;
+* `setLogger()`
+
+Instead these classes get the method;
+* `setConfiguration(WebSocket\Configuration $configuration)`
 
 ## Extending
 

@@ -73,7 +73,6 @@ class ProcessStackTest extends TestCase
             $this->assertEquals('Test message<-C', $message->getContent());
             return $message;
         }));
-        $connection->setLogger(new NullLogger());
 
         $this->expectSocketStreamRead()->setReturn(function () {
             return base64_decode('gQw=');
@@ -129,7 +128,6 @@ class ProcessStackTest extends TestCase
             $this->assertEquals('Test message->A->B->C<-C', $message->getContent());
             return $message;
         }));
-        $connection->setLogger(new NullLogger());
 
         $this->expectSocketStreamWrite();
         $connection->send(new Text('Test message'));

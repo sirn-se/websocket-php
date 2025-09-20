@@ -7,7 +7,6 @@
 
 namespace WebSocket\Middleware;
 
-use Psr\Log\LoggerAwareInterface;
 use Stringable;
 use WebSocket\Connection;
 use WebSocket\Message\{
@@ -15,7 +14,7 @@ use WebSocket\Message\{
     Message
 };
 use WebSocket\Trait\{
-    LoggerAwareTrait,
+    ConfigurationTrait,
     StringableTrait,
 };
 
@@ -23,9 +22,9 @@ use WebSocket\Trait\{
  * WebSocket\Middleware\PingInterval class.
  * Handles close procedure.
  */
-class PingInterval implements LoggerAwareInterface, ProcessOutgoingInterface, ProcessTickInterface, Stringable
+class PingInterval implements ProcessOutgoingInterface, ProcessTickInterface, Stringable
 {
-    use LoggerAwareTrait;
+    use ConfigurationTrait;
     use StringableTrait;
 
     private int|float|null $interval;
@@ -33,7 +32,7 @@ class PingInterval implements LoggerAwareInterface, ProcessOutgoingInterface, Pr
     public function __construct(int|float|null $interval = null)
     {
         $this->interval = $interval;
-        $this->initLogger();
+        $this->initConfiguration();
     }
 
     public function processOutgoing(ProcessStack $stack, Connection $connection, Message $message): Message
@@ -46,7 +45,7 @@ class PingInterval implements LoggerAwareInterface, ProcessOutgoingInterface, Pr
     {
         // Push if time exceeds timestamp for next ping
         if ($connection->isWritable() && microtime(true) >= $this->getNext($connection)) {
-            $this->logger->debug("[ping-interval] Auto-pushing ping");
+            $this->configuration->getLogger()->debug("[ping-interval] Auto-pushing ping");
             $connection->send(new Ping());
             $this->setNext($connection); // Update timestamp for next ping
         }

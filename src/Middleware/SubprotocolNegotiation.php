@@ -15,12 +15,11 @@ use Psr\Http\Message\{
     ResponseInterface,
     ServerRequestInterface,
 };
-use Psr\Log\LoggerAwareInterface;
 use Stringable;
 use WebSocket\Connection;
 use WebSocket\Exception\HandshakeException;
 use WebSocket\Trait\{
-    LoggerAwareTrait,
+    ConfigurationTrait,
     StringableTrait,
 };
 
@@ -29,12 +28,11 @@ use WebSocket\Trait\{
  * Handles close procedure.
  */
 class SubprotocolNegotiation implements
-    LoggerAwareInterface,
     ProcessHttpOutgoingInterface,
     ProcessHttpIncomingInterface,
     Stringable
 {
-    use LoggerAwareTrait;
+    use ConfigurationTrait;
     use StringableTrait;
 
     /** @var array<string> $subprotocols */
@@ -46,7 +44,7 @@ class SubprotocolNegotiation implements
     {
         $this->subprotocols = $subprotocols;
         $this->require = $require;
-        $this->initLogger();
+        $this->initConfiguration();
     }
 
     public function processHttpOutgoing(
@@ -60,13 +58,13 @@ class SubprotocolNegotiation implements
                 $message = $message->withAddedHeader('Sec-WebSocket-Protocol', $subprotocol);
             }
             if ($supported = implode(', ', $this->subprotocols)) {
-                $this->logger->debug("[subprotocol-negotiation] Requested subprotocols: {$supported}");
+                $this->configuration->getLogger()->debug("[subprotocol-negotiation] Requested subprotocols: {$supported}");
             }
         } elseif ($message instanceof ResponseInterface) {
             // Outgoing Response on Server
             if ($selected = $connection->getMeta('subprotocolNegotiation.selected')) {
                 $message = $message->withHeader('Sec-WebSocket-Protocol', $selected);
-                $this->logger->info("[subprotocol-negotiation] Selected subprotocol: {$selected}");
+                $this->configuration->getLogger()->info("[subprotocol-negotiation] Selected subprotocol: {$selected}");
             } elseif ($this->require) {
                 // No matching subprotocol, fail handshake
                 $message = $message->withStatus(426);
@@ -86,10 +84,10 @@ class SubprotocolNegotiation implements
         if ($message instanceof ServerRequestInterface) {
             // Incoming requests on Server
             if ($requested = $message->getHeaderLine('Sec-WebSocket-Protocol')) {
-                $this->logger->debug("[subprotocol-negotiation] Requested subprotocols: {$requested}");
+                $this->configuration->getLogger()->debug("[subprotocol-negotiation] Requested subprotocols: {$requested}");
             }
             if ($supported = implode(', ', $this->subprotocols)) {
-                $this->logger->debug("[subprotocol-negotiation] Supported subprotocols: {$supported}");
+                $this->configuration->getLogger()->debug("[subprotocol-negotiation] Supported subprotocols: {$supported}");
             }
             foreach ($message->getHeader('Sec-WebSocket-Protocol') as $subprotocol) {
                 if (in_array($subprotocol, $this->subprotocols)) {
@@ -101,7 +99,7 @@ class SubprotocolNegotiation implements
             // Incoming Response on Client
             if ($selected = $message->getHeaderLine('Sec-WebSocket-Protocol')) {
                 $connection->setMeta('subprotocolNegotiation.selected', $selected);
-                $this->logger->info("[subprotocol-negotiation] Selected subprotocol: {$selected}");
+                $this->configuration->getLogger()->info("[subprotocol-negotiation] Selected subprotocol: {$selected}");
             } elseif ($this->require) {
                 // No matching subprotocol, close and fail
                 $connection->close();

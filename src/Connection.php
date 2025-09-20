@@ -20,10 +20,6 @@ use Psr\Http\Message\{
     ServerRequestFactoryInterface,
     UriFactoryInterface,
 };
-use Psr\Log\{
-    LoggerAwareInterface,
-    LoggerInterface,
-};
 use Stringable;
 use Throwable;
 use WebSocket\Frame\FrameHandler;
@@ -53,9 +49,8 @@ use WebSocket\Trait\{
  * WebSocket\Connection class.
  * A client/server connection, wrapping socket stream.
  */
-class Connection implements LoggerAwareInterface, Stringable
+class Connection implements Stringable
 {
-    use LoggerAwareTrait;
     use SendMethodsTrait;
     use StringableTrait;
 
@@ -75,6 +70,8 @@ class Connection implements LoggerAwareInterface, Stringable
     private array $meta = [];
     private bool $closed = false;
 
+    private Configuration $configuration;
+
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
 
@@ -86,14 +83,15 @@ class Connection implements LoggerAwareInterface, Stringable
         ResponseFactoryInterface|null $responseFactory = null,
         ServerRequestFactoryInterface|null $serverRequestFactory = null,
         UriFactoryInterface|null $uriFactory = null,
+        Configuration|null $configuration = null,
     ) {
         $this->stream = $stream;
         $this->httpHandler = new HttpHandler($this->stream, $ssl, $responseFactory, $serverRequestFactory, $uriFactory);
-        $this->messageHandler = new MessageHandler(new FrameHandler($this->stream, $pushMasked, $pullMaskedRequired));
-        $this->middlewareHandler = new MiddlewareHandler($this->messageHandler, $this->httpHandler);
+        $this->messageHandler = new MessageHandler(new FrameHandler($this->stream, $pushMasked, $pullMaskedRequired), $configuration);
+        $this->middlewareHandler = new MiddlewareHandler($this->messageHandler, $this->httpHandler, $configuration);
         $this->localName = $this->stream->getLocalName() ?? '<unknown>';
         $this->remoteName = $this->stream->getRemoteName() ?? '<unknown>';
-        $this->initLogger();
+        $this->configuration = $configuration ?? new Configuration();
     }
 
     public function __destruct()
@@ -112,18 +110,6 @@ class Connection implements LoggerAwareInterface, Stringable
     /* ---------- Configuration ------------------------------------------------------------------------------------ */
 
     /**
-     * Set logger.
-     * @param LoggerInterface $logger Logger implementation
-     */
-    public function setLogger(LoggerInterface $logger): void
-    {
-        $this->logger = $logger;
-        $this->messageHandler->setLogger($logger);
-        $this->middlewareHandler->setLogger($logger);
-        $this->logger->debug("[connection] Setting logger: " . get_class($logger));
-    }
-
-    /**
      * Set time out on connection.
      * @param int<0, max>|float $timeout Timeout part in seconds
      * @return self
@@ -136,7 +122,7 @@ class Connection implements LoggerAwareInterface, Stringable
         }
         $this->timeout = $timeout;
         $this->stream->setTimeout($timeout);
-        $this->logger->debug("[connection] Setting timeout: {$timeout} seconds");
+        $this->configuration->getLogger()->debug("[connection] Setting timeout: {$timeout} seconds");
         return $this;
     }
 
@@ -190,7 +176,7 @@ class Connection implements LoggerAwareInterface, Stringable
     public function addMiddleware(MiddlewareInterface $middleware): self
     {
         $this->middlewareHandler->add($middleware);
-        $this->logger->debug("[connection] Added middleware: {$middleware}");
+        $this->configuration->getLogger()->debug("[connection] Added middleware: {$middleware}");
         return $this;
     }
 
@@ -230,7 +216,7 @@ class Connection implements LoggerAwareInterface, Stringable
      */
     public function disconnect(): self
     {
-        $this->logger->info('[connection] Closing connection');
+        $this->configuration->getLogger()->info('[connection] Closing connection');
         $this->stream->close();
         $this->closed = true;
         return $this;
@@ -242,7 +228,7 @@ class Connection implements LoggerAwareInterface, Stringable
      */
     public function closeRead(): self
     {
-        $this->logger->info('[connection] Closing further reading');
+        $this->configuration->getLogger()->info('[connection] Closing further reading');
         $this->stream->closeRead();
         return $this;
     }
@@ -253,7 +239,7 @@ class Connection implements LoggerAwareInterface, Stringable
      */
     public function closeWrite(): self
     {
-        $this->logger->info('[connection] Closing further writing');
+        $this->configuration->getLogger()->info('[connection] Closing further writing');
         $this->stream->closeWrite();
         return $this;
     }
@@ -410,11 +396,11 @@ class Connection implements LoggerAwareInterface, Stringable
     {
         // Internal exceptions are handled and re-thrown
         if ($e instanceof ReconnectException) {
-            $this->logger->info("[connection] {$e->getMessage()}", ['exception' => $e]);
+            $this->configuration->getLogger()->info("[connection] {$e->getMessage()}", ['exception' => $e]);
             throw $e;
         }
         if ($e instanceof ExceptionInterface) {
-            $this->logger->error("[connection] {$e->getMessage()}", ['exception' => $e]);
+            $this->configuration->getLogger()->error("[connection] {$e->getMessage()}", ['exception' => $e]);
             throw $e;
         }
         // External exceptions are converted to internal
@@ -422,15 +408,15 @@ class Connection implements LoggerAwareInterface, Stringable
             $meta = $this->stream->getMetadata();
             $json = json_encode($meta);
             if (!empty($meta['timed_out'])) {
-                $this->logger->error("[connection] {$e->getMessage()}", ['exception' => $e, 'meta' => $meta]);
+                $this->configuration->getLogger()->error("[connection] {$e->getMessage()}", ['exception' => $e, 'meta' => $meta]);
                 throw new ConnectionTimeoutException();
             }
             if (!empty($meta['eof'])) {
-                $this->logger->error("[connection] {$e->getMessage()}", ['exception' => $e, 'meta' => $meta]);
+                $this->configuration->getLogger()->error("[connection] {$e->getMessage()}", ['exception' => $e, 'meta' => $meta]);
                 throw new ConnectionClosedException();
             }
         }
-        $this->logger->error("[connection] {$e->getMessage()}", ['exception' => $e]);
+        $this->configuration->getLogger()->error("[connection] {$e->getMessage()}", ['exception' => $e]);
         throw new ConnectionFailureException();
     }
 }

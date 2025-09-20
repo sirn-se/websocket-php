@@ -14,7 +14,6 @@ use Psr\Http\Message\{
     MessageInterface,
     ResponseInterface,
 };
-use Psr\Log\LoggerAwareInterface;
 use Stringable;
 use WebSocket\Connection;
 use WebSocket\Exception\{
@@ -22,7 +21,7 @@ use WebSocket\Exception\{
     ReconnectException,
 };
 use WebSocket\Trait\{
-    LoggerAwareTrait,
+    ConfigurationTrait,
     StringableTrait,
 };
 
@@ -30,9 +29,9 @@ use WebSocket\Trait\{
  * WebSocket\Middleware\CloseHandler class.
  * Handles close procedure.
  */
-class FollowRedirect implements LoggerAwareInterface, ProcessHttpIncomingInterface, Stringable
+class FollowRedirect implements ProcessHttpIncomingInterface, Stringable
 {
-    use LoggerAwareTrait;
+    use ConfigurationTrait;
     use StringableTrait;
 
     private int $limit;
@@ -41,7 +40,7 @@ class FollowRedirect implements LoggerAwareInterface, ProcessHttpIncomingInterfa
     public function __construct(int $limit = 10)
     {
         $this->limit = $limit;
-        $this->initLogger();
+        $this->initConfiguration();
     }
 
     /**
@@ -59,11 +58,11 @@ class FollowRedirect implements LoggerAwareInterface, ProcessHttpIncomingInterfa
         ) {
             $note = "{$this->attempts} of {$this->limit} redirect attempts";
             if ($this->attempts > $this->limit) {
-                $this->logger->debug("[follow-redirect] Too many redirect attempts, giving up");
+                $this->configuration->getLogger()->debug("[follow-redirect] Too many redirect attempts, giving up");
                 throw new HandshakeException("Too many redirect attempts, giving up", $message);
             }
             $this->attempts++;
-            $this->logger->debug("[follow-redirect] {$message->getStatusCode()} {$locationHeader} ($note)");
+            $this->configuration->getLogger()->debug("[follow-redirect] {$message->getStatusCode()} {$locationHeader} ($note)");
             throw new ReconnectException(new Uri($locationHeader));
         }
         return $message;

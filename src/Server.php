@@ -150,7 +150,7 @@ class Server implements LoggerAwareInterface, Stringable
     {
         $this->logger = $logger;
         foreach ($this->connections as $connection) {
-            $connection->setLogger($this->logger);
+//            $connection->setLogger($this->logger);
         }
     }
 
@@ -576,7 +576,7 @@ class Server implements LoggerAwareInterface, Stringable
             throw new ConnectionFailureException("Server failed to accept: {$e->getMessage()}");
         }
         try {
-            $connection->setLogger($this->logger);
+//            $connection->setLogger($this->logger);
             $connection
                 ->setFrameSize($this->frameSize)
                 ->setTimeout($this->timeout)
