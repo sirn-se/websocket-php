@@ -327,12 +327,7 @@ class ConfigTest extends TestCase
 
         $client->setLogger(new NullLogger());
         $client->addMiddleware(new CloseHandler());
-
-        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
-            $this->assertEquals(300, $params[0]);
-        });
         $client->setTimeout(300);
-
         $client->setFrameSize(64);
         $this->assertEquals(64, $client->getFrameSize());
 

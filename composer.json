@@ -42,7 +42,7 @@
         "phrity/net-mock": "dev-ws4 as 2.4.0",
         "phrity/util-errorhandler": "^1.1",
         "robiningelbrecht/phpunit-coverage-tools": "^1.9",
-        "squizlabs/php_codesniffer": "^3.5"
+        "squizlabs/php_codesniffer": "^4.0"
     },
     "suggest": {
         "ext-zlib": "Required for per-message deflate compression",

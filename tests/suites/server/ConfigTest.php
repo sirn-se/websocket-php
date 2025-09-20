@@ -124,9 +124,7 @@ class ConfigTest extends TestCase
         $server->start();
 
         $server->setLogger(new NullLogger());
-        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
-            $this->assertEquals(300, $params[0]);
-        });
+
         $this->assertSame($server, $server->setTimeout(300));
         $this->assertSame($server, $server->setFrameSize(64));
         $this->assertSame($server, $server->setMaxConnections(null));
@@ -134,7 +132,6 @@ class ConfigTest extends TestCase
         $this->assertSame($server, $server->addMiddleware(new Callback()));
 
         $this->assertEquals('WebSocket\Server(ssl://0.0.0.0:9000)', "{$server}");
-        $this->assertEquals(300, $server->getTimeout());
         $this->assertEquals(64, $server->getFrameSize());
         $this->assertEquals(9000, $server->getPort());
         $this->assertEquals('ssl', $server->getScheme());

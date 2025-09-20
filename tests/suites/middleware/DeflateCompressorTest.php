@@ -51,8 +51,7 @@ class DeflateCompressorTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $compressor = new DeflateCompressor();
@@ -145,8 +144,7 @@ class DeflateCompressorTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $compressor = new DeflateCompressor();
@@ -239,8 +237,7 @@ class DeflateCompressorTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $compressor = new DeflateCompressor();
@@ -312,8 +309,7 @@ class DeflateCompressorTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $compressor = new DeflateCompressor(
@@ -411,8 +407,7 @@ class DeflateCompressorTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $compressor = new DeflateCompressor(
@@ -509,8 +504,7 @@ class DeflateCompressorTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $compressor = new DeflateCompressor(
@@ -574,8 +568,7 @@ class DeflateCompressorTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $compressor = new DeflateCompressor(

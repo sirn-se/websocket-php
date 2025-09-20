@@ -26,6 +26,7 @@ use WebSocket\Exception\{
     ConnectionTimeoutException
 };
 use WebSocket\Message\Text;
+use WebSocket\Test\MockStreamTrait;
 
 /**
  * Test case for WebSocket\Connection: Exceptions.
@@ -34,6 +35,7 @@ class ExceptionTest extends TestCase
 {
     use ExpectContextTrait;
     use ExpectSocketStreamTrait;
+    use MockStreamTrait;
 
     public function setUp(): void
     {
@@ -54,8 +56,7 @@ class ExceptionTest extends TestCase
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -77,8 +78,7 @@ class ExceptionTest extends TestCase
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -99,8 +99,7 @@ class ExceptionTest extends TestCase
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -121,8 +120,7 @@ class ExceptionTest extends TestCase
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -143,8 +141,7 @@ class ExceptionTest extends TestCase
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -165,8 +162,7 @@ class ExceptionTest extends TestCase
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -191,8 +187,7 @@ class ExceptionTest extends TestCase
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -217,8 +212,7 @@ class ExceptionTest extends TestCase
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -242,8 +236,7 @@ class ExceptionTest extends TestCase
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -256,45 +249,6 @@ class ExceptionTest extends TestCase
         $this->expectException(ConnectionFailureException::class);
         $this->expectExceptionMessage('Connection error');
         $connection->send(new Text('Generic'));
-
-        unset($connection);
-    }
-
-    public function testInvalidTimeout(): void
-    {
-        $temp = tmpfile();
-
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-        $this->expectContext();
-        $stream = new SocketStream($temp);
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
-        $connection = new Connection($stream, false, false);
-
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Invalid timeout '-1' provided");
-        $connection->setTimeout(-1);
-
-        unset($connection);
-    }
-
-    public function testInvalidFrameSize(): void
-    {
-        $temp = tmpfile();
-
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-        $this->expectContext();
-        $stream = new SocketStream($temp);
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
-        $connection = new Connection($stream, false, false);
-
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Invalid frameSize '0' provided");
-        // @phpstan-ignore argument.type
-        $connection->setFrameSize(0);
 
         unset($connection);
     }

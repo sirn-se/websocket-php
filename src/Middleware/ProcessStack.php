@@ -68,6 +68,6 @@ class ProcessStack implements Stringable
         if ($processor) {
             return $processor->processOutgoing($this, $this->connection, $message);
         }
-        return $this->messageHandler->push($message, $this->connection->getFrameSize());
+        return $this->messageHandler->push($message, $this->connection->getConfiguration()->getFrameSize());
     }
 }

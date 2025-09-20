@@ -63,7 +63,7 @@ echo "# Random server\n";
  *     ssl: bool,
  *     timeout: int<0, max>|float,
  *     framesize: int<1, max>,
- *     connections: int<0, max>|null,
+ *     connections: int<1, max>|null,
  *     deflate: bool,
  * } $options
  */
@@ -95,7 +95,7 @@ try {
         echo "# Set frame size: {$options['framesize']}\n";
     }
     if (isset($options['connections'])) {
-        $server->setMaxConnections($options['connections']);
+        $server->getConfiguration()->setMaxConnections($options['connections']);
         echo "# Set max connections: {$options['connections']}\n";
     }
     if (isset($options['deflate'])) {

@@ -311,4 +311,11 @@ trait MockStreamTrait
             });
         }
     }
+
+    private function expectWsConnectionCreate(string ...$encodedFrames): void
+    {
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+    }
 }

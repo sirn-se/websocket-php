@@ -35,6 +35,7 @@ use WebSocket\Message\{
     Text
 };
 use WebSocket\Middleware\Callback;
+use WebSocket\Test\MockStreamTrait;
 
 /**
  * Test case for WebSocket\Connection: Connection.
@@ -43,6 +44,7 @@ class ConnectionTest extends TestCase
 {
     use ExpectContextTrait;
     use ExpectSocketStreamTrait;
+    use MockStreamTrait;
 
     public function setUp(): void
     {
@@ -64,8 +66,7 @@ class ConnectionTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
         $this->assertInstanceOf(Connection::class, $connection);
         $this->assertInstanceOf(Stringable::class, $connection);
@@ -82,13 +83,6 @@ class ConnectionTest extends TestCase
         $this->assertEquals('meta.data.1', $connection->getMeta('test.meta.1'));
         $this->assertEquals('meta.data.2', $connection->getMeta('test.meta.2'));
 
-        $this->expectSocketStreamSetTimeout();
-        $this->assertSame($connection, $connection->setTimeout(10));
-        $this->assertEquals(10, $connection->getTimeout());
-
-        $connection->setLogger(new NullLogger());
-        $this->assertSame($connection, $connection->setFrameSize(64));
-        $this->assertEquals(64, $connection->getFrameSize());
         $this->assertSame($connection, $connection->addMiddleware(new Callback()));
 
         $this->expectSocketStreamIsReadable();
@@ -126,8 +120,7 @@ class ConnectionTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
         $request = new Request('GET', 'ws://test.com/path');
         $connection->setHandshakeRequest($request);
@@ -168,8 +161,7 @@ class ConnectionTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
         $message = new Text('Test message');
 
@@ -203,8 +195,7 @@ class ConnectionTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -226,8 +217,7 @@ class ConnectionTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamReadLine()->setReturn(function () {
@@ -249,8 +239,7 @@ class ConnectionTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -272,8 +261,7 @@ class ConnectionTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamRead()->setReturn(function () {

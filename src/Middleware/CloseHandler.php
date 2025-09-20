@@ -7,7 +7,6 @@
 
 namespace WebSocket\Middleware;
 
-use Psr\Log\LoggerAwareInterface;
 use Stringable;
 use WebSocket\Connection;
 use WebSocket\Message\{
@@ -15,7 +14,7 @@ use WebSocket\Message\{
     Message
 };
 use WebSocket\Trait\{
-    LoggerAwareTrait,
+    ConfigurationTrait,
     StringableTrait,
 };
 
@@ -23,14 +22,14 @@ use WebSocket\Trait\{
  * WebSocket\Middleware\CloseHandler class.
  * Handles close procedure.
  */
-class CloseHandler implements LoggerAwareInterface, ProcessIncomingInterface, ProcessOutgoingInterface, Stringable
+class CloseHandler implements ProcessIncomingInterface, ProcessOutgoingInterface, Stringable
 {
-    use LoggerAwareTrait;
+    use ConfigurationTrait;
     use StringableTrait;
 
     public function __construct()
     {
-        $this->initLogger();
+        $this->initConfiguration();
     }
 
     public function processIncoming(ProcessStack $stack, Connection $connection): Message
@@ -41,13 +40,15 @@ class CloseHandler implements LoggerAwareInterface, ProcessIncomingInterface, Pr
         }
         if ($connection->isWritable()) {
             // Remote sent Close; acknowledge and close for further reading
-            $this->logger->debug("[close-handler] Received 'close', status: {$message->getCloseStatus()}");
+            $this->configuration->getLogger()->debug(
+                "[close-handler] Received 'close', status: {$message->getCloseStatus()}"
+            );
             $ack =  "Close acknowledged: {$message->getCloseStatus()}";
             $connection->closeRead();
             $connection->send(new Close($message->getCloseStatus(), $ack));
         } else {
             // Remote sent Close/Ack: disconnect
-            $this->logger->debug("[close-handler] Received 'close' acknowledge, disconnecting");
+            $this->configuration->getLogger()->debug("[close-handler] Received 'close' acknowledge, disconnecting");
             $connection->disconnect();
         }
         return $message;
@@ -61,11 +62,13 @@ class CloseHandler implements LoggerAwareInterface, ProcessIncomingInterface, Pr
         }
         if ($connection->isReadable()) {
             // Local sent Close: close for further writing, expect remote acknowledge
-            $this->logger->debug("[close-handler] Sent 'close', status: {$message->getCloseStatus()}");
+            $this->configuration->getLogger()->debug(
+                "[close-handler] Sent 'close', status: {$message->getCloseStatus()}"
+            );
             $connection->closeWrite();
         } else {
             // Local sent Close/Ack: disconnect
-            $this->logger->debug("[close-handler] Sent 'close' acknowledge, disconnecting");
+            $this->configuration->getLogger()->debug("[close-handler] Sent 'close' acknowledge, disconnecting");
             $connection->disconnect();
         }
         return $message;

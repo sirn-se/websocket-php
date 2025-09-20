@@ -7,6 +7,7 @@
 
 namespace WebSocket\Middleware;
 
+use WebSocket\Configuration;
 use Stringable;
 
 /**
@@ -15,4 +16,5 @@ use Stringable;
  */
 interface MiddlewareInterface extends Stringable
 {
+    public function setConfiguration(Configuration $configuration): self;
 }

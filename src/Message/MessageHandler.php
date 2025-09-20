@@ -7,18 +7,15 @@
 
 namespace WebSocket\Message;
 
-use Psr\Log\{
-    LoggerAwareInterface,
-    LoggerInterface,
-};
 use Stringable;
+use WebSocket\Configuration;
 use WebSocket\Exception\BadOpcodeException;
 use WebSocket\Frame\{
     Frame,
     FrameHandler,
 };
 use WebSocket\Trait\{
-    LoggerAwareTrait,
+    ConfigurationTrait,
     StringableTrait,
 };
 
@@ -26,9 +23,9 @@ use WebSocket\Trait\{
  * WebSocket\Message\MessageHandler class.
  * Message/Frame handling.
  */
-class MessageHandler implements LoggerAwareInterface, Stringable
+class MessageHandler implements Stringable
 {
-    use LoggerAwareTrait;
+    use ConfigurationTrait;
     use StringableTrait;
 
     private const DEFAULT_SIZE = 4096;
@@ -37,16 +34,10 @@ class MessageHandler implements LoggerAwareInterface, Stringable
     /** @var array<Frame> $frameBuffer */
     private array $frameBuffer = [];
 
-    public function __construct(FrameHandler $frameHandler)
+    public function __construct(FrameHandler $frameHandler, Configuration|null $configuration = null)
     {
         $this->frameHandler = $frameHandler;
-        $this->initLogger();
-    }
-
-    public function setLogger(LoggerInterface $logger): void
-    {
-        $this->logger = $logger;
-        $this->frameHandler->setLogger($logger);
+        $this->initConfiguration($configuration);
     }
 
     /**
@@ -62,7 +53,7 @@ class MessageHandler implements LoggerAwareInterface, Stringable
         foreach ($frames as $frame) {
             $this->frameHandler->push($frame);
         }
-        $this->logger->info("[message-handler] Pushed {$message}", [
+        $this->configuration->getLogger()->info("[message-handler] Pushed {$message}", [
             'opcode' => $message->getOpcode(),
             'content-length' => $message->getLength(),
             'frames' => count($frames),
@@ -108,7 +99,7 @@ class MessageHandler implements LoggerAwareInterface, Stringable
             return $carry . $item->getPayload();
         }, ''));
         $message->setCompress($frames[0]->getRsv1() ?? false);
-        $this->logger->info("[message-handler] Pulled {$message}", [
+        $this->configuration->getLogger()->info("[message-handler] Pulled {$message}", [
             'opcode' => $message->getOpcode(),
             'content-length' => $message->getLength(),
             'frames' => count($frames),

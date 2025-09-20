@@ -48,8 +48,7 @@ class ProcessStackTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $connection->addMiddleware(new Callback(incoming: function ($stack, $connection) {
@@ -73,7 +72,6 @@ class ProcessStackTest extends TestCase
             $this->assertEquals('Test message<-C', $message->getContent());
             return $message;
         }));
-        $connection->setLogger(new NullLogger());
 
         $this->expectSocketStreamRead()->setReturn(function () {
             return base64_decode('gQw=');
@@ -96,8 +94,7 @@ class ProcessStackTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $connection->addMiddleware(new Callback(outgoing: function ($stack, $connection, $message) {
@@ -127,7 +124,6 @@ class ProcessStackTest extends TestCase
             $this->assertEquals('Test message->A->B->C<-C', $message->getContent());
             return $message;
         }));
-        $connection->setLogger(new NullLogger());
 
         $this->expectSocketStreamWrite();
         $connection->send(new Text('Test message'));

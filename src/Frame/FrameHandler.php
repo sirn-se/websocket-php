@@ -8,12 +8,12 @@
 namespace WebSocket\Frame;
 
 use Phrity\Net\SocketStream;
-use Psr\Log\LoggerAwareInterface;
 use RuntimeException;
 use Stringable;
+use WebSocket\Configuration;
 use WebSocket\Exception\CloseException;
 use WebSocket\Trait\{
-    LoggerAwareTrait,
+    ConfigurationTrait,
     OpcodeTrait,
     StringableTrait
 };
@@ -22,9 +22,9 @@ use WebSocket\Trait\{
  * WebSocket\Frame\FrameHandler class.
  * Reads and writes Frames on stream.
  */
-class FrameHandler implements LoggerAwareInterface, Stringable
+class FrameHandler implements Stringable
 {
-    use LoggerAwareTrait;
+    use ConfigurationTrait;
     use OpcodeTrait;
     use StringableTrait;
 
@@ -32,12 +32,16 @@ class FrameHandler implements LoggerAwareInterface, Stringable
     private bool $pushMasked;
     private bool $pullMaskedRequired;
 
-    public function __construct(SocketStream $stream, bool $pushMasked, bool $pullMaskedRequired)
-    {
+    public function __construct(
+        SocketStream $stream,
+        bool $pushMasked,
+        bool $pullMaskedRequired,
+        Configuration|null $configuration = null
+    ) {
         $this->stream = $stream;
         $this->pushMasked = $pushMasked;
         $this->pullMaskedRequired = $pullMaskedRequired;
-        $this->initLogger();
+        $this->initConfiguration($configuration);
     }
 
     /**
@@ -96,14 +100,14 @@ class FrameHandler implements LoggerAwareInterface, Stringable
         }
 
         $frame = new Frame($opcode, $payload, $final, $rsv1, $rsv2, $rsv3);
-        $this->logger->debug("[frame-handler] Pulled '{$opcode}' frame", [
+        $this->configuration->getLogger()->debug("[frame-handler] Pulled '{$opcode}' frame", [
             'opcode' => $frame->getOpcode(),
             'final' => $frame->isFinal(),
             'content-length' => $frame->getPayloadLength(),
         ]);
 
         if ($this->pullMaskedRequired && !$masked) {
-            $this->logger->error("[frame-handler] Masking required, but frame was unmasked");
+            $this->configuration->getLogger()->error("[frame-handler] Masking required, but frame was unmasked");
             throw new CloseException(1002, 'Masking required');
         }
 
@@ -158,7 +162,7 @@ class FrameHandler implements LoggerAwareInterface, Stringable
         // Write to stream.
         $written = $this->write($data);
 
-        $this->logger->debug("[frame-handler] Pushed '{opcode}' frame", [
+        $this->configuration->getLogger()->debug("[frame-handler] Pushed '{opcode}' frame", [
             'opcode' => $frame->getOpcode(),
             'final' => $frame->isFinal(),
             'content-length' => $frame->getPayloadLength(),

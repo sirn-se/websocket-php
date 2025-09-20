@@ -8,6 +8,9 @@
 
 ### `4.0.0`
 
+ * Shared stream observer, sharable across multiple cients and servers (@sirn-se)
+ * Configuration class for various settings (@sirn-se)
+ * Many class local configuration setters removed (@sirn-se)
  * Remove deprecated code (@sirn-se)
 
 ## `v3.6`
