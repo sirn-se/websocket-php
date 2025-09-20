@@ -14,6 +14,7 @@
     <testsuites>
         <testsuite name="Unit tests">
             <directory suffix=".php">tests/suites/client</directory>
+            <directory suffix=".php">tests/suites/configuration</directory>
             <directory suffix=".php">tests/suites/connection</directory>
             <directory suffix=".php">tests/suites/frame</directory>
             <directory suffix=".php">tests/suites/http</directory>

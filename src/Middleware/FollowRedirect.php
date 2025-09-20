@@ -62,7 +62,9 @@ class FollowRedirect implements ProcessHttpIncomingInterface, Stringable
                 throw new HandshakeException("Too many redirect attempts, giving up", $message);
             }
             $this->attempts++;
-            $this->configuration->getLogger()->debug("[follow-redirect] {$message->getStatusCode()} {$locationHeader} ($note)");
+            $this->configuration->getLogger()->debug(
+                "[follow-redirect] {$message->getStatusCode()} {$locationHeader} ($note)"
+            );
             throw new ReconnectException(new Uri($locationHeader));
         }
         return $message;

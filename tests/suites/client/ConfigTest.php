@@ -9,9 +9,10 @@ declare(strict_types=1);
 
 namespace WebSocket\Test\Client;
 
-use GuzzleHttp\Psr7\HttpFactory;
+use GuzzleHttp\Psr7\HttpFactory as GuzzleFactory;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Phrity\Http\HttpFactory;
 use Phrity\Net\Mock\{
     Context,
     StreamFactory,
@@ -58,31 +59,38 @@ class ConfigTest extends TestCase
 
     public function testUriStringExtended(): void
     {
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path?my_query=yes#my_fragment');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client(
+            'ws://localhost:8000/my/mock/path?my_query=yes#my_fragment',
+            streamFactory: new StreamFactory()
+        );
 
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake('localhost:8000', '/my/mock/path?my_query=yes');
         $client->connect();
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
+        $client->disconnect();
+
         unset($client);
     }
 
     public function testUriStringWithoutPath(): void
     {
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000', streamFactory: new StreamFactory());
 
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake('localhost:8000', '/');
         $client->connect();
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
+        $client->disconnect();
+
         unset($client);
     }
 
@@ -91,16 +99,18 @@ class ConfigTest extends TestCase
         $uri = new Uri('ws://localhost:8000');
         $uri = $uri->withPath('my/mock/path');
 
-        $this->expectStreamFactory();
-        $client = new Client($uri);
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client($uri, streamFactory: new StreamFactory());
 
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake('localhost:8000', '/my/mock/path');
         $client->connect();
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
+        $client->disconnect();
+
         unset($client);
     }
 
@@ -109,16 +119,18 @@ class ConfigTest extends TestCase
         $uri = new Uri('ws://localhost');
         $uri = $uri->withPath('my/mock/path');
 
-        $this->expectStreamFactory();
-        $client = new Client($uri);
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client($uri, streamFactory: new StreamFactory());
 
         $this->expectWsClientConnect(port: 80);
         $this->expectWsClientPerformHandshake('localhost', '/my/mock/path');
         $client->connect();
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
+        $client->disconnect();
+
         unset($client);
     }
 
@@ -127,16 +139,18 @@ class ConfigTest extends TestCase
         $uri = new Uri('wss://localhost');
         $uri = $uri->withPath('my/mock/path');
 
-        $this->expectStreamFactory();
-        $client = new Client($uri);
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client($uri, streamFactory: new StreamFactory());
 
         $this->expectWsClientConnect(scheme: 'ssl', port: 443);
         $this->expectWsClientPerformHandshake('localhost', '/my/mock/path');
         $client->connect();
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
+        $client->disconnect();
+
         unset($client);
     }
 
@@ -163,9 +177,8 @@ class ConfigTest extends TestCase
     #[DataProvider('uriStringAuthorizationDataProvider')]
     public function testUriStringAuthorization(string $uriAuth, string $expectedCredentials): void
     {
-        $this->expectStreamFactory();
-        $client = new Client("wss://{$uriAuth}@localhost:8000/my/mock/path");
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client("wss://{$uriAuth}@localhost:8000/my/mock/path", streamFactory: new StreamFactory());
 
         $this->expectWsClientConnect(scheme: 'ssl');
         $this->expectWsClientPerformHandshake(
@@ -175,8 +188,11 @@ class ConfigTest extends TestCase
         );
         $client->connect();
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
+        $client->disconnect();
+
         unset($client);
     }
 
@@ -184,26 +200,28 @@ class ConfigTest extends TestCase
     {
         $uri = new MockUri();
 
-        $this->expectStreamFactory();
-        $client = new Client($uri);
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client($uri, streamFactory: new StreamFactory());
 
         unset($client);
     }
 
     public function testTimeoutOption(): void
     {
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client("ws://localhost:8000/my/mock/path", streamFactory: new StreamFactory());
+
         $client->setTimeout(300);
 
         $this->expectWsClientConnect(timeout: 300);
         $this->expectWsClientPerformHandshake('localhost:8000', '/my/mock/path');
         $client->connect();
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
+        $client->disconnect();
+
         unset($client);
     }
 
@@ -215,9 +233,9 @@ class ConfigTest extends TestCase
         $this->expectContextSetOption();
         $context->setOptions(['ssl' => ['verify_peer' => false]]);
 
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client("ws://localhost:8000/my/mock/path", streamFactory: new StreamFactory());
+
         $client->onHandshake(function (Client $client, Connection $connection) {
             $this->expectSocketStreamGetContext();
             $connectionContext = $connection->getContext();
@@ -235,16 +253,19 @@ class ConfigTest extends TestCase
 
         $this->assertSame($context, $client->getContext());
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
+        $client->disconnect();
+
         unset($client);
     }
 
     public function testHeadersOption(): void
     {
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client("ws://localhost:8000/my/mock/path", streamFactory: new StreamFactory());
+
         $client->addHeader('Generic-header', 'Generic content');
 
         $this->expectWsClientConnect();
@@ -255,32 +276,37 @@ class ConfigTest extends TestCase
         );
         $client->connect();
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
+        $client->disconnect();
+
         unset($client);
     }
 
     public function testPersistentOption(): void
     {
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client("ws://localhost:8000/my/mock/path", streamFactory: new StreamFactory());
+
         $client->setPersistent(true);
 
         $this->expectWsClientConnect(persistent: true);
         $this->expectWsClientPerformHandshake();
         $client->connect();
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
+        $client->disconnect();
+
         unset($client);
     }
 
     public function testConfigUnconnectedClient(): void
     {
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client("ws://localhost:8000/my/mock/path", streamFactory: new StreamFactory());
 
         $this->assertFalse($client->isConnected());
         $client->setLogger(new NullLogger());
@@ -292,9 +318,8 @@ class ConfigTest extends TestCase
 
     public function testConfigConnectedClient(): void
     {
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client("ws://localhost:8000/my/mock/path", streamFactory: new StreamFactory());
 
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake();
@@ -302,30 +327,36 @@ class ConfigTest extends TestCase
 
         $client->setLogger(new NullLogger());
         $client->addMiddleware(new CloseHandler());
-
-        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
-            $this->assertEquals(300, $params[0]);
-        });
         $client->setTimeout(300);
-
-        $this->expectSocketStreamIsConnected();
         $client->setFrameSize(64);
         $this->assertEquals(64, $client->getFrameSize());
 
+        $this->expectStreamCollectionDetach();
+        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
+        $client->disconnect();
+
         unset($client);
     }
 
     public function testHttpFactories(): void
     {
-        $httpFactory = new HttpFactory();
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $httpFactory = new GuzzleFactory();
+        $this->expectWsClientCreate();
+        $client = new Client("ws://localhost:8000/my/mock/path", streamFactory: new StreamFactory());
 
-        $this->assertSame($client, $client->setResponseFactory($httpFactory));
-        $this->assertSame($client, $client->setRequestFactory($httpFactory));
-        $this->assertSame($client, $client->setUriFactory($httpFactory));
+        $this->assertSame($client, $client->setHttpFactory(HttpFactory::create($httpFactory)));
+
+        unset($client);
+    }
+
+    public function testHStreamFactory(): void
+    {
+        $this->expectWsClientCreate();
+        $client = new Client("ws://localhost:8000/my/mock/path", streamFactory: new StreamFactory());
+
+        $this->expectStreamFactory();
+        $this->assertSame($client, $client->setStreamFactory(new StreamFactory()));
 
         unset($client);
     }

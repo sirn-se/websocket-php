@@ -8,6 +8,7 @@
 namespace WebSocket;
 
 use InvalidArgumentException;
+use Phrity\Http\HttpFactory;
 use Phrity\Net\{
     Context,
     SocketStream,
@@ -15,10 +16,7 @@ use Phrity\Net\{
 use Psr\Http\Message\{
     MessageInterface,
     RequestInterface,
-    ResponseFactoryInterface,
     ResponseInterface,
-    ServerRequestFactoryInterface,
-    UriFactoryInterface,
 };
 use Stringable;
 use Throwable;
@@ -40,7 +38,7 @@ use WebSocket\Middleware\{
     MiddlewareInterface
 };
 use WebSocket\Trait\{
-    LoggerAwareTrait,
+    ConfigurationTrait,
     SendMethodsTrait,
     StringableTrait
 };
@@ -51,6 +49,7 @@ use WebSocket\Trait\{
  */
 class Connection implements Stringable
 {
+    use ConfigurationTrait;
     use SendMethodsTrait;
     use StringableTrait;
 
@@ -58,19 +57,12 @@ class Connection implements Stringable
     private HttpHandler $httpHandler;
     private MessageHandler $messageHandler;
     private MiddlewareHandler $middlewareHandler;
-    /** @var int<1, max> $frameSize */
-    private int $frameSize = 4096;
-    /** @var int<0, max>|float $timeout */
-    private int|float $timeout = 60;
     private string $localName;
     private string $remoteName;
     private RequestInterface|null $handshakeRequest = null;
     private ResponseInterface|null $handshakeResponse = null;
     /** @var array<string, mixed> $meta */
     private array $meta = [];
-    private bool $closed = false;
-
-    private Configuration $configuration;
 
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
@@ -80,25 +72,18 @@ class Connection implements Stringable
         bool $pushMasked,
         bool $pullMaskedRequired,
         bool $ssl = false,
-        ResponseFactoryInterface|null $responseFactory = null,
-        ServerRequestFactoryInterface|null $serverRequestFactory = null,
-        UriFactoryInterface|null $uriFactory = null,
+        HttpFactory|null $httpFactory = null,
         Configuration|null $configuration = null,
     ) {
         $this->stream = $stream;
-        $this->httpHandler = new HttpHandler($this->stream, $ssl, $responseFactory, $serverRequestFactory, $uriFactory);
-        $this->messageHandler = new MessageHandler(new FrameHandler($this->stream, $pushMasked, $pullMaskedRequired), $configuration);
-        $this->middlewareHandler = new MiddlewareHandler($this->messageHandler, $this->httpHandler, $configuration);
+        $this->httpHandler = new HttpHandler($this->stream, $ssl, $httpFactory);
+        $this->messageHandler = new MessageHandler(new FrameHandler($this->stream, $pushMasked, $pullMaskedRequired));
+        $this->middlewareHandler = new MiddlewareHandler($this->messageHandler, $this->httpHandler);
         $this->localName = $this->stream->getLocalName() ?? '<unknown>';
         $this->remoteName = $this->stream->getRemoteName() ?? '<unknown>';
-        $this->configuration = $configuration ?? new Configuration();
-    }
+        $this->initConfiguration($configuration);
 
-    public function __destruct()
-    {
-        if (!$this->closed && $this->isConnected()) {
-            $this->stream->close();
-        }
+        $this->stream->setTimeout($this->configuration->getTimeout());
     }
 
     public function __toString(): string
@@ -108,56 +93,6 @@ class Connection implements Stringable
 
 
     /* ---------- Configuration ------------------------------------------------------------------------------------ */
-
-    /**
-     * Set time out on connection.
-     * @param int<0, max>|float $timeout Timeout part in seconds
-     * @return self
-     * @throws InvalidArgumentException
-     */
-    public function setTimeout(int|float $timeout): self
-    {
-        if ($timeout < 0) {
-            throw new InvalidArgumentException("Invalid timeout '{$timeout}' provided");
-        }
-        $this->timeout = $timeout;
-        $this->stream->setTimeout($timeout);
-        $this->configuration->getLogger()->debug("[connection] Setting timeout: {$timeout} seconds");
-        return $this;
-    }
-
-    /**
-     * Get timeout.
-     * @return int<0, max>|float Timeout in seconds.
-     */
-    public function getTimeout(): int|float
-    {
-        return $this->timeout;
-    }
-
-    /**
-     * Set frame size.
-     * @param int<1, max> $frameSize Frame size in bytes.
-     * @return self
-     * @throws InvalidArgumentException
-     */
-    public function setFrameSize(int $frameSize): self
-    {
-        if ($frameSize < 1) {
-            throw new InvalidArgumentException("Invalid frameSize '{$frameSize}' provided");
-        }
-        $this->frameSize = $frameSize;
-        return $this;
-    }
-
-    /**
-     * Get frame size.
-     * @return int<1, max> Frame size in bytes
-     */
-    public function getFrameSize(): int
-    {
-        return max(1, $this->frameSize);
-    }
 
     /**
      * Get current stream context.
@@ -218,7 +153,6 @@ class Connection implements Stringable
     {
         $this->configuration->getLogger()->info('[connection] Closing connection');
         $this->stream->close();
-        $this->closed = true;
         return $this;
     }
 
@@ -249,18 +183,18 @@ class Connection implements Stringable
 
     /**
      * Get name of local socket, or null if not connected.
-     * @return string|null
+     * @return string
      */
-    public function getName(): string|null
+    public function getName(): string
     {
         return $this->localName;
     }
 
     /**
      * Get name of remote socket, or null if not connected.
-     * @return string|null
+     * @return string
      */
-    public function getRemoteName(): string|null
+    public function getRemoteName(): string
     {
         return $this->remoteName;
     }
@@ -408,11 +342,17 @@ class Connection implements Stringable
             $meta = $this->stream->getMetadata();
             $json = json_encode($meta);
             if (!empty($meta['timed_out'])) {
-                $this->configuration->getLogger()->error("[connection] {$e->getMessage()}", ['exception' => $e, 'meta' => $meta]);
+                $this->configuration->getLogger()->error(
+                    "[connection] {$e->getMessage()}",
+                    ['exception' => $e, 'meta' => $meta]
+                );
                 throw new ConnectionTimeoutException();
             }
             if (!empty($meta['eof'])) {
-                $this->configuration->getLogger()->error("[connection] {$e->getMessage()}", ['exception' => $e, 'meta' => $meta]);
+                $this->configuration->getLogger()->error(
+                    "[connection] {$e->getMessage()}",
+                    ['exception' => $e, 'meta' => $meta]
+                );
                 throw new ConnectionClosedException();
             }
         }

@@ -49,9 +49,9 @@ class CallbackTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
+
         $middleware = new Callback(incoming: function ($stack, $connection) {
             $message = $stack->handleIncoming();
             $message->setContent("Changed message");
@@ -72,8 +72,6 @@ class CallbackTest extends TestCase
         $message = $connection->pullMessage();
         $this->assertEquals('Changed message', $message->getContent());
 
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         unset($stream);
     }
 
@@ -86,8 +84,7 @@ class CallbackTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $connection->addMiddleware(new Callback(outgoing: function ($stack, $connection, $message) {
@@ -101,8 +98,6 @@ class CallbackTest extends TestCase
         $this->expectSocketStreamWrite();
         $connection->send(new Text('Test message'));
 
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         unset($stream);
     }
 
@@ -115,8 +110,7 @@ class CallbackTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $connection->addMiddleware(new Callback(httpIncoming: function ($stack, $connection) {
@@ -138,8 +132,6 @@ class CallbackTest extends TestCase
         $message = $connection->pullHttp();
         $this->assertEquals('POST', $message->getMethod());
 
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         unset($stream);
     }
 
@@ -152,8 +144,7 @@ class CallbackTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $connection->addMiddleware(new Callback(httpOutgoing: function ($stack, $connection, $message) {
@@ -167,8 +158,6 @@ class CallbackTest extends TestCase
         $message = $connection->pushHttp(new Response(200));
         $this->assertEquals(400, $message->getStatusCode());
 
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         unset($stream);
     }
 
@@ -181,8 +170,7 @@ class CallbackTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $connection->addMiddleware(new Callback(tick: function ($stack, $connection) {
@@ -190,8 +178,6 @@ class CallbackTest extends TestCase
         }));
         $connection->tick();
 
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         unset($stream);
     }
 }

@@ -59,7 +59,7 @@ class PingInterval implements ProcessOutgoingInterface, ProcessTickInterface, St
 
     private function setNext(Connection $connection): float
     {
-        $next = microtime(true) + ($this->interval ?? $connection->getTimeout());
+        $next = microtime(true) + ($this->interval ?? $this->getConfiguration()->getTimeout());
         $connection->setMeta('pingInterval.next', $next);
         return $next;
     }

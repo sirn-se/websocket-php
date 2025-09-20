@@ -9,8 +9,9 @@ declare(strict_types=1);
 
 namespace WebSocket\Test\Server;
 
-use GuzzleHttp\Psr7\HttpFactory;
+use GuzzleHttp\Psr7\HttpFactory as GuzzleFactory;
 use PHPUnit\Framework\TestCase;
+use Phrity\Http\HttpFactory;
 use Phrity\Net\Mock\{
     Context,
     StreamFactory,
@@ -123,9 +124,7 @@ class ConfigTest extends TestCase
         $server->start();
 
         $server->setLogger(new NullLogger());
-        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
-            $this->assertEquals(300, $params[0]);
-        });
+
         $this->assertSame($server, $server->setTimeout(300));
         $this->assertSame($server, $server->setFrameSize(64));
         $this->assertSame($server, $server->setMaxConnections(null));
@@ -133,7 +132,6 @@ class ConfigTest extends TestCase
         $this->assertSame($server, $server->addMiddleware(new Callback()));
 
         $this->assertEquals('WebSocket\Server(ssl://0.0.0.0:9000)', "{$server}");
-        $this->assertEquals(300, $server->getTimeout());
         $this->assertEquals(64, $server->getFrameSize());
         $this->assertEquals(9000, $server->getPort());
         $this->assertEquals('ssl', $server->getScheme());
@@ -205,7 +203,7 @@ class ConfigTest extends TestCase
 
     public function testHttpFactories(): void
     {
-        $httpFactory = new HttpFactory();
+        $httpFactory = new GuzzleFactory();
         $this->expectContext();
         $context = new Context();
         $this->expectContextSetOptions();
@@ -215,9 +213,7 @@ class ConfigTest extends TestCase
         $this->expectWsServerCreate();
         $server = new Server(8000, streamFactory: new StreamFactory());
 
-        $this->assertSame($server, $server->setResponseFactory($httpFactory));
-        $this->assertSame($server, $server->setServerRequestFactory($httpFactory));
-        $this->assertSame($server, $server->setUriFactory($httpFactory));
+        $this->assertSame($server, $server->setHttpFactory(HttpFactory::create($httpFactory)));
 
         $this->expectStreamCollectionDetach();
         $server->disconnect();

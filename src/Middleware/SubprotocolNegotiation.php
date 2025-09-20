@@ -58,7 +58,9 @@ class SubprotocolNegotiation implements
                 $message = $message->withAddedHeader('Sec-WebSocket-Protocol', $subprotocol);
             }
             if ($supported = implode(', ', $this->subprotocols)) {
-                $this->configuration->getLogger()->debug("[subprotocol-negotiation] Requested subprotocols: {$supported}");
+                $this->configuration->getLogger()->debug(
+                    "[subprotocol-negotiation] Requested subprotocols: {$supported}"
+                );
             }
         } elseif ($message instanceof ResponseInterface) {
             // Outgoing Response on Server
@@ -84,10 +86,14 @@ class SubprotocolNegotiation implements
         if ($message instanceof ServerRequestInterface) {
             // Incoming requests on Server
             if ($requested = $message->getHeaderLine('Sec-WebSocket-Protocol')) {
-                $this->configuration->getLogger()->debug("[subprotocol-negotiation] Requested subprotocols: {$requested}");
+                $this->configuration->getLogger()->debug(
+                    "[subprotocol-negotiation] Requested subprotocols: {$requested}"
+                );
             }
             if ($supported = implode(', ', $this->subprotocols)) {
-                $this->configuration->getLogger()->debug("[subprotocol-negotiation] Supported subprotocols: {$supported}");
+                $this->configuration->getLogger()->debug(
+                    "[subprotocol-negotiation] Supported subprotocols: {$supported}"
+                );
             }
             foreach ($message->getHeader('Sec-WebSocket-Protocol') as $subprotocol) {
                 if (in_array($subprotocol, $this->subprotocols)) {

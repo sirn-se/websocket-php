@@ -53,7 +53,7 @@ echo "# Echo server! [phrity/websocket]\n";
  *     ssl: bool,
  *     timeout: int<0, max>|float,
  *     framesize: int<1, max>,
- *     connections: int<0, max>|null,
+ *     connections: int<1, max>|null,
  *     deflate: bool,
  * } $options
  */
@@ -83,7 +83,7 @@ try {
         echo "# Set frame size: {$options['framesize']}\n";
     }
     if (isset($options['connections'])) {
-        $server->setMaxConnections($options['connections']);
+        $server->getConfiguration()->setMaxConnections($options['connections']);
         echo "# Set max connections: {$options['connections']}\n";
     }
     if (isset($options['deflate'])) {
@@ -121,8 +121,8 @@ try {
                 $msg .= "  - Connected:   " . json_encode($connection->isConnected()) . "\n";
                 $msg .= "  - Readable:    " . json_encode($connection->isReadable()) . "\n";
                 $msg .= "  - Writable:    " . json_encode($connection->isWritable()) . "\n";
-                $msg .= "  - Timeout:     {$connection->getTimeout()}s\n";
-                $msg .= "  - Frame size:  {$connection->getFrameSize()}b\n";
+                $msg .= "  - Timeout:     {$connection->getConfiguration()->getTimeout()}s\n";
+                $msg .= "  - Frame size:  {$connection->getConfiguration()->getFrameSize()}b\n";
                 echo "< [{$connection->getRemoteName()}] {$msg}";
                 $server->send(new Text($msg));
                 break;

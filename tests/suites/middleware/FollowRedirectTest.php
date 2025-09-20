@@ -57,8 +57,7 @@ class FollowRedirectTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
         $connection->addMiddleware($middleware);
 
@@ -71,8 +70,6 @@ class FollowRedirectTest extends TestCase
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "\r\n";
         });
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $this->expectException(ReconnectException::class);
         $this->expectExceptionMessage('Reconnect requested: ws://redirect.to/new/target');
         $connection->pullHttp();
@@ -89,8 +86,7 @@ class FollowRedirectTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
         $connection->addMiddleware($middleware);
 
@@ -103,8 +99,6 @@ class FollowRedirectTest extends TestCase
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "\r\n";
         });
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $this->expectException(HandshakeException::class);
         $this->expectExceptionMessage('Too many redirect attempts, giving up');
         $connection->pullHttp();
@@ -121,8 +115,7 @@ class FollowRedirectTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
         $connection->addMiddleware($middleware);
 
@@ -133,8 +126,7 @@ class FollowRedirectTest extends TestCase
             return "\r\n";
         });
         $response = $connection->pullHttp();
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
+
         unset($connection);
     }
 }

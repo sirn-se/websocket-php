@@ -8,6 +8,7 @@
 namespace WebSocket;
 
 use InvalidArgumentException;
+use Phrity\Http\HttpFactory;
 use Phrity\Net\{
     Context,
     SocketServer,
@@ -16,13 +17,6 @@ use Phrity\Net\{
     StreamException,
     StreamFactory,
     Uri
-};
-use Psr\Http\Message\{
-    ResponseFactoryInterface,
-    ResponseInterface,
-    ServerRequestFactoryInterface,
-    UriInterface,
-    UriFactoryInterface,
 };
 use Psr\Log\{
     LoggerAwareInterface,
@@ -47,8 +41,8 @@ use WebSocket\Http\{
 use WebSocket\Message\Message;
 use WebSocket\Middleware\MiddlewareInterface;
 use WebSocket\Trait\{
+    ConfigurationTrait,
     ListenerTrait,
-    LoggerAwareTrait,
     SendMethodsTrait,
     StringableTrait
 };
@@ -60,20 +54,15 @@ use WebSocket\Runtime\Watcher;
  */
 class Server implements LoggerAwareInterface, Stringable
 {
+    use ConfigurationTrait;
     /** @use ListenerTrait<Server> */
     use ListenerTrait;
-    use LoggerAwareTrait;
     use SendMethodsTrait;
     use StringableTrait;
 
     // Settings
     private int $port;
     private string $scheme;
-    /** @var int<0, max>|float $timeout */
-    private int|float $timeout = 60;
-    /** @var int<1, max> $frameSize */
-    private int $frameSize = 4096;
-    private Context $context;
 
     // Internal resources
     private SocketServer|null $server = null;
@@ -82,14 +71,12 @@ class Server implements LoggerAwareInterface, Stringable
     private array $connections = [];
     /** @var array<MiddlewareInterface> $middlewares */
     private array $middlewares = [];
-    private int|null $maxConnections = null;
-
-    private ResponseFactoryInterface $responseFactory;
-    private ServerRequestFactoryInterface $serverRequestFactory;
-    private UriFactoryInterface $uriFactory;
+    private bool $allowConnections = false;
 
     private StreamFactory $streamFactory;
+    private HttpFactory $httpFactory;
     private Watcher $watcher;
+
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
 
@@ -97,26 +84,28 @@ class Server implements LoggerAwareInterface, Stringable
      * @param int<0, 65535> $port Socket port to listen to
      * @param bool $ssl If SSL should be used
      * @param StreamFactory|null $streamFactory
+     * @param HttpFactory|null $httpFactory
      * @param Watcher|null $watcher
+     * @param Configuration|null $configuration
      * @throws InvalidArgumentException If invalid port provided
      */
     public function __construct(
         int $port = 80,
         bool $ssl = false,
         StreamFactory|null $streamFactory = null,
+        HttpFactory|null $httpFactory = null,
         Watcher|null $watcher = null,
+        Configuration|null $configuration = null,
     ) {
         if ($port < 0 || $port > 65535) {
             throw new InvalidArgumentException("Invalid port '{$port}' provided");
         }
         $this->port = $port;
         $this->scheme = $ssl ? 'ssl' : 'tcp';
-        $this->initLogger();
-        $this->context = new Context();
-        $this->responseFactory = $this->serverRequestFactory = $this->uriFactory = new DefaultHttpFactory();
-
         $this->streamFactory = $streamFactory ?? new StreamFactory();
+        $this->httpFactory = $httpFactory ?? new DefaultHttpFactory();
         $this->watcher = $watcher ?? new Watcher($this->streamFactory->createStreamCollection());
+        $this->initConfiguration($configuration);
     }
 
     /**
@@ -143,45 +132,23 @@ class Server implements LoggerAwareInterface, Stringable
     }
 
     /**
+     * Set HTTP factory to use.
+     * @param HttpFactory $httpFactory
+     * @return self
+     */
+    public function setHttpFactory(HttpFactory $httpFactory): self
+    {
+        $this->httpFactory = $httpFactory;
+        return $this;
+    }
+
+    /**
      * Set logger.
      * @param LoggerInterface $logger Logger implementation
      */
     public function setLogger(LoggerInterface $logger): void
     {
-        $this->logger = $logger;
-        foreach ($this->connections as $connection) {
-//            $connection->setLogger($this->logger);
-        }
-    }
-
-    /**
-     * Set ResponseFactory.
-     * @param ResponseFactoryInterface $responseFactory ResponseFactory to use
-     */
-    public function setResponseFactory(ResponseFactoryInterface $responseFactory): self
-    {
-        $this->responseFactory = $responseFactory;
-        return $this;
-    }
-
-    /**
-     * Set ServerRequestFactory.
-     * @param ServerRequestFactoryInterface $serverRequestFactory ServerRequestFactory to use
-     */
-    public function setServerRequestFactory(ServerRequestFactoryInterface $serverRequestFactory): self
-    {
-        $this->serverRequestFactory = $serverRequestFactory;
-        return $this;
-    }
-
-    /**
-     * Set UriFactory.
-     * @param UriFactoryInterface $uriFactory UriFactory to use
-     */
-    public function setUriFactory(UriFactoryInterface $uriFactory): self
-    {
-        $this->uriFactory = $uriFactory;
-        return $this;
+        $this->configuration->setLogger($logger);
     }
 
     /**
@@ -192,13 +159,7 @@ class Server implements LoggerAwareInterface, Stringable
      */
     public function setTimeout(int|float $timeout): self
     {
-        if ($timeout < 0) {
-            throw new InvalidArgumentException("Invalid timeout '{$timeout}' provided");
-        }
-        $this->timeout = $timeout;
-        foreach ($this->connections as $connection) {
-            $connection->setTimeout($timeout);
-        }
+        $this->configuration->setTimeout($timeout);
         return $this;
     }
 
@@ -208,24 +169,17 @@ class Server implements LoggerAwareInterface, Stringable
      */
     public function getTimeout(): int|float
     {
-        return $this->timeout;
+        return $this->configuration->getTimeout();
     }
 
     /**
      * Set frame size.
-     * @param int<1, max> $frameSize Frame size in bytes
+     * @param int<1, max> $frameSize Max frame payload size in bytes
      * @return self
-     * @throws InvalidArgumentException If invalid frameSize provided
      */
     public function setFrameSize(int $frameSize): self
     {
-        if ($frameSize < 3) {
-            throw new InvalidArgumentException("Invalid frameSize '{$frameSize}' provided");
-        }
-        $this->frameSize = $frameSize;
-        foreach ($this->connections as $connection) {
-            $connection->setFrameSize($frameSize);
-        }
+        $this->configuration->setFrameSize($frameSize);
         return $this;
     }
 
@@ -235,7 +189,7 @@ class Server implements LoggerAwareInterface, Stringable
      */
     public function getFrameSize(): int
     {
-        return $this->frameSize;
+        return $this->configuration->getFrameSize();
     }
 
     /**
@@ -313,7 +267,7 @@ class Server implements LoggerAwareInterface, Stringable
      */
     public function setContext(Context $context): self
     {
-        $this->context = $context;
+        $this->configuration->setContext($context);
         return $this;
     }
 
@@ -323,7 +277,7 @@ class Server implements LoggerAwareInterface, Stringable
      */
     public function getContext(): Context
     {
-        return $this->context;
+        return $this->configuration->getContext();
     }
 
     /**
@@ -342,16 +296,12 @@ class Server implements LoggerAwareInterface, Stringable
 
     /**
      * Set maximum number of connections allowed, null means unlimited.
-     * @param int|null $maxConnections
+     * @param int<1, max>|null $maxConnections
      * @return self
-     * @throws InvalidArgumentException If number provided
      */
     public function setMaxConnections(int|null $maxConnections): self
     {
-        if ($maxConnections !== null && $maxConnections < 1) {
-            throw new InvalidArgumentException("Invalid maxConnections '{$maxConnections}' provided");
-        }
-        $this->maxConnections = $maxConnections;
+        $this->configuration->setMaxConnections($maxConnections);
         return $this;
     }
 
@@ -389,11 +339,11 @@ class Server implements LoggerAwareInterface, Stringable
 
         // Check if running
         if ($this->running) {
-            $this->logger->warning("[server] Server is already running");
+            $this->configuration->getLogger()->warning("[server] Server is already running");
             return;
         }
         $this->running = true;
-        $this->logger->info("[server] Server is running");
+        $this->configuration->getLogger()->info("[server] Server is running");
 
         // Run handler
         while ($this->running) {
@@ -404,52 +354,22 @@ class Server implements LoggerAwareInterface, Stringable
                     $this->stop();
                     return;
                 }
-                $this->watcher->watch($timeout ?? $this->timeout);
+                $this->watcher->watch($timeout ?? $this->configuration->getTimeout());
                 foreach ($this->connections as $connection) {
                     $connection->tick();
                 }
                 $this->dispatch('tick', [$this]);
             } catch (ExceptionInterface $e) {
                 // Low-level error
-                $this->logger->error("[server] {$e->getMessage()}", ['exception' => $e]);
+                $this->configuration->getLogger()->error("[server] {$e->getMessage()}", ['exception' => $e]);
                 $this->dispatch('error', [$this, null, $e]);
             } catch (Throwable $e) {
                 // Crash it
-                $this->logger->error("[server] {$e->getMessage()}", ['exception' => $e]);
+                $this->configuration->getLogger()->error("[server] {$e->getMessage()}", ['exception' => $e]);
                 $this->disconnect();
                 throw $e;
             }
             gc_collect_cycles(); // Collect garbage
-        }
-    }
-
-    private function selectHandler(string $key, SocketStream $stream): void
-    {
-        try {
-            // Read from connection
-            $connection = $this->connections[$key];
-            $message = $connection->pullMessage();
-            $this->dispatch($message->getOpcode(), [$this, $connection, $message]);
-        } catch (MessageLevelInterface $e) {
-            // Error, but keep connection open
-            $this->logger->error("[server] {$e->getMessage()}", ['exception' => $e]);
-            $this->dispatch('error', [$this, $connection, $e]);
-        } catch (ConnectionLevelInterface $e) {
-            // Error, disconnect connection
-            if ($connection) {
-                $this->watcher->detach($key);
-                unset($this->connections[$key]);
-                $connection->disconnect();
-            }
-            $this->logger->error("[server] {$e->getMessage()}", ['exception' => $e]);
-            $this->dispatch('error', [$this, $connection, $e]);
-        } catch (CloseException $e) {
-            // Should close
-            if ($connection) {
-                $connection->close($e->getCloseStatus(), $e->getMessage());
-            }
-            $this->logger->error("[server] {$e->getMessage()}", ['exception' => $e]);
-            $this->dispatch('error', [$this, $connection, $e]);
         }
     }
 
@@ -459,7 +379,7 @@ class Server implements LoggerAwareInterface, Stringable
     public function stop(): void
     {
         $this->running = false;
-        $this->logger->info("[server] Server is stopped");
+        $this->configuration->getLogger()->info("[server] Server is stopped");
     }
 
     /**
@@ -471,6 +391,36 @@ class Server implements LoggerAwareInterface, Stringable
         return $this->running;
     }
 
+    private function selectHandler(string $key, SocketStream $stream): void
+    {
+        try {
+            // Read from connection
+            $connection = $this->connections[$key];
+            $message = $connection->pullMessage();
+            $this->dispatch($message->getOpcode(), [$this, $connection, $message]);
+        } catch (MessageLevelInterface $e) {
+            // Error, but keep connection open
+            $this->configuration->getLogger()->error("[server] {$e->getMessage()}", ['exception' => $e]);
+            $this->dispatch('error', [$this, $connection, $e]);
+        } catch (ConnectionLevelInterface $e) {
+            // Error, disconnect connection
+            if ($connection) {
+                $this->watcher->detach($key);
+                unset($this->connections[$key]);
+                $connection->disconnect();
+            }
+            $this->configuration->getLogger()->error("[server] {$e->getMessage()}", ['exception' => $e]);
+            $this->dispatch('error', [$this, $connection, $e]);
+        } catch (CloseException $e) {
+            // Should close
+            if ($connection) {
+                $connection->close($e->getCloseStatus(), $e->getMessage());
+            }
+            $this->configuration->getLogger()->error("[server] {$e->getMessage()}", ['exception' => $e]);
+            $this->dispatch('error', [$this, $connection, $e]);
+        }
+    }
+
 
     /* ---------- Connection management ---------------------------------------------------------------------------- */
 
@@ -480,24 +430,22 @@ class Server implements LoggerAwareInterface, Stringable
      */
     public function shutdown(int $closeStatus = 1001): void
     {
-        $this->logger->info('[server] Shutting down');
+        $this->configuration->getLogger()->info('[server] Shutting down');
         if ($this->getConnectionCount() == 0) {
             $this->disconnect();
             return;
         }
         // Store and reset settings, lock new connections, reset listeners
-        $max = $this->maxConnections;
-        $this->maxConnections = 0;
+        $this->allowConnections = false;
         $listeners = $this->listeners;
         $this->listeners = [];
         // Track disconnects
-        $this->onDisconnect(function () use ($max, $listeners) {
+        $this->onDisconnect(function () use ($listeners) {
             if ($this->getConnectionCount() > 0) {
                 return;
             }
             $this->disconnect();
             // Restore settings
-            $this->maxConnections = $max;
             $this->listeners = $listeners;
         });
         // Close all current connections, listen to acks
@@ -521,7 +469,7 @@ class Server implements LoggerAwareInterface, Stringable
             $this->server->close();
         }
         $this->server = null;
-        $this->logger->info('[server] Server disconnected');
+        $this->configuration->getLogger()->info('[server] Server disconnected');
     }
 
 
@@ -532,19 +480,20 @@ class Server implements LoggerAwareInterface, Stringable
     {
         try {
             $uri = new Uri("{$this->scheme}://0.0.0.0:{$this->port}");
-            $this->server = $this->streamFactory->createSocketServer($uri, $this->context);
+            $this->server = $this->streamFactory->createSocketServer($uri, $this->configuration->getContext());
             /** @throws StreamException */
             $this->watcher->attach('@server', $this->server, function (string $key, SocketServer $socket) {
                 $this->acceptHandler($socket);
             });
-            $this->logger->info("[server] Starting server on {$uri}.");
+            $this->allowConnections = true;
+            $this->configuration->getLogger()->info("[server] Starting server on {$uri}.");
         } catch (StreamException $e) {
             $error = "Server failed to start: {$e->getMessage()}";
-            $this->logger->error("[server] {$error}");
+            $this->configuration->getLogger()->error("[server] {$error}");
             throw new ServerException($error);
         } catch (Throwable $e) {
             $error = "Server error: {$e->getMessage()}";
-            $this->logger->error("[server] {$error}");
+            $this->configuration->getLogger()->error("[server] {$error}");
             throw $e;
         }
     }
@@ -552,8 +501,15 @@ class Server implements LoggerAwareInterface, Stringable
     // Accept connection on socket server
     protected function acceptHandler(SocketServer $socket): void
     {
-        if (!is_null($this->maxConnections) && $this->getConnectionCount() >= $this->maxConnections) {
-            $this->logger->warning("[server] Denied connection, reached max {$this->maxConnections}");
+        $maxConnections = $this->configuration->getMaxConnections();
+        if (!is_null($maxConnections) && $this->getConnectionCount() >= $maxConnections) {
+            $this->configuration->getLogger()->warning(
+                "[server] Denied connection, reached max {$maxConnections}"
+            );
+            return;
+        }
+        if (!$this->allowConnections) {
+            $this->configuration->getLogger()->warning("[server] Denied connection, shutting down");
             return;
         }
         try {
@@ -568,26 +524,20 @@ class Server implements LoggerAwareInterface, Stringable
                 false,
                 true,
                 $this->isSsl(),
-                $this->responseFactory,
-                $this->serverRequestFactory,
-                $this->uriFactory,
+                $this->httpFactory,
+                $this->configuration
             );
         } catch (StreamException $e) {
             throw new ConnectionFailureException("Server failed to accept: {$e->getMessage()}");
         }
         try {
-//            $connection->setLogger($this->logger);
-            $connection
-                ->setFrameSize($this->frameSize)
-                ->setTimeout($this->timeout)
-                ;
             foreach ($this->middlewares as $middleware) {
                 $connection->addMiddleware($middleware);
             }
             /** @throws StreamException */
             $request = $this->performHandshake($connection);
             $this->connections[$name] = $connection;
-            $this->logger->info("[server] Accepted connection from {$name}.");
+            $this->configuration->getLogger()->info("[server] Accepted connection from {$name}.");
             $this->dispatch('handshake', [
                 $this,
                 $connection,
@@ -608,7 +558,7 @@ class Server implements LoggerAwareInterface, Stringable
             if (!$connection->isConnected()) {
                 $this->watcher->detach($key);
                 unset($this->connections[$key]);
-                $this->logger->info("[server] Disconnected {$key}.");
+                $this->configuration->getLogger()->info("[server] Disconnected {$key}.");
                 $this->dispatch('disconnect', [$this, $connection]);
             }
         }
@@ -617,7 +567,7 @@ class Server implements LoggerAwareInterface, Stringable
     // Perform upgrade handshake on new connections.
     protected function performHandshake(Connection $connection): ServerRequest
     {
-        $response = $this->responseFactory->createResponse(101);
+        $response = $this->httpFactory->createResponse(101);
         $exception = null;
 
         // Read handshake request
@@ -673,7 +623,7 @@ class Server implements LoggerAwareInterface, Stringable
                 ->withHeader('Connection', 'Upgrade')
                 ->withHeader('Sec-WebSocket-Accept', $responseKey);
         } catch (HandshakeException $e) {
-            $this->logger->warning("[server] {$e->getMessage()}", ['exception' => $e]);
+            $this->configuration->getLogger()->warning("[server] {$e->getMessage()}", ['exception' => $e]);
             $response = $e->getResponse();
             $exception = $e;
         }
@@ -689,7 +639,7 @@ class Server implements LoggerAwareInterface, Stringable
             throw $exception;
         }
 
-        $this->logger->debug("[server] Handshake on {$request->getUri()->getPath()}");
+        $this->configuration->getLogger()->debug("[server] Handshake on {$request->getUri()->getPath()}");
         $connection->setHandshakeRequest($request);
         $connection->setHandshakeResponse($response);
 

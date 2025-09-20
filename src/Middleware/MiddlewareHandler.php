@@ -18,7 +18,7 @@ use WebSocket\Message\{
     MessageHandler
 };
 use WebSocket\Trait\{
-    LoggerAwareTrait,
+    ConfigurationTrait,
     StringableTrait,
 };
 
@@ -28,11 +28,10 @@ use WebSocket\Trait\{
  */
 class MiddlewareHandler implements Stringable
 {
+    use ConfigurationTrait;
     use StringableTrait;
 
     // Processor collections
-    /** @var array<MiddlewareInterface> */
-    private array $middlewares = [];
     /** @var array<ProcessIncomingInterface> */
     private array $incoming = [];
     /** @var array<ProcessOutgoingInterface> */
@@ -47,18 +46,20 @@ class MiddlewareHandler implements Stringable
     // Handlers
     private HttpHandler $httpHandler;
     private MessageHandler $messageHandler;
-    private Configuration $configuration;
 
     /**
      * Create MiddlewareHandler.
      * @param MessageHandler $messageHandler
      * @param HttpHandler $httpHandler
      */
-    public function __construct(MessageHandler $messageHandler, HttpHandler $httpHandler, Configuration|null $configuration = null)
-    {
+    public function __construct(
+        MessageHandler $messageHandler,
+        HttpHandler $httpHandler,
+        Configuration|null $configuration = null
+    ) {
         $this->messageHandler = $messageHandler;
         $this->httpHandler = $httpHandler;
-        $this->configuration = $configuration ?? new Configuration();
+        $this->initConfiguration($configuration);
     }
 
     /**
@@ -89,7 +90,6 @@ class MiddlewareHandler implements Stringable
             $this->tick[] = $middleware;
         }
         $middleware->setConfiguration($this->configuration);
-        $this->middlewares[] = $middleware;
         return $this;
     }
 

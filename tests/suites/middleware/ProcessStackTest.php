@@ -48,8 +48,7 @@ class ProcessStackTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $connection->addMiddleware(new Callback(incoming: function ($stack, $connection) {
@@ -83,8 +82,6 @@ class ProcessStackTest extends TestCase
         $message = $connection->pullMessage();
         $this->assertEquals('Test message<-C<-B<-A', $message->getContent());
 
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         unset($stream);
     }
 
@@ -97,8 +94,7 @@ class ProcessStackTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
+        $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
         $connection->addMiddleware(new Callback(outgoing: function ($stack, $connection, $message) {
@@ -132,8 +128,6 @@ class ProcessStackTest extends TestCase
         $this->expectSocketStreamWrite();
         $connection->send(new Text('Test message'));
 
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         unset($stream);
     }
 }

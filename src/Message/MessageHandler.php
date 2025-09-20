@@ -14,7 +14,10 @@ use WebSocket\Frame\{
     Frame,
     FrameHandler,
 };
-use WebSocket\Trait\StringableTrait;
+use WebSocket\Trait\{
+    ConfigurationTrait,
+    StringableTrait,
+};
 
 /**
  * WebSocket\Message\MessageHandler class.
@@ -22,6 +25,7 @@ use WebSocket\Trait\StringableTrait;
  */
 class MessageHandler implements Stringable
 {
+    use ConfigurationTrait;
     use StringableTrait;
 
     private const DEFAULT_SIZE = 4096;
@@ -29,12 +33,11 @@ class MessageHandler implements Stringable
     private FrameHandler $frameHandler;
     /** @var array<Frame> $frameBuffer */
     private array $frameBuffer = [];
-    private Configuration $configuration;
 
     public function __construct(FrameHandler $frameHandler, Configuration|null $configuration = null)
     {
         $this->frameHandler = $frameHandler;
-        $this->configuration = $configuration ?? new Configuration();
+        $this->initConfiguration($configuration);
     }
 
     /**
