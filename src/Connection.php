@@ -8,6 +8,7 @@
 namespace WebSocket;
 
 use InvalidArgumentException;
+use Phrity\Http\HttpFactory;
 use Phrity\Net\{
     Context,
     SocketStream,
@@ -15,10 +16,7 @@ use Phrity\Net\{
 use Psr\Http\Message\{
     MessageInterface,
     RequestInterface,
-    ResponseFactoryInterface,
     ResponseInterface,
-    ServerRequestFactoryInterface,
-    UriFactoryInterface,
 };
 use Psr\Log\{
     LoggerAwareInterface,
@@ -73,7 +71,6 @@ class Connection implements LoggerAwareInterface, Stringable
     private ResponseInterface|null $handshakeResponse = null;
     /** @var array<string, mixed> $meta */
     private array $meta = [];
-    private bool $closed = false;
 
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
@@ -83,24 +80,15 @@ class Connection implements LoggerAwareInterface, Stringable
         bool $pushMasked,
         bool $pullMaskedRequired,
         bool $ssl = false,
-        ResponseFactoryInterface|null $responseFactory = null,
-        ServerRequestFactoryInterface|null $serverRequestFactory = null,
-        UriFactoryInterface|null $uriFactory = null,
+        HttpFactory|null $httpFactory = null
     ) {
         $this->stream = $stream;
-        $this->httpHandler = new HttpHandler($this->stream, $ssl, $responseFactory, $serverRequestFactory, $uriFactory);
+        $this->httpHandler = new HttpHandler($this->stream, $ssl, $httpFactory);
         $this->messageHandler = new MessageHandler(new FrameHandler($this->stream, $pushMasked, $pullMaskedRequired));
         $this->middlewareHandler = new MiddlewareHandler($this->messageHandler, $this->httpHandler);
         $this->localName = $this->stream->getLocalName() ?? '<unknown>';
         $this->remoteName = $this->stream->getRemoteName() ?? '<unknown>';
         $this->initLogger();
-    }
-
-    public function __destruct()
-    {
-        if (!$this->closed && $this->isConnected()) {
-            $this->stream->close();
-        }
     }
 
     public function __toString(): string
@@ -232,7 +220,6 @@ class Connection implements LoggerAwareInterface, Stringable
     {
         $this->logger->info('[connection] Closing connection');
         $this->stream->close();
-        $this->closed = true;
         return $this;
     }
 
@@ -263,18 +250,18 @@ class Connection implements LoggerAwareInterface, Stringable
 
     /**
      * Get name of local socket, or null if not connected.
-     * @return string|null
+     * @return string
      */
-    public function getName(): string|null
+    public function getName(): string
     {
         return $this->localName;
     }
 
     /**
      * Get name of remote socket, or null if not connected.
-     * @return string|null
+     * @return string
      */
-    public function getRemoteName(): string|null
+    public function getRemoteName(): string
     {
         return $this->remoteName;
     }

@@ -84,8 +84,6 @@ class ProcessStackTest extends TestCase
         $message = $connection->pullMessage();
         $this->assertEquals('Test message<-C<-B<-A', $message->getContent());
 
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         unset($stream);
     }
 
@@ -134,8 +132,6 @@ class ProcessStackTest extends TestCase
         $this->expectSocketStreamWrite();
         $connection->send(new Text('Test message'));
 
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         unset($stream);
     }
 }

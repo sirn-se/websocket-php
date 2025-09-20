@@ -8,6 +8,7 @@
 namespace WebSocket;
 
 use InvalidArgumentException;
+use Phrity\Http\HttpFactory;
 use Phrity\Net\{
     Context,
     SocketServer,
@@ -16,13 +17,6 @@ use Phrity\Net\{
     StreamException,
     StreamFactory,
     Uri
-};
-use Psr\Http\Message\{
-    ResponseFactoryInterface,
-    ResponseInterface,
-    ServerRequestFactoryInterface,
-    UriInterface,
-    UriFactoryInterface,
 };
 use Psr\Log\{
     LoggerAwareInterface,
@@ -84,26 +78,30 @@ class Server implements LoggerAwareInterface, Stringable
     private array $middlewares = [];
     private int|null $maxConnections = null;
 
-    private ResponseFactoryInterface $responseFactory;
-    private ServerRequestFactoryInterface $serverRequestFactory;
-    private UriFactoryInterface $uriFactory;
-
     private StreamFactory $streamFactory;
+    private HttpFactory $httpFactory;
     private Watcher $watcher;
+
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
 
     /**
      * @param int<0, 65535> $port Socket port to listen to
      * @param bool $ssl If SSL should be used
+     * @param LoggerInterface|null $logger
+     * @param Context|null $context $logger
      * @param StreamFactory|null $streamFactory
+     * @param HttpFactory|null $httpFactory
      * @param Watcher|null $watcher
      * @throws InvalidArgumentException If invalid port provided
      */
     public function __construct(
         int $port = 80,
         bool $ssl = false,
+        LoggerInterface|null $logger = null,
+        Context|null $context = null,
         StreamFactory|null $streamFactory = null,
+        HttpFactory|null $httpFactory = null,
         Watcher|null $watcher = null,
     ) {
         if ($port < 0 || $port > 65535) {
@@ -111,11 +109,10 @@ class Server implements LoggerAwareInterface, Stringable
         }
         $this->port = $port;
         $this->scheme = $ssl ? 'ssl' : 'tcp';
-        $this->initLogger();
-        $this->context = new Context();
-        $this->responseFactory = $this->serverRequestFactory = $this->uriFactory = new DefaultHttpFactory();
-
+        $this->initLogger($logger);
+        $this->context = $context ?? new Context();
         $this->streamFactory = $streamFactory ?? new StreamFactory();
+        $this->httpFactory = $httpFactory ?? new DefaultHttpFactory();
         $this->watcher = $watcher ?? new Watcher($this->streamFactory->createStreamCollection());
     }
 
@@ -143,6 +140,17 @@ class Server implements LoggerAwareInterface, Stringable
     }
 
     /**
+     * Set HTTP factory to use.
+     * @param HttpFactory $httpFactory
+     * @return self
+     */
+    public function setHttpFactory(HttpFactory $httpFactory): self
+    {
+        $this->httpFactory = $httpFactory;
+        return $this;
+    }
+
+    /**
      * Set logger.
      * @param LoggerInterface $logger Logger implementation
      */
@@ -152,36 +160,6 @@ class Server implements LoggerAwareInterface, Stringable
         foreach ($this->connections as $connection) {
             $connection->setLogger($this->logger);
         }
-    }
-
-    /**
-     * Set ResponseFactory.
-     * @param ResponseFactoryInterface $responseFactory ResponseFactory to use
-     */
-    public function setResponseFactory(ResponseFactoryInterface $responseFactory): self
-    {
-        $this->responseFactory = $responseFactory;
-        return $this;
-    }
-
-    /**
-     * Set ServerRequestFactory.
-     * @param ServerRequestFactoryInterface $serverRequestFactory ServerRequestFactory to use
-     */
-    public function setServerRequestFactory(ServerRequestFactoryInterface $serverRequestFactory): self
-    {
-        $this->serverRequestFactory = $serverRequestFactory;
-        return $this;
-    }
-
-    /**
-     * Set UriFactory.
-     * @param UriFactoryInterface $uriFactory UriFactory to use
-     */
-    public function setUriFactory(UriFactoryInterface $uriFactory): self
-    {
-        $this->uriFactory = $uriFactory;
-        return $this;
     }
 
     /**
@@ -423,6 +401,24 @@ class Server implements LoggerAwareInterface, Stringable
         }
     }
 
+    /**
+     * Stop server listener (resumable).
+     */
+    public function stop(): void
+    {
+        $this->running = false;
+        $this->logger->info("[server] Server is stopped");
+    }
+
+    /**
+     * If server is running (accepting connections and messages).
+     * @return bool
+     */
+    public function isRunning(): bool
+    {
+        return $this->running;
+    }
+
     private function selectHandler(string $key, SocketStream $stream): void
     {
         try {
@@ -451,24 +447,6 @@ class Server implements LoggerAwareInterface, Stringable
             $this->logger->error("[server] {$e->getMessage()}", ['exception' => $e]);
             $this->dispatch('error', [$this, $connection, $e]);
         }
-    }
-
-    /**
-     * Stop server listener (resumable).
-     */
-    public function stop(): void
-    {
-        $this->running = false;
-        $this->logger->info("[server] Server is stopped");
-    }
-
-    /**
-     * If server is running (accepting connections and messages).
-     * @return bool
-     */
-    public function isRunning(): bool
-    {
-        return $this->running;
     }
 
 
@@ -568,9 +546,7 @@ class Server implements LoggerAwareInterface, Stringable
                 false,
                 true,
                 $this->isSsl(),
-                $this->responseFactory,
-                $this->serverRequestFactory,
-                $this->uriFactory,
+                $this->httpFactory,
             );
         } catch (StreamException $e) {
             throw new ConnectionFailureException("Server failed to accept: {$e->getMessage()}");
@@ -617,7 +593,7 @@ class Server implements LoggerAwareInterface, Stringable
     // Perform upgrade handshake on new connections.
     protected function performHandshake(Connection $connection): ServerRequest
     {
-        $response = $this->responseFactory->createResponse(101);
+        $response = $this->httpFactory->createResponse(101);
         $exception = null;
 
         // Read handshake request

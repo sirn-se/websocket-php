@@ -7,6 +7,7 @@
 
 namespace WebSocket\Http;
 
+use Phrity\Http\HttpFactory;
 use Phrity\Net\UriFactory;
 use Psr\Http\Message\{
     RequestFactoryInterface,
@@ -23,11 +24,15 @@ use Psr\Http\Message\{
  * WebSocket\Http\DefaultHttpFactory
  * Only used for handshake procedure.
  */
-class DefaultHttpFactory extends UriFactory implements
-    RequestFactoryInterface,
-    ResponseFactoryInterface,
-    ServerRequestFactoryInterface
+class DefaultHttpFactory extends HttpFactory
 {
+    private UriFactory $uriFactory;
+
+    public function __construct()
+    {
+        $this->uriFactory = new UriFactory();
+    }
+
     /**
      * Create a new request.
      * @param string $method
@@ -55,5 +60,13 @@ class DefaultHttpFactory extends UriFactory implements
     public function createServerRequest(string $method, mixed $uri, array $serverParams = []): ServerRequestInterface
     {
         return new ServerRequest($method, $uri);
+    }
+
+    /**
+     * @param string $uri The URI to parse.
+     */
+    public function createUri(string $uri = ''): UriInterface
+    {
+        return $this->uriFactory->createUri($uri);
     }
 }

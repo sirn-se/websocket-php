@@ -64,8 +64,6 @@ class ExceptionTest extends TestCase
 
         $this->expectException(BadOpcodeException::class);
         $this->expectExceptionMessage('Bad Opcode');
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $connection->send(new Text('Bad Opcode'));
 
         unset($connection);
@@ -88,8 +86,6 @@ class ExceptionTest extends TestCase
         });
         $this->expectException(BadUriException::class);
         $this->expectExceptionMessage('Bad URI');
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $connection->send(new Text('Bad URI'));
 
         unset($connection);
@@ -112,8 +108,6 @@ class ExceptionTest extends TestCase
         });
         $this->expectException(ConnectionClosedException::class);
         $this->expectExceptionMessage('Connection has unexpectedly closed');
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $connection->send(new Text('Connection has unexpectedly closed'));
 
         unset($connection);
@@ -136,8 +130,6 @@ class ExceptionTest extends TestCase
         });
         $this->expectException(ConnectionFailureException::class);
         $this->expectExceptionMessage('Connection error');
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $connection->send(new Text('Connection error'));
 
         unset($connection);
@@ -160,8 +152,6 @@ class ExceptionTest extends TestCase
         });
         $this->expectException(ConnectionTimeoutException::class);
         $this->expectExceptionMessage('Connection operation timeout');
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $connection->send(new Text('Connection operation timeout'));
 
         unset($connection);
@@ -188,8 +178,6 @@ class ExceptionTest extends TestCase
         });
         $this->expectException(ConnectionTimeoutException::class);
         $this->expectExceptionMessage('Connection operation timeout');
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $connection->send(new Text('Timeout'));
 
         unset($connection);
@@ -216,8 +204,6 @@ class ExceptionTest extends TestCase
         });
         $this->expectException(ConnectionClosedException::class);
         $this->expectExceptionMessage('Connection has unexpectedly closed');
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $connection->send(new Text('Eof'));
 
         unset($connection);
@@ -243,8 +229,6 @@ class ExceptionTest extends TestCase
         });
         $this->expectException(ConnectionFailureException::class);
         $this->expectExceptionMessage('Connection error');
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $connection->send(new Text('Generic'));
 
         unset($connection);
@@ -271,8 +255,6 @@ class ExceptionTest extends TestCase
         });
         $this->expectException(ConnectionFailureException::class);
         $this->expectExceptionMessage('Connection error');
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $connection->send(new Text('Generic'));
 
         unset($connection);
@@ -292,8 +274,6 @@ class ExceptionTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("Invalid timeout '-1' provided");
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $connection->setTimeout(-1);
 
         unset($connection);
@@ -313,8 +293,6 @@ class ExceptionTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("Invalid frameSize '0' provided");
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         // @phpstan-ignore argument.type
         $connection->setFrameSize(0);
 
