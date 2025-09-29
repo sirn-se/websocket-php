@@ -4,28 +4,6 @@
 
 The client can read and write on a WebSocket stream.
 
-## Basic operation
-
-Set up a WebSocket client for request/response strategy.
-
-```php
-$client = new WebSocket\Client("wss://echo.websocket.org/");
-$client
-    // Add standard middlewares
-    ->addMiddleware(new WebSocket\Middleware\CloseHandler())
-    ->addMiddleware(new WebSocket\Middleware\PingResponder())
-    ;
-
-// Send a message
-$client->text("Hello WebSocket.org!");
-
-// Read response (this is blocking)
-$message = $client->receive();
-echo "Got message: {$message->getContent()} \n";
-
-// Close connection
-$client->close();
-```
 
 ## Subscribe operation
 
@@ -47,6 +25,32 @@ $client
     ->start();
 ```
 Optionally, `start()` can take timeout argument as int or float.
+
+
+## Basic operation
+
+Set up a WebSocket client for request/response strategy.
+Manually pulling messages using `receive()` method is not recommended.
+
+```php
+$client = new WebSocket\Client("wss://echo.websocket.org/");
+$client
+    // Add standard middlewares
+    ->addMiddleware(new WebSocket\Middleware\CloseHandler())
+    ->addMiddleware(new WebSocket\Middleware\PingResponder())
+    ;
+
+// Send a message
+$client->text("Hello WebSocket.org!");
+
+// Read response (this is blocking)
+$message = $client->receive();
+echo "Got message: {$message->getContent()} \n";
+
+// Close connection
+$client->close();
+```
+
 
 ## Middlewares
 
@@ -137,66 +141,16 @@ $client->close(1000, "Closing now");
 
 The Client takes one argument: [URI](http://tools.ietf.org/html/rfc3986) as a class implementing [UriInterface](https://www.php-fig.org/psr/psr-7/#35-psrhttpmessageuriinterface) or as string.
 The client support `ws` (`tcp`) and `wss` (`ssl`) schemas, depending on SSL configuration.
-Other options are available runtime by calling configuration methods.
 
-### Logger
+Other options are available using the Configuration class.
 
-Client support adding any [PSR-4 compatible](https://www.php-fig.org/psr/psr-3/) logger.
+- Logger
+- Context
+- Timeout
+- Frame size
+- Persistency
 
-```php
-$client->setLogger(Psr\Log\LoggerInterface $logger);
-```
-
-### Timeout
-
-Timeout for various operations can be specified in seconds.
-This affects how long Client will wait for connection, read and write operations, and listener scope.
-Default is `60` seconds. Minimum is `0` seconds. Accepts int or float value.
-Avoid setting very low values as it will cause a read loop to use all
-available processing power even when there's nothing to read.
-
-```php
-$client->setTimeout(300); // set timeout in seconds
-$client->getTimeout(); // => current timeout in seconds
-```
-
-### Frame size
-
-Defines the maximum payload per frame size in bytes.
-Default is `4096` bytes. Minimum is `1` byte.
-Do not change unless you have a strong reason to do so.
-
-```php
-$client->setFrameSize(1024); // set maximum payload frame size in bytes
-$client->getFrameSize(); // => current maximum payload frame size in bytes
-```
-
-### Persistent connection
-
-If set to true, the underlying connection will be kept open if possible.
-This means that if Client closes and is then restarted, it may use the same connection.
-Do not change unless you have a strong reason to do so.
-
-```php
-$client->setPersistent(true);
-```
-
-### Context
-
-Client support adding [context options and parameters](https://www.php.net/manual/en/context.php)
-using the [Phrity\Net\Context](https://github.com/sirn-se/phrity-net-stream?tab=readme-ov-file#context-class) class.
-
-```php
-$context = new Phrity\Net\Context();
-$context->setOptions([
-    "ssl" => [
-        "verify_peer" => false,
-        "verify_peer_name" => false,
-    ],
-]);
-$client->setContext($context); // set context
-$client->getContext(); // => currently used Phrity\Net\Context
-```
+Read more on [Configuration](Configuration.md).
 
 ### HTTP factories
 

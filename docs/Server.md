@@ -138,56 +138,16 @@ $server->close(1000, "Closing now");
 
 The Server takes two arguments; port and ssl.
 By default, ssl is false. If port is not specified, it will use 80 for non-secure and 443 for secure server.
-Other options are available runtime by calling configuration methods.
 
-### Logger
+Other options are available using the Configuration class.
 
-Server support adding any [PSR-4 compatible](https://www.php-fig.org/psr/psr-3/) logger.
+- Logger
+- Context
+- Timeout
+- Frame size
+- Max connections
 
-```php
-$server->setLogger(Psr\Log\LoggerInterface $logger);
-```
-
-### Timeout
-
-Timeout for various operations can be specified in seconds.
-This affects how long Server will wait for connection, read and write operations, and listener scope.
-Default is `60` seconds. Minimum is `0` seconds.  Accepts int or float value.
-Avoid setting very low values as it will cause a read loop to use all
-available processing power even when there's nothing to read.
-
-```php
-$server->setTimeout(300); // set timeout in seconds
-$server->getTimeout(); // => current timeout in seconds
-```
-
-### Frame size
-
-Defines the maximum payload per frame size in bytes.
-Default is `4096` bytes. Minimum is `1` byte.
-Do not change unless you have a strong reason to do so.
-
-```php
-$server->setFrameSize(1024); // set maximum payload frame size in bytes
-$server->getFrameSize(); // => current maximum payload frame size in bytes
-```
-
-### Context
-
-Server support adding [context options and parameters](https://www.php.net/manual/en/context.php)
-using the [Phrity\Net\Context](https://github.com/sirn-se/phrity-net-stream?tab=readme-ov-file#context-class) class.
-
-```php
-$context = new Phrity\Net\Context();
-$context->setOptions([
-    "ssl" => [
-        "verify_peer" => false,
-        "verify_peer_name" => false,
-    ],
-]);
-$server->setContext($context); // set context
-$server->getContext(); // => currently used Phrity\Net\Context
-```
+Read more on [Configuration](Configuration.md).
 
 ### HTTP factories
 
@@ -208,15 +168,6 @@ Or if you use factories that support multiple interfaces, available in libraries
 ```php
 $psrFactory = new Nyholm\Psr7\Factory\Psr17Factory(); // Or any other PSR-17 factory
 $server->setHttpFactory(Phrity\Http\HttpFactory::create($psrFactory));
-```
-
-### Max connections
-
-Limit maximum number of connections served. Any additional connection attempts will fail.
-By default Server support unlimited number of connections.
-
-```php
-$server->setMaxConnections(10);
 ```
 
 ### Server info

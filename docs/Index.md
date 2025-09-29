@@ -7,6 +7,7 @@
 
 ## Resources
 
+* [Configuration](Configuration.md) - Configuration for Client and Server
 * [Connection](Connection.md) - The connection between client and server
 * [Listener](Listener.md) - Listeners allow callbacks when messages are received
 * [Message](Message.md) - Represents a WebSocket message being sent or received

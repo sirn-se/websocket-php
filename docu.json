@@ -18,6 +18,10 @@
         "name": "Resources",
         "content": [
             {
+                "name": "Configuration",
+                "source": "docs/Configuration.md"
+            },
+            {
                 "name": "Connection",
                 "source": "docs/Connection.md"
             },
