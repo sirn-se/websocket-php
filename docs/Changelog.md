@@ -10,6 +10,7 @@
 
  * Shared stream observer, sharable across multiple cients and servers (@sirn-se)
  * Configuration class for various settings (@sirn-se)
+ * MessageEncodingException when compression fails (@sirn-se)
  * Many class local configuration setters removed (@sirn-se)
  * Remove deprecated code (@sirn-se)
 

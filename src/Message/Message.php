@@ -10,7 +10,7 @@ namespace WebSocket\Message;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Stringable;
-use WebSocket\Exception\ConnectionFailureException;
+use WebSocket\Exception\MessageEncodingException;
 use WebSocket\Frame\Frame;
 use WebSocket\Trait\StringableTrait;
 
@@ -78,11 +78,11 @@ abstract class Message implements Stringable
         return false;
     }
 
-    /** @throws ConnectionFailureException */
+    /** @throws MessageEncodingException */
     public function setCompress(bool $compress): void
     {
         if ($compress) {
-            throw new ConnectionFailureException('Must not compress control message.');
+            throw new MessageEncodingException('Must not compress control message.');
         }
     }
 

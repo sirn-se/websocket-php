@@ -26,6 +26,10 @@
                 "source": "docs/Connection.md"
             },
             {
+                "name": "Error handling",
+                "source": "docs/ErrorHandling.md"
+            },
+            {
                 "name": "Listener",
                 "source": "docs/Listener.md"
             },
