@@ -53,10 +53,12 @@ class MessageHandler implements Stringable
         foreach ($frames as $frame) {
             $this->frameHandler->push($frame);
         }
-        $this->configuration->getLogger()->info("[message-handler] Pushed {$message}", [
-            'opcode' => $message->getOpcode(),
+        $this->configuration->getLogger()->info("[{scope}] Pushed {message}", [
             'content-length' => $message->getLength(),
             'frames' => count($frames),
+            'message' => $message,
+            'opcode' => $message->getOpcode(),
+            'scope' => 'message-handler',
         ]);
         return $message;
     }
@@ -99,10 +101,12 @@ class MessageHandler implements Stringable
             return $carry . $item->getPayload();
         }, ''));
         $message->setCompress($frames[0]->getRsv1() ?? false);
-        $this->configuration->getLogger()->info("[message-handler] Pulled {$message}", [
-            'opcode' => $message->getOpcode(),
+        $this->configuration->getLogger()->info("[{scope}] Pulled {message}", [
             'content-length' => $message->getLength(),
             'frames' => count($frames),
+            'message' => $message,
+            'opcode' => $message->getOpcode(),
+            'scope' => 'message-handler',
         ]);
         return $message;
     }
