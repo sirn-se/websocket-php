@@ -7,7 +7,9 @@
 
 ## Resources
 
+* [Configuration](Configuration.md) - Configuration for Client and Server
 * [Connection](Connection.md) - The connection between client and server
+* [Error handling](ErrorHandling.md) - Notes on exceptions and error handling
 * [Listener](Listener.md) - Listeners allow callbacks when messages are received
 * [Message](Message.md) - Represents a WebSocket message being sent or received
 * [Middleware](Middleware.md) - Middlewares allow implementations to act incoming and outgoing messages

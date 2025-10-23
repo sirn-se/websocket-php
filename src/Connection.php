@@ -76,12 +76,19 @@ class Connection implements Stringable
         Configuration|null $configuration = null,
     ) {
         $this->stream = $stream;
+        $this->initConfiguration($configuration);
         $this->httpHandler = new HttpHandler($this->stream, $ssl, $httpFactory);
-        $this->messageHandler = new MessageHandler(new FrameHandler($this->stream, $pushMasked, $pullMaskedRequired));
-        $this->middlewareHandler = new MiddlewareHandler($this->messageHandler, $this->httpHandler);
+        $this->messageHandler = new MessageHandler(
+            new FrameHandler($this->stream, $pushMasked, $pullMaskedRequired, $this->configuration),
+            $this->configuration
+        );
+        $this->middlewareHandler = new MiddlewareHandler(
+            $this->messageHandler,
+            $this->httpHandler,
+            $this->configuration
+        );
         $this->localName = $this->stream->getLocalName() ?? '<unknown>';
         $this->remoteName = $this->stream->getRemoteName() ?? '<unknown>';
-        $this->initConfiguration($configuration);
 
         $this->stream->setTimeout($this->configuration->getTimeout());
     }
@@ -111,7 +118,10 @@ class Connection implements Stringable
     public function addMiddleware(MiddlewareInterface $middleware): self
     {
         $this->middlewareHandler->add($middleware);
-        $this->configuration->getLogger()->debug("[connection] Added middleware: {$middleware}");
+        $this->configuration->getLogger()->debug("[{scope}] Added middleware: {$middleware}", [
+            'middleware' => $middleware,
+            'scope' => 'connection',
+        ]);
         return $this;
     }
 
@@ -151,7 +161,9 @@ class Connection implements Stringable
      */
     public function disconnect(): self
     {
-        $this->configuration->getLogger()->info('[connection] Closing connection');
+        $this->configuration->getLogger()->info("[{scope}] Closing connection", [
+            'scope' => 'connection',
+        ]);
         $this->stream->close();
         return $this;
     }
@@ -162,7 +174,9 @@ class Connection implements Stringable
      */
     public function closeRead(): self
     {
-        $this->configuration->getLogger()->info('[connection] Closing further reading');
+        $this->configuration->getLogger()->info("[{scope}] Closing further reading", [
+            'scope' => 'connection',
+        ]);
         $this->stream->closeRead();
         return $this;
     }
@@ -173,7 +187,9 @@ class Connection implements Stringable
      */
     public function closeWrite(): self
     {
-        $this->configuration->getLogger()->info('[connection] Closing further writing');
+        $this->configuration->getLogger()->info("[{scope}] Closing further writing", [
+            'scope' => 'connection',
+        ]);
         $this->stream->closeWrite();
         return $this;
     }
@@ -330,11 +346,19 @@ class Connection implements Stringable
     {
         // Internal exceptions are handled and re-thrown
         if ($e instanceof ReconnectException) {
-            $this->configuration->getLogger()->info("[connection] {$e->getMessage()}", ['exception' => $e]);
+            $this->configuration->getLogger()->info("[{scope}] {message}", [
+                'exception' => $e,
+                'message' => $e->getMessage(),
+                'scope' => 'connection',
+            ]);
             throw $e;
         }
         if ($e instanceof ExceptionInterface) {
-            $this->configuration->getLogger()->error("[connection] {$e->getMessage()}", ['exception' => $e]);
+            $this->configuration->getLogger()->error("[{scope}] {message}", [
+                'exception' => $e,
+                'message' => $e->getMessage(),
+                'scope' => 'connection',
+            ]);
             throw $e;
         }
         // External exceptions are converted to internal
@@ -342,21 +366,29 @@ class Connection implements Stringable
             $meta = $this->stream->getMetadata();
             $json = json_encode($meta);
             if (!empty($meta['timed_out'])) {
-                $this->configuration->getLogger()->error(
-                    "[connection] {$e->getMessage()}",
-                    ['exception' => $e, 'meta' => $meta]
-                );
+                $this->configuration->getLogger()->error("[{scope}] {message}", [
+                    'exception' => $e,
+                    'message' => $e->getMessage(),
+                    'meta' => $meta,
+                    'scope' => 'connection',
+                ]);
                 throw new ConnectionTimeoutException();
             }
             if (!empty($meta['eof'])) {
-                $this->configuration->getLogger()->error(
-                    "[connection] {$e->getMessage()}",
-                    ['exception' => $e, 'meta' => $meta]
-                );
+                $this->configuration->getLogger()->error("[{scope}] {message}", [
+                    'exception' => $e,
+                    'message' => $e->getMessage(),
+                    'meta' => $meta,
+                    'scope' => 'connection',
+                ]);
                 throw new ConnectionClosedException();
             }
         }
-        $this->configuration->getLogger()->error("[connection] {$e->getMessage()}", ['exception' => $e]);
+        $this->configuration->getLogger()->error("[{scope}] {message}", [
+            'exception' => $e,
+            'message' => $e->getMessage(),
+            'scope' => 'connection',
+        ]);
         throw new ConnectionFailureException();
     }
 }

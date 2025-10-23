@@ -80,41 +80,18 @@ $connection->getHandshakeResponse();
 
 ## Configuration
 
-Some options are available runtime by calling configuration methods.
-
-### Logger
-
-Connection support adding any [PSR-4 compatible](https://www.php-fig.org/psr/psr-3/) logger.
-
+Configuration is normally inherited from Client or Sever, but can also be explicitly set.
 ```php
-$connection->setLogger(Psr\Log\LoggerInterface $logger);
+$configuration = $connection->getConfiguration();
+$connection->setConfiguration($configuration);
 ```
 
-### Timeout
+- Logger
+- Timeout
 
-Timeout for various operations can be specified in seconds.
-This affects how long a Connection will wait for read and write operations.
-Default is `60` seconds. Minimum is `0` seconds.  Accepts int or float value.
-Avoid setting very low values as it will cause a read loop to use all
-available processing power even when there's nothing to read.
+Read more on [Configuration](Configuration.md).
 
-```php
-$connection->setTimeout(300); // set timeout in seconds
-$connection->getTimeout(); // => current timeout in seconds
-```
-
-### Frame size
-
-Defines the maximum payload per frame size in bytes.
-Default is `4096` bytes. Minimum is `1` byte.
-Do not change unless you have a strong reason to do so.
-
-```php
-$connection->setFrameSize(1024); // set maximum payload frame size in bytes
-$connection->getFrameSize(); // => current maximum payload frame size in bytes
-```
-
-### Context
+## Context
 
 Connection exposes [context options and parameters](https://www.php.net/manual/en/context.php)
 using the [Phrity\Net\Context](https://github.com/sirn-se/phrity-net-stream?tab=readme-ov-file#context-class) class.
