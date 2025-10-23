@@ -540,15 +540,6 @@ class Client implements LoggerAwareInterface, Stringable
 
     /* ---------- Connection wrapper methods ----------------------------------------------------------------------- */
 
-    public function getIdentity(): string
-    {
-        return sprintf(
-            'client/%s/%s',
-            $this->getName() ?: 'closed',
-            $this->getRemoteName() ?: 'closed',
-        );
-    }
-
     /**
      * Get name of local socket, or null if not connected.
      * @return string|null

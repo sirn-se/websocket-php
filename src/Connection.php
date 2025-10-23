@@ -197,15 +197,6 @@ class Connection implements Stringable
 
     /* ---------- Connection state --------------------------------------------------------------------------------- */
 
-    public function getIdentity(): string
-    {
-        return sprintf(
-            'connection/%s/%s',
-            $this->getName() ?: 'closed',
-            $this->getRemoteName() ?: 'closed',
-        );
-    }
-
     /**
      * Get name of local socket, or null if not connected.
      * @return string

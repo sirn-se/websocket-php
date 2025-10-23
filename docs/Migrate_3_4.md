@@ -2,22 +2,22 @@
 
 # Websocket: Migration v3 -> v4
 
-Version 4.x has few changes compared to previous version.
+Version 4.x has few breaking changes compared to previous version.
 
 ## Breaking changes
 
+* Client `setContext()` - no longer accepts array input
+* Server `setContext()` - no longer accepts array input
 
-## Removed deprecated code
+## Removed deprecated methods
 
 * Client `getMeta()` - removed
 * Client `onConnect()` - use `onHandshake()` instead
-* Client `setContext()` - no longer accepts array input
 * Server `onConnect()` - use `onHandshake()` instead
-* Server `setContext()` - no longer accepts array input
 
 ## Configuration management
 
-v4 uses the Configuration class to propagate configurations throughout internal classes.
+`v4` uses the `Configuration` class to propagate configurations throughout internal classes.
 
 This affects the following classes;
 * Connection
@@ -26,7 +26,7 @@ This affects the following classes;
 * MiddlewareHandler
 * All middlewares
 
-He following methods (when applicable) are removed;
+The following methods (when applicable) are removed;
 * `setLogger()`
 * `getTimeout()`
 * `setTimeout()`
@@ -48,3 +48,5 @@ $source->setConfiguration($clonedConfiguration);
 
 ## Extending
 
+Increased modularization affects many internal classes and methods.
+If you rely on using these directly (extending or adapting) your code may be incompatible.
