@@ -103,7 +103,7 @@ class ConfigTest extends TestCase
         $this->assertSame($server, $server->setStreamFactory(new StreamFactory()));
 
         $this->expectWsServerSetup(scheme: 'ssl', port: 9000);
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:9000']);
         // Accept connection
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
@@ -175,7 +175,7 @@ class ConfigTest extends TestCase
         $this->assertSame($context, $server->getContext());
 
         $this->expectWsServerSetup(context: ['ssl' => ['verify_peer' => false]]);
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:8000']);
         // Accept connection
         $this->expectSocketServerAccept();
         $this->expectSocketStream();

@@ -60,7 +60,7 @@ class HandshakeTest extends TestCase
         $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:8000']);
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -91,7 +91,7 @@ class HandshakeTest extends TestCase
         $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:8000']);
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -150,7 +150,7 @@ class HandshakeTest extends TestCase
         $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:8000']);
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -185,7 +185,7 @@ class HandshakeTest extends TestCase
         $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:8000']);
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -239,7 +239,7 @@ class HandshakeTest extends TestCase
         $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:8000']);
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -293,7 +293,7 @@ class HandshakeTest extends TestCase
         $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:8000']);
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -347,7 +347,7 @@ class HandshakeTest extends TestCase
         $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:8000']);
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -401,7 +401,7 @@ class HandshakeTest extends TestCase
         $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:8000']);
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -452,7 +452,7 @@ class HandshakeTest extends TestCase
         $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:8000']);
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -506,7 +506,7 @@ class HandshakeTest extends TestCase
         $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:8000']);
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();

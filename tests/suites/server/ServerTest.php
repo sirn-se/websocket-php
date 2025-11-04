@@ -140,7 +140,7 @@ class ServerTest extends TestCase
         });
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:8000']);
         // Accept connection
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
@@ -258,7 +258,7 @@ class ServerTest extends TestCase
         $server->addMiddleware(new Callback());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:8000']);
         // Accept connection
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
@@ -294,7 +294,7 @@ class ServerTest extends TestCase
         $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:8000']);
         // Accept connection
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
@@ -358,7 +358,7 @@ class ServerTest extends TestCase
         });
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:8000']);
         // Accept connection
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
@@ -379,7 +379,7 @@ class ServerTest extends TestCase
 
         $this->expectSocketStreamIsConnected();
         $this->expectStreamCollectionDetach();
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:8000']);
         // Accept connection
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
@@ -421,7 +421,7 @@ class ServerTest extends TestCase
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
 
         // Accept connection 1
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:8000']);
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -439,7 +439,7 @@ class ServerTest extends TestCase
         $this->expectSocketStreamIsConnected();
 
         // Accept connection 2
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:8000']);
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -471,8 +471,8 @@ class ServerTest extends TestCase
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamIsConnected();
-        // The @server handler should be blocked now
-        $this->expectWsSelectConnections(['@server', 'fake-connection-1', 'fake-connection-2']);
+        // The server handler should be blocked now
+        $this->expectWsSelectConnections(['server:8000', 'fake-connection-1', 'fake-connection-2']);
 
         // Receive close ack connection 1
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
@@ -551,7 +551,7 @@ class ServerTest extends TestCase
         });
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:8000']);
         // Accept connection
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
@@ -622,7 +622,7 @@ class ServerTest extends TestCase
         $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:8000']);
         $this->expectSocketServerAccept()->addAssert(function ($method, $params) use ($server) {
             $server->stop();
             throw new StreamException(StreamException::SERVER_ACCEPT_ERR, ['uri' => 'test']);
@@ -642,7 +642,7 @@ class ServerTest extends TestCase
         $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:8000']);
         // Accept connection
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
@@ -690,7 +690,7 @@ class ServerTest extends TestCase
         $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:8000']);
         // Accept connection
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
@@ -737,7 +737,7 @@ class ServerTest extends TestCase
         $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:8000']);
         // Accept connection
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
@@ -785,7 +785,7 @@ class ServerTest extends TestCase
         $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:8000']);
         // Accept connection
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
@@ -830,7 +830,7 @@ class ServerTest extends TestCase
         });
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:8000']);
         // Accept connection
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
@@ -872,7 +872,7 @@ class ServerTest extends TestCase
         $server->setMaxConnections(1);
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:8000']);
         $this->expectSocketServerAccept();
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -888,7 +888,7 @@ class ServerTest extends TestCase
         $this->expectSocketStreamSetTimeout();
         $this->expectWsServerPerformHandshake();
         $this->expectSocketStreamIsConnected();
-        $this->expectWsSelectConnections(['@server'])->addAssert(function () use ($server) {
+        $this->expectWsSelectConnections(['server:8000'])->addAssert(function () use ($server) {
             $server->stop();
         });
 
@@ -917,7 +917,7 @@ class ServerTest extends TestCase
         });
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
+        $this->expectWsSelectConnections(['server:8000']);
         // Accept connection
         $this->expectSocketServerAccept();
         $this->expectSocketStream();

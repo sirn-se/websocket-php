@@ -189,8 +189,8 @@ trait MockStreamTrait
         }
 
         $this->expectSocketServerGetMetadata();
-        $this->expectStreamCollectionAttach()->addAssert(function ($method, $params) {
-            $this->assertEquals('@server', $params[1]);
+        $this->expectStreamCollectionAttach()->addAssert(function ($method, $params) use ($port) {
+            $this->assertEquals("server:{$port}", $params[1]);
         });
     }
 

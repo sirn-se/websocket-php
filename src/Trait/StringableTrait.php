@@ -18,7 +18,7 @@ trait StringableTrait
         return get_class($this);
     }
 
-    protected function stringable(string $format, mixed ...$values): string
+    protected function stringable(string $format = '', mixed ...$values): string
     {
         return sprintf("%s({$format})", get_class($this), ...$values);
     }
