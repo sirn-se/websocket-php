@@ -759,7 +759,7 @@ class ServerTest extends TestCase
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () use ($server) {
             $server->stop();
-            throw new ServerException();
+            throw new ServerException($server, 'Test error');
         });
         $server->start();
 

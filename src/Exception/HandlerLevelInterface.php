@@ -7,15 +7,13 @@
 
 namespace WebSocket\Exception;
 
-use WebSocket\Connection;
 use WebSocket\Runtime\HandlerInterface;
 
 /**
- * WebSocket\Exception\ConnectionLevelInterface interface.
- * Indicates error on connection level - connection should be closed
+ * WebSocket\Exception\HandlerLevelInterface interface.
+ * Indicates error on handler level - handler should be closed
  */
-interface ConnectionLevelInterface extends ExceptionInterface
+interface HandlerLevelInterface extends ExceptionInterface
 {
     public function getHandler(): HandlerInterface;
-    public function getConnection(): Connection;
 }

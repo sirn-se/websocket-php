@@ -15,5 +15,5 @@ use Throwable;
  */
 interface ExceptionInterface extends Throwable
 {
-    public function getMessage(): string;
+    //public function getMessage(): string;
 }

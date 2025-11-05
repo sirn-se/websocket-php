@@ -46,13 +46,16 @@ use WebSocket\Trait\{
     SendMethodsTrait,
     StringableTrait
 };
-use WebSocket\Runtime\Watcher;
+use WebSocket\Runtime\{
+    HandlerInterface,
+    Watcher,
+};
 
 /**
  * WebSocket\Client class.
  * Entry class for WebSocket client.
  */
-class Client implements LoggerAwareInterface, Stringable
+class Client implements HandlerInterface, LoggerAwareInterface, Stringable
 {
     use ConfigurationTrait;
     /** @use ListenerTrait<Client> */
@@ -444,7 +447,7 @@ class Client implements LoggerAwareInterface, Stringable
             ->withScheme(match ($this->socketUri->getScheme()) {
                 'ws', 'http' => 'tcp',
                 'wss', 'https' => 'ssl',
-                default => throw new ClientException("Invalid socket scheme: {$this->socketUri->getScheme()}")
+                default => throw new ClientException($this, "Invalid socket scheme: {$this->socketUri->getScheme()}")
             })
             ->withHost($this->socketUri->getHost(Uri::IDN_ENCODE))
             ->withPort($this->socketUri->getPort(Uri::REQUIRE_PORT));
@@ -463,7 +466,7 @@ class Client implements LoggerAwareInterface, Stringable
                 'message' => $e->getMessage(),
                 'scope' => 'client',
             ]);
-            throw new ClientException($error);
+            throw new ClientException($this, $error, $e);
         }
         $name = $stream->getRemoteName() ?? 'unknown';
         $this->watcher->attach($name, $stream, function (string $key, SocketStream $stream) {
@@ -488,7 +491,7 @@ class Client implements LoggerAwareInterface, Stringable
                 'scope' => 'client',
             ]);
             $this->disconnect();
-            throw new ClientException($error);
+            throw new ClientException($this, $error);
         }
         try {
             if (!$this->configuration->isPersistent() || $stream->tell() == 0) {

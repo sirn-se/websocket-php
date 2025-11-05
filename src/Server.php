@@ -46,13 +46,16 @@ use WebSocket\Trait\{
     SendMethodsTrait,
     StringableTrait
 };
-use WebSocket\Runtime\Watcher;
+use WebSocket\Runtime\{
+    HandlerInterface,
+    Watcher,
+};
 
 /**
  * WebSocket\Server class.
  * Entry class for WebSocket server.
  */
-class Server implements LoggerAwareInterface, Stringable
+class Server implements HandlerInterface, LoggerAwareInterface, Stringable
 {
     use ConfigurationTrait;
     /** @use ListenerTrait<Server> */
@@ -490,7 +493,7 @@ class Server implements LoggerAwareInterface, Stringable
         } catch (StreamException $e) {
             $error = "Server failed to start: {$e->getMessage()}";
             $this->configuration->getLogger()->error("[server] {$error}");
-            throw new ServerException($error);
+            throw new ServerException($this, $error, $e);
         } catch (Throwable $e) {
             $error = "Server error: {$e->getMessage()}";
             $this->configuration->getLogger()->error("[server] {$error}");

@@ -7,10 +7,12 @@
 
 namespace WebSocket\Exception;
 
+use RuntimeException;
+
 /**
- * WebSocket\Exception\ServerException class.
- * Fatal exception during server start
+ * WebSocket\Exception\AbstractException abstract class.
+ * Core exception for repo
  */
-class ServerException extends AbstractHandlerException
+abstract class AbstractException extends RuntimeException implements ExceptionInterface
 {
 }

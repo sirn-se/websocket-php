@@ -1030,8 +1030,8 @@ class ClientTest extends TestCase
         $this->expectWsClientSelectConnections(['localhost:8000']);
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
-        })->setReturn(function () {
-            throw new ClientException();
+        })->setReturn(function () use ($client) {
+            throw new ClientException($client, 'Test error');
         });
         $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
