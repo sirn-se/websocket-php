@@ -37,6 +37,7 @@ use WebSocket\Middleware\{
     MiddlewareHandler,
     MiddlewareInterface
 };
+use WebSocket\Runtime\HandlerInterface;
 use WebSocket\Trait\{
     ConfigurationTrait,
     SendMethodsTrait,
@@ -53,6 +54,7 @@ class Connection implements Stringable
     use SendMethodsTrait;
     use StringableTrait;
 
+    private HandlerInterface|null $handler;
     private SocketStream $stream;
     private HttpHandler $httpHandler;
     private MessageHandler $messageHandler;
@@ -74,7 +76,9 @@ class Connection implements Stringable
         bool $ssl = false,
         HttpFactory|null $httpFactory = null,
         Configuration|null $configuration = null,
+        HandlerInterface|null $handler = null,
     ) {
+        $this->handler = $handler;
         $this->stream = $stream;
         $this->initConfiguration($configuration);
         $this->httpHandler = new HttpHandler($this->stream, $ssl, $httpFactory);
@@ -91,6 +95,11 @@ class Connection implements Stringable
         $this->remoteName = $this->stream->getRemoteName() ?? '<unknown>';
 
         $this->stream->setTimeout($this->configuration->getTimeout());
+    }
+
+    public function getHandler(): HandlerInterface|null
+    {
+        return $this->handler;
     }
 
     public function __toString(): string
@@ -381,7 +390,7 @@ class Connection implements Stringable
                     'meta' => $meta,
                     'scope' => 'connection',
                 ]);
-                throw new ConnectionClosedException();
+                throw new ConnectionClosedException($this, null, $e);
             }
         }
         $this->configuration->getLogger()->error("[{scope}] {message}", [
@@ -389,6 +398,6 @@ class Connection implements Stringable
             'message' => $e->getMessage(),
             'scope' => 'connection',
         ]);
-        throw new ConnectionFailureException();
+        throw new ConnectionFailureException($this, null, $e);
     }
 }

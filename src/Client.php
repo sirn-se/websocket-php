@@ -407,6 +407,11 @@ class Client implements HandlerInterface, LoggerAwareInterface, Stringable
 
     /* ---------- Connection management ---------------------------------------------------------------------------- */
 
+    public function getConnection(): Connection|null
+    {
+        return $this->connection;
+    }
+
     /**
      * If Client has active connection.
      * @return bool True if active connection.
@@ -478,7 +483,8 @@ class Client implements HandlerInterface, LoggerAwareInterface, Stringable
             false,
             $hostUri->getScheme() === 'ssl',
             $this->httpFactory,
-            $this->configuration
+            $this->configuration,
+            $this
         );
         foreach ($this->middlewares as $middleware) {
             $this->connection->addMiddleware($middleware);
@@ -608,13 +614,18 @@ class Client implements HandlerInterface, LoggerAwareInterface, Stringable
             $response = $connection->pullHttp();
 
             if ($response->getStatusCode() != 101) {
-                throw new HandshakeException("Invalid status code {$response->getStatusCode()}.", $response);
+                throw new HandshakeException(
+                    $connection,
+                    $response,
+                    "Invalid status code {$response->getStatusCode()}.",
+                );
             }
 
             if (empty($response->getHeaderLine('Sec-WebSocket-Accept'))) {
                 throw new HandshakeException(
+                    $connection,
+                    $response,
                     "Connection to '{$uri}' failed: Server sent invalid upgrade response.",
-                    $response
                 );
             }
 
@@ -624,7 +635,11 @@ class Client implements HandlerInterface, LoggerAwareInterface, Stringable
             );
 
             if ($responseKey !== $expectedKey) {
-                throw new HandshakeException("Server sent bad upgrade response.", $response);
+                throw new HandshakeException(
+                    $connection,
+                    $response,
+                    "Server sent bad upgrade response.",
+                );
             }
         } catch (HandshakeException $e) {
             $this->configuration->getLogger()->error("[{scope}] {message}", [

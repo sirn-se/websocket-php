@@ -8,6 +8,7 @@
 namespace WebSocket\Exception;
 
 use RuntimeException;
+use Throwable;
 
 /**
  * WebSocket\Exception\AbstractException abstract class.
@@ -15,4 +16,12 @@ use RuntimeException;
  */
 abstract class AbstractException extends RuntimeException implements ExceptionInterface
 {
+    protected static string $defaultMessage = 'Unspecified error';
+
+    public function __construct(
+        string|null $message = null,
+        Throwable|null $previous = null,
+    ) {
+        parent::__construct($message ?? static::$defaultMessage, 0, $previous);
+    }
 }

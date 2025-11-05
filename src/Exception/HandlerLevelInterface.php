@@ -15,5 +15,5 @@ use WebSocket\Runtime\HandlerInterface;
  */
 interface HandlerLevelInterface extends ExceptionInterface
 {
-    public function getHandler(): HandlerInterface;
+    public function getHandler(): HandlerInterface|null;
 }

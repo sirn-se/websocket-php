@@ -102,8 +102,8 @@ class ExceptionTest extends TestCase
         $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
-        $this->expectSocketStreamWrite()->setReturn(function () {
-            throw new ConnectionClosedException();
+        $this->expectSocketStreamWrite()->setReturn(function () use ($connection) {
+            throw new ConnectionClosedException($connection);
         });
         $this->expectException(ConnectionClosedException::class);
         $this->expectExceptionMessage('Connection has unexpectedly closed');
@@ -123,8 +123,8 @@ class ExceptionTest extends TestCase
         $this->expectWsConnectionCreate();
         $connection = new Connection($stream, false, false);
 
-        $this->expectSocketStreamWrite()->setReturn(function () {
-            throw new ConnectionFailureException();
+        $this->expectSocketStreamWrite()->setReturn(function () use ($connection) {
+            throw new ConnectionFailureException($connection);
         });
         $this->expectException(ConnectionFailureException::class);
         $this->expectExceptionMessage('Connection error');

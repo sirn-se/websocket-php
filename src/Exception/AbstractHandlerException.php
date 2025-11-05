@@ -13,22 +13,24 @@ use Throwable;
 
 /**
  * WebSocket\Exception\Exception abstract class.
- * Core exception for repo
+ * Abstract for handler level exceptions.
  */
 abstract class AbstractHandlerException extends AbstractException implements HandlerLevelInterface
 {
-    private HandlerInterface $handler;
+    protected static string $defaultMessage = 'Unspecified handler error';
+
+    private HandlerInterface|null $handler;
 
     public function __construct(
-        HandlerInterface $handler,
-        string $message,
+        HandlerInterface|null $handler = null,
+        string|null $message = null,
         Throwable|null $previous = null,
     ) {
         $this->handler = $handler;
-        parent::__construct($message, 0, $previous);
+        parent::__construct($message, $previous);
     }
 
-    public function getHandler(): HandlerInterface
+    public function getHandler(): HandlerInterface|null
     {
         return $this->handler;
     }

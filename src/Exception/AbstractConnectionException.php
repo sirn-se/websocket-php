@@ -12,24 +12,30 @@ use WebSocket\Runtime\HandlerInterface;
 use Throwable;
 
 /**
- * WebSocket\Exception\AbstractConnecitonException abstract class.
- * Core exception for repo
+ * WebSocket\Exception\AbstractConnectionException abstract class.
+ * Abstract for connection level exceptions.
  */
-abstract class AbstractConnecitonException extends AbstractHandlerException implements ConnectionLevelInterface
+abstract class AbstractConnectionException extends AbstractException implements ConnectionLevelInterface
 {
-    private Conneciton $connection;
+    protected static string $defaultMessage = 'Unspecified connection error';
+
+    private Connection|null $connection;
 
     public function __construct(
-        HandlerInterface $handler,
-        Connection $connection,
-        string $message,
+        Connection|null $connection = null,
+        string|null $message = null,
         Throwable|null $previous = null,
     ) {
         $this->connection = $connection;
-        parent::__construct($handler, $message, 0, $previous);
+        parent::__construct($message, $previous);
     }
 
-    public function getConnection(): Connection
+    public function getHandler(): HandlerInterface|null
+    {
+        return $this->getConnection()?->getHandler();
+    }
+
+    public function getConnection(): Connection|null
     {
         return $this->connection;
     }
