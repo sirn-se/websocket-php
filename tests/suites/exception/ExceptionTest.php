@@ -9,52 +9,43 @@ declare(strict_types=1);
 
 namespace WebSocket\Test\Exception;
 
-use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
-use Phrity\Net\Mock\SocketStream;
-use Phrity\Net\Mock\Stack\{
-    ExpectContextTrait,
-    ExpectSocketStreamTrait,
-};
-use RuntimeException;
-use WebSocket\Exception\{
-    BadOpcodeException,
-    BadUriException,
-    ConnectionClosedException,
-    ConnectionFailureException,
-    ConnectionTimeoutException,
-    AbstractMessageException,
-    AbstractException,
-    MessageLevelInterface,
-    ExceptionInterface,
-    ClientException,
-    AbstractHandlerException,
-    HandlerLevelInterface,
-    ServerException,
-    AbstractConnectionException,
-    ConnectionLevelInterface,
-    HandshakeException,
-    MessageEncodingException,
-};
-use WebSocket\Client;
-use WebSocket\Connection;
-use WebSocket\Server;
-use WebSocket\Message\Text;
-use WebSocket\Test\MockStreamTrait;
 use Phrity\Net\Mock\{
+    SocketStream,
     StreamFactory,
 };
-use WebSocket\Http\{
-    Response
+use WebSocket\{
+    Client,
+    Connection,
+    Server,
 };
+use WebSocket\Exception\{
+    AbstractException,
+    AbstractConnectionException,
+    AbstractHandlerException,
+    AbstractMessageException,
+    BadOpcodeException,
+    BadUriException,
+    ClientException,
+    ConnectionClosedException,
+    ConnectionFailureException,
+    ConnectionLevelInterface,
+    ConnectionTimeoutException,
+    ExceptionInterface,
+    HandlerLevelInterface,
+    HandshakeException,
+    MessageEncodingException,
+    MessageLevelInterface,
+    ServerException,
+};
+use WebSocket\Http\Response;
+use WebSocket\Test\MockStreamTrait;
 
 /**
  * Test case for WebSocket\Connection: Exceptions.
  */
 class ExceptionTest extends TestCase
 {
-    use ExpectContextTrait;
-    use ExpectSocketStreamTrait;
     use MockStreamTrait;
 
     public function setUp(): void
