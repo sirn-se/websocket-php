@@ -17,12 +17,14 @@ use Throwable;
  */
 class HandshakeException extends AbstractConnectionException
 {
+    protected static string $defaultMessage = 'Handshake failed';
+
     private ResponseInterface $response;
 
     public function __construct(
         Connection $connection,
         ResponseInterface $response,
-        string $message,
+        string|null $message = null,
     ) {
         $this->response = $response;
         parent::__construct($connection, $message);

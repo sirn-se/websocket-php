@@ -126,6 +126,8 @@ class ClientTest extends TestCase
 
         $this->expectSocketStreamIsConnected();
         $this->assertTrue($client->isConnected());
+        $this->assertInstanceOf(Connection::class, $client->getConnection());
+        $this->assertSame($client, $client->getConnection()->getHandler());
 
         $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();

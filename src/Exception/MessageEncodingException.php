@@ -11,6 +11,7 @@ namespace WebSocket\Exception;
  * WebSocket\Exception\MessageEncodingException class.
  * Message content could not be encoded/decoded.
  */
-class MessageEncodingException extends Exception implements MessageLevelInterface
+class MessageEncodingException extends AbstractMessageException
 {
+    protected static string $defaultMessage = 'Message encoding error';
 }

@@ -70,6 +70,7 @@ class ConnectionTest extends TestCase
         $connection = new Connection($stream, false, false);
         $this->assertInstanceOf(Connection::class, $connection);
         $this->assertInstanceOf(Stringable::class, $connection);
+        $this->assertNull($connection->getHandler());
 
         $this->expectSocketStreamIsConnected();
         $this->assertTrue($connection->isConnected());

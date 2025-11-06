@@ -11,10 +11,7 @@ namespace WebSocket\Exception;
  * WebSocket\Exception\BadOpcodeException class.
  * Thrown when bad opcode is sent or received.
  */
-class BadOpcodeException extends Exception implements MessageLevelInterface
+class BadOpcodeException extends AbstractMessageException
 {
-    public function __construct(string $message = 'Bad Opcode')
-    {
-        parent::__construct($message);
-    }
+    protected static string $defaultMessage = 'Bad Opcode';
 }

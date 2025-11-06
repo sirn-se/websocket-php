@@ -11,7 +11,7 @@ namespace WebSocket\Exception;
  * WebSocket\Exception\CloseException class.
  * Connection should close
  */
-class CloseException extends Exception
+class CloseException extends AbstractException
 {
     protected int|null $status;
     protected string $content;
