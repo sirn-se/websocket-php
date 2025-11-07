@@ -46,13 +46,16 @@ use WebSocket\Trait\{
     SendMethodsTrait,
     StringableTrait
 };
-use WebSocket\Runtime\Watcher;
+use WebSocket\Runtime\{
+    HandlerInterface,
+    Watcher,
+};
 
 /**
  * WebSocket\Client class.
  * Entry class for WebSocket client.
  */
-class Client implements LoggerAwareInterface, Stringable
+class Client implements HandlerInterface, LoggerAwareInterface, Stringable
 {
     use ConfigurationTrait;
     /** @use ListenerTrait<Client> */
@@ -404,6 +407,11 @@ class Client implements LoggerAwareInterface, Stringable
 
     /* ---------- Connection management ---------------------------------------------------------------------------- */
 
+    public function getConnection(): Connection|null
+    {
+        return $this->connection;
+    }
+
     /**
      * If Client has active connection.
      * @return bool True if active connection.
@@ -444,7 +452,7 @@ class Client implements LoggerAwareInterface, Stringable
             ->withScheme(match ($this->socketUri->getScheme()) {
                 'ws', 'http' => 'tcp',
                 'wss', 'https' => 'ssl',
-                default => throw new ClientException("Invalid socket scheme: {$this->socketUri->getScheme()}")
+                default => throw new ClientException($this, "Invalid socket scheme: {$this->socketUri->getScheme()}")
             })
             ->withHost($this->socketUri->getHost(Uri::IDN_ENCODE))
             ->withPort($this->socketUri->getPort(Uri::REQUIRE_PORT));
@@ -463,7 +471,7 @@ class Client implements LoggerAwareInterface, Stringable
                 'message' => $e->getMessage(),
                 'scope' => 'client',
             ]);
-            throw new ClientException($error);
+            throw new ClientException($this, $error, $e);
         }
         $name = $stream->getRemoteName() ?? 'unknown';
         $this->watcher->attach($name, $stream, function (string $key, SocketStream $stream) {
@@ -475,7 +483,8 @@ class Client implements LoggerAwareInterface, Stringable
             false,
             $hostUri->getScheme() === 'ssl',
             $this->httpFactory,
-            $this->configuration
+            $this->configuration,
+            $this
         );
         foreach ($this->middlewares as $middleware) {
             $this->connection->addMiddleware($middleware);
@@ -488,7 +497,7 @@ class Client implements LoggerAwareInterface, Stringable
                 'scope' => 'client',
             ]);
             $this->disconnect();
-            throw new ClientException($error);
+            throw new ClientException($this, $error);
         }
         try {
             if (!$this->configuration->isPersistent() || $stream->tell() == 0) {
@@ -605,13 +614,18 @@ class Client implements LoggerAwareInterface, Stringable
             $response = $connection->pullHttp();
 
             if ($response->getStatusCode() != 101) {
-                throw new HandshakeException("Invalid status code {$response->getStatusCode()}.", $response);
+                throw new HandshakeException(
+                    $connection,
+                    $response,
+                    "Invalid status code {$response->getStatusCode()}.",
+                );
             }
 
             if (empty($response->getHeaderLine('Sec-WebSocket-Accept'))) {
                 throw new HandshakeException(
+                    $connection,
+                    $response,
                     "Connection to '{$uri}' failed: Server sent invalid upgrade response.",
-                    $response
                 );
             }
 
@@ -621,7 +635,11 @@ class Client implements LoggerAwareInterface, Stringable
             );
 
             if ($responseKey !== $expectedKey) {
-                throw new HandshakeException("Server sent bad upgrade response.", $response);
+                throw new HandshakeException(
+                    $connection,
+                    $response,
+                    "Server sent bad upgrade response.",
+                );
             }
         } catch (HandshakeException $e) {
             $this->configuration->getLogger()->error("[{scope}] {message}", [
@@ -672,15 +690,15 @@ class Client implements LoggerAwareInterface, Stringable
                 $uriInstance = new Uri($uri);
             }
         } catch (InvalidArgumentException $e) {
-            throw new BadUriException("Invalid URI '{$uri}' provided.");
+            throw new BadUriException($this, "Invalid URI '{$uri}' provided.");
         }
 
 
         if (!in_array($uriInstance->getScheme(), ['ws', 'wss'])) {
-            throw new BadUriException("Invalid URI scheme, must be 'ws' or 'wss'.");
+            throw new BadUriException($this, "Invalid URI scheme, must be 'ws' or 'wss'.");
         }
         if (!$uriInstance->getHost()) {
-            throw new BadUriException("Invalid URI host.");
+            throw new BadUriException($this, "Invalid URI host.");
         }
         return $uriInstance;
     }

@@ -46,13 +46,16 @@ use WebSocket\Trait\{
     SendMethodsTrait,
     StringableTrait
 };
-use WebSocket\Runtime\Watcher;
+use WebSocket\Runtime\{
+    HandlerInterface,
+    Watcher,
+};
 
 /**
  * WebSocket\Server class.
  * Entry class for WebSocket server.
  */
-class Server implements LoggerAwareInterface, Stringable
+class Server implements HandlerInterface, LoggerAwareInterface, Stringable
 {
     use ConfigurationTrait;
     /** @use ListenerTrait<Server> */
@@ -490,7 +493,7 @@ class Server implements LoggerAwareInterface, Stringable
         } catch (StreamException $e) {
             $error = "Server failed to start: {$e->getMessage()}";
             $this->configuration->getLogger()->error("[server] {$error}");
-            throw new ServerException($error);
+            throw new ServerException($this, $error, $e);
         } catch (Throwable $e) {
             $error = "Server error: {$e->getMessage()}";
             $this->configuration->getLogger()->error("[server] {$error}");
@@ -525,10 +528,11 @@ class Server implements LoggerAwareInterface, Stringable
                 true,
                 $this->isSsl(),
                 $this->httpFactory,
-                $this->configuration
+                $this->configuration,
+                $this
             );
         } catch (StreamException $e) {
-            throw new ConnectionFailureException("Server failed to accept: {$e->getMessage()}");
+            throw new ConnectionFailureException(null, "Server failed to accept: {$e->getMessage()}", $e);
         }
         try {
             foreach ($this->middlewares as $middleware) {
@@ -547,7 +551,7 @@ class Server implements LoggerAwareInterface, Stringable
             $this->dispatch('connect', [$this, $connection, $request]);
         } catch (ExceptionInterface | StreamException $e) {
             $connection->disconnect();
-            throw new ConnectionFailureException("Server failed to accept: {$e->getMessage()}");
+            throw new ConnectionFailureException($connection, "Server failed to accept: {$e->getMessage()}", $e);
         }
     }
 
@@ -578,42 +582,48 @@ class Server implements LoggerAwareInterface, Stringable
         try {
             if ($request->getMethod() != 'GET') {
                 throw new HandshakeException(
+                    $connection,
+                    $response->withStatus(405),
                     "Handshake request with invalid method: '{$request->getMethod()}'",
-                    $response->withStatus(405)
                 );
             }
             $connectionHeader = trim($request->getHeaderLine('Connection'));
             if (!str_contains(strtolower($connectionHeader), 'upgrade')) {
                 throw new HandshakeException(
+                    $connection,
+                    $response->withStatus(426),
                     "Handshake request with invalid Connection header: '{$connectionHeader}'",
-                    $response->withStatus(426)
                 );
             }
             $upgradeHeader = trim($request->getHeaderLine('Upgrade'));
             if (strtolower($upgradeHeader) != 'websocket') {
                 throw new HandshakeException(
+                    $connection,
+                    $response->withStatus(426),
                     "Handshake request with invalid Upgrade header: '{$upgradeHeader}'",
-                    $response->withStatus(426)
                 );
             }
             $versionHeader = trim($request->getHeaderLine('Sec-WebSocket-Version'));
             if ($versionHeader != '13') {
                 throw new HandshakeException(
+                    $connection,
+                    $response->withStatus(426)->withHeader('Sec-WebSocket-Version', '13'),
                     "Handshake request with invalid Sec-WebSocket-Version header: '{$versionHeader}'",
-                    $response->withStatus(426)->withHeader('Sec-WebSocket-Version', '13')
                 );
             }
             $keyHeader = trim($request->getHeaderLine('Sec-WebSocket-Key'));
             if (empty($keyHeader)) {
                 throw new HandshakeException(
+                    $connection,
+                    $response->withStatus(426),
                     "Handshake request with invalid Sec-WebSocket-Key header: '{$keyHeader}'",
-                    $response->withStatus(426)
                 );
             }
             if (strlen(base64_decode($keyHeader)) != 16) {
                 throw new HandshakeException(
+                    $connection,
+                    $response->withStatus(426),
                     "Handshake request with invalid Sec-WebSocket-Key header: '{$keyHeader}'",
-                    $response->withStatus(426)
                 );
             }
 
@@ -632,7 +642,11 @@ class Server implements LoggerAwareInterface, Stringable
         /** @var Response */
         $response = $connection->pushHttp($response);
         if ($response->getStatusCode() != 101) {
-            $exception = new HandshakeException("Invalid status code {$response->getStatusCode()}", $response);
+            $exception = new HandshakeException(
+                $connection,
+                $response,
+                "Invalid status code {$response->getStatusCode()}",
+            );
         }
 
         if ($exception) {

@@ -242,6 +242,10 @@ class ServerTest extends TestCase
         });
         $server->start();
 
+        foreach ($server->getConnections() as $connection) {
+            $this->assertSame($server, $connection->getHandler());
+        }
+
         $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
         $this->expectSocketServerClose();
@@ -759,7 +763,7 @@ class ServerTest extends TestCase
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () use ($server) {
             $server->stop();
-            throw new ServerException();
+            throw new ServerException($server, 'Test error');
         });
         $server->start();
 
