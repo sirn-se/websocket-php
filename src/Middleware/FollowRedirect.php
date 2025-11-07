@@ -65,7 +65,7 @@ class FollowRedirect implements ProcessHttpIncomingInterface, Stringable
             $this->configuration->getLogger()->debug(
                 "[follow-redirect] {$message->getStatusCode()} {$locationHeader} ($note)"
             );
-            throw new ReconnectException(new Uri($locationHeader));
+            throw new ReconnectException(new Uri($locationHeader), "Reconnect requested: {$locationHeader}");
         }
         return $message;
     }

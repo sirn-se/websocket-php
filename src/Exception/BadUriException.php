@@ -11,7 +11,7 @@ namespace WebSocket\Exception;
  * WebSocket\Exception\BadUriException class.
  * Thrown when invalid URI is provided.
  */
-class BadUriException extends AbstractMessageException
+class BadUriException extends AbstractHandlerException
 {
     protected static string $defaultMessage = 'Bad URI';
 }

@@ -14,6 +14,7 @@ use Phrity\Net\Mock\{
     SocketStream,
     StreamFactory,
 };
+use Phrity\Net\Uri;
 use WebSocket\{
     Client,
     Connection,
@@ -27,15 +28,18 @@ use WebSocket\Exception\{
     BadOpcodeException,
     BadUriException,
     ClientException,
+    CloseException,
     ConnectionClosedException,
     ConnectionFailureException,
     ConnectionLevelInterface,
     ConnectionTimeoutException,
+    ControlInterface,
     ExceptionInterface,
     HandlerLevelInterface,
     HandshakeException,
     MessageEncodingException,
     MessageLevelInterface,
+    ReconnectException,
     ServerException,
 };
 use WebSocket\Http\Response;
@@ -109,6 +113,31 @@ class ExceptionTest extends TestCase
         }
         $this->assertEquals('Test message', $e->getMessage());
         $this->assertSame($server, $e->getHandler());
+    }
+
+    public function testBadUriException(): void
+    {
+        $client = new Client('ws://localhost:8000');
+
+        try {
+            throw new BadUriException($client);
+        } catch (BadUriException $e) {
+            ;
+        }
+        $this->assertInstanceOf(BadUriException::class, $e);
+        $this->assertInstanceOf(AbstractHandlerException::class, $e);
+        $this->assertInstanceOf(AbstractException::class, $e);
+        $this->assertInstanceOf(HandlerLevelInterface::class, $e);
+        $this->assertInstanceOf(ExceptionInterface::class, $e);
+        $this->assertEquals('Bad URI', $e->getMessage());
+        $this->assertSame($client, $e->getHandler());
+
+        try {
+            throw new BadUriException($client, 'Test message');
+        } catch (BadUriException $e) {
+            ;
+        }
+        $this->assertEquals('Test message', $e->getMessage());
     }
 
     public function testConnectionClosedException(): void
@@ -234,28 +263,6 @@ class ExceptionTest extends TestCase
         $this->assertEquals('Test message', $e->getMessage());
     }
 
-    public function testBadUriException(): void
-    {
-        try {
-            throw new BadUriException();
-        } catch (BadUriException $e) {
-            ;
-        }
-        $this->assertInstanceOf(BadUriException::class, $e);
-        $this->assertInstanceOf(AbstractMessageException::class, $e);
-        $this->assertInstanceOf(AbstractException::class, $e);
-        $this->assertInstanceOf(MessageLevelInterface::class, $e);
-        $this->assertInstanceOf(ExceptionInterface::class, $e);
-        $this->assertEquals('Bad URI', $e->getMessage());
-
-        try {
-            throw new BadUriException('Test message');
-        } catch (BadUriException $e) {
-            ;
-        }
-        $this->assertEquals('Test message', $e->getMessage());
-    }
-
     public function testConnectionTimeoutException(): void
     {
         try {
@@ -297,6 +304,54 @@ class ExceptionTest extends TestCase
         } catch (MessageEncodingException $e) {
             ;
         }
+        $this->assertEquals('Test message', $e->getMessage());
+    }
+
+    public function testCloseException(): void
+    {
+        try {
+            throw new CloseException();
+        } catch (CloseException $e) {
+            ;
+        }
+        $this->assertInstanceOf(CloseException::class, $e);
+        $this->assertInstanceOf(AbstractException::class, $e);
+        $this->assertInstanceOf(ControlInterface::class, $e);
+        $this->assertInstanceOf(ExceptionInterface::class, $e);
+        $this->assertEquals(1000, $e->getCloseStatus());
+        $this->assertEquals('Closing connection', $e->getMessage());
+
+        try {
+            throw new CloseException(1200, 'Test message');
+        } catch (CloseException $e) {
+            ;
+        }
+        $this->assertEquals(1200, $e->getCloseStatus());
+        $this->assertEquals('Test message', $e->getMessage());
+    }
+
+    public function testReconnectException(): void
+    {
+        $uri = new Uri('ws://localhost:9000');
+
+        try {
+            throw new ReconnectException();
+        } catch (ReconnectException $e) {
+            ;
+        }
+        $this->assertInstanceOf(ReconnectException::class, $e);
+        $this->assertInstanceOf(AbstractException::class, $e);
+        $this->assertInstanceOf(ControlInterface::class, $e);
+        $this->assertInstanceOf(ExceptionInterface::class, $e);
+        $this->assertNull($e->getUri());
+        $this->assertEquals('Reconnect connection', $e->getMessage());
+
+        try {
+            throw new ReconnectException($uri, 'Test message');
+        } catch (ReconnectException $e) {
+            ;
+        }
+        $this->assertEquals($uri, $e->getUri());
         $this->assertEquals('Test message', $e->getMessage());
     }
 }

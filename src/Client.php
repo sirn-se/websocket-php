@@ -690,15 +690,15 @@ class Client implements HandlerInterface, LoggerAwareInterface, Stringable
                 $uriInstance = new Uri($uri);
             }
         } catch (InvalidArgumentException $e) {
-            throw new BadUriException("Invalid URI '{$uri}' provided.");
+            throw new BadUriException($this, "Invalid URI '{$uri}' provided.");
         }
 
 
         if (!in_array($uriInstance->getScheme(), ['ws', 'wss'])) {
-            throw new BadUriException("Invalid URI scheme, must be 'ws' or 'wss'.");
+            throw new BadUriException($this, "Invalid URI scheme, must be 'ws' or 'wss'.");
         }
         if (!$uriInstance->getHost()) {
-            throw new BadUriException("Invalid URI host.");
+            throw new BadUriException($this, "Invalid URI host.");
         }
         return $uriInstance;
     }
