@@ -221,7 +221,7 @@ $server->setMaxConnections(10);
 
 ### Server info
 
-Additional methids that provides information.
+Additional methods that provides information.
 
 ```php
 echo "port:   {$server->getPort()}\n";
@@ -244,7 +244,7 @@ $server->start();
 // Stop server - When called, server will no longer listen to incoming messages but will not disconnect clients
 $server->stop();
 
-// Orderly shutdown server - Will initate close procedure on all connected clients and stop running when all are disconnected
+// Orderly shutdown server - Will initiate close procedure on all connected clients and stop running when all are disconnected
 $server->shutdown();
 
 // Disconnect server - Server will immediately stop and disconnect all clients without normal close procedure

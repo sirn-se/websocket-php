@@ -12,7 +12,7 @@ Requirements on pull requests;
 * All tests **MUST** pass.
 * Code coverage **MUST** remain at 100%.
 * Code **MUST** adhere to PSR-1 and PSR-12 code standards.
-* Staic analysis check **MUST** pass.
+* Static analysis check **MUST** pass.
 
 ## SemVer, versions, and target branches
 
