@@ -9,6 +9,7 @@ namespace WebSocket;
 
 use Phrity\Net\{
     Context,
+    StreamContainerInterface,
     StreamFactory,
 };
 use Psr\Log\{
@@ -18,7 +19,8 @@ use Psr\Log\{
 use Stringable;
 use Throwable;
 use WebSocket\Exception\{
-    ServerException
+    ExceptionInterface,
+    ServerException,
 };
 use WebSocket\Http\{
     DefaultHttpFactory,
@@ -27,8 +29,10 @@ use WebSocket\Http\{
 };
 use WebSocket\Trait\{
     ConfigurationTrait,
+    ListenerTrait,
     StringableTrait
 };
+use WebSocket\Runtime\HandlerInterface;
 use WebSocket\Runtime\Watcher;
 
 /**
@@ -38,11 +42,14 @@ use WebSocket\Runtime\Watcher;
 class Cluster implements LoggerAwareInterface, Stringable
 {
     use ConfigurationTrait;
+    /** @use ListenerTrait<Cluster> */
+    use ListenerTrait;
     use StringableTrait;
 
     private StreamFactory $streamFactory;
     private Watcher $watcher;
 
+    /** @var array<string, HandlerInterface> $services */
     private array $services = [];
     private bool $running = false;
 
@@ -61,7 +68,7 @@ class Cluster implements LoggerAwareInterface, Stringable
         $this->streamFactory = $streamFactory ?? new StreamFactory();
         $this->watcher = $watcher ?? new Watcher($this->streamFactory->createStreamCollection());
         $this->initConfiguration($configuration);
-   }
+    }
 
     /**
      * Get string representation of instance.
@@ -72,11 +79,17 @@ class Cluster implements LoggerAwareInterface, Stringable
         return $this->stringable();
     }
 
+    /**
+     * @param int<0, 65535> $port Socket port to listen to
+     * @param bool $ssl If SSL should be used
+     * @param string|null $name
+     * @throws ServerException If already attached
+     */
     public function createServer(int $port = 80, bool $ssl = false, string|null $name = null): Server
     {
         $name = $name ?? "server:{$port}";
         if (array_key_exists($name, $this->services)) {
-            throw new ServerException("Server {$name} already attached.");
+            throw new ServerException(null, "Server {$name} already attached.");
         }
         $server = new Server(
             port: $port,
@@ -98,7 +111,7 @@ class Cluster implements LoggerAwareInterface, Stringable
         $this->configuration->setLogger($logger);
     }
 
-    public function start(int|float|null $timeout = null)
+    public function start(int|float|null $timeout = null): void
     {
         // Check if running
         if ($this->running) {
@@ -117,17 +130,18 @@ class Cluster implements LoggerAwareInterface, Stringable
                     $this->stop();
                     return;
                 }
-                $this->watcher->select($timeout ?? $this->configuration->getTimeout());
+                $this->watcher->watch($timeout ?? $this->configuration->getTimeout());
                 $this->afterWatch();
-
             } catch (ExceptionInterface $e) {
                 // Low-level error
                 $this->configuration->getLogger()->error("[CLUSTER] {$e->getMessage()}", ['exception' => $e]);
-//                $this->dispatch('error', [$this, null, $e]);
+                $this->dispatch('error', [$this, null, $e]);
             } catch (Throwable $e) {
                 // Crash it
                 $this->configuration->getLogger()->error("[CLUSTER] {$e->getMessage()}", ['exception' => $e]);
-//                $this->disconnect();
+                foreach ($this->services as $service) {
+                    $service->disconnect();
+                }
                 throw $e;
             }
             gc_collect_cycles(); // Collect garbage

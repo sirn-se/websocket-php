@@ -16,6 +16,7 @@ use Phrity\Net\{
     StreamCollection,
     StreamException,
     StreamFactory,
+    StreamInterface,
     Uri
 };
 use Psr\Log\{
@@ -46,13 +47,17 @@ use WebSocket\Trait\{
     SendMethodsTrait,
     StringableTrait
 };
-use WebSocket\Runtime\Watcher;
+use WebSocket\Runtime\{
+    HandlerInterface,
+    SelectableInterface,
+    Watcher,
+};
 
 /**
  * WebSocket\Server class.
  * Entry class for WebSocket server.
  */
-class Server implements LoggerAwareInterface, Stringable
+class Server implements HandlerInterface, LoggerAwareInterface, SelectableInterface, Stringable
 {
     use ConfigurationTrait;
     /** @use ListenerTrait<Server> */
@@ -107,7 +112,7 @@ class Server implements LoggerAwareInterface, Stringable
         $this->httpFactory = $httpFactory ?? new DefaultHttpFactory();
         $this->watcher = $watcher ?? new Watcher($this->streamFactory->createStreamCollection());
         $this->initConfiguration($configuration);
-        $this->identity = "server:{$port}";
+        $this->identity = "server/{$port}";
     }
 
     /**
@@ -117,6 +122,11 @@ class Server implements LoggerAwareInterface, Stringable
     public function __toString(): string
     {
         return $this->stringable('%s', $this->server ? "{$this->scheme}://0.0.0.0:{$this->port}" : 'closed');
+    }
+
+    public function getIdentity(): string
+    {
+        return $this->identity;
     }
 
 
@@ -385,11 +395,11 @@ class Server implements LoggerAwareInterface, Stringable
         return $this->running;
     }
 
-    private function selectHandler(string $key, SocketStream $stream): void
+    public function selectHandler(Connection $connection): void
     {
+        $key = $connection->getIdentity();
         try {
             // Read from connection
-            $connection = $this->connections[$key];
             $message = $connection->pullMessage();
             $this->dispatch($message->getOpcode(), [$this, $connection, $message]);
         } catch (MessageLevelInterface $e) {
@@ -398,18 +408,14 @@ class Server implements LoggerAwareInterface, Stringable
             $this->dispatch('error', [$this, $connection, $e]);
         } catch (ConnectionLevelInterface $e) {
             // Error, disconnect connection
-            if ($connection) {
-                $this->watcher->detach($key);
-                unset($this->connections[$key]);
-                $connection->disconnect();
-            }
+            $this->watcher->detach($key);
+            unset($this->connections[$key]);
+            $connection->disconnect();
             $this->configuration->getLogger()->error("[{$this->identity}] {$e->getMessage()}", ['exception' => $e]);
             $this->dispatch('error', [$this, $connection, $e]);
         } catch (CloseException $e) {
             // Should close
-            if ($connection) {
-                $connection->close($e->getCloseStatus(), $e->getMessage());
-            }
+            $connection->close($e->getCloseStatus(), $e->getMessage());
             $this->configuration->getLogger()->error("[{$this->identity}] {$e->getMessage()}", ['exception' => $e]);
             $this->dispatch('error', [$this, $connection, $e]);
         }
@@ -467,29 +473,49 @@ class Server implements LoggerAwareInterface, Stringable
     }
 
 
+    public function getStream(): SocketServer
+    {
+        return $this->server ?? $this->createSocketServer();
+    }
+
+    public function onSelect(): void
+    {
+        if ($this->server) {
+            $this->acceptHandler($this->server);
+        }
+    }
+
+
     /* ---------- Internal helper methods -------------------------------------------------------------------------- */
 
-    // Create socket server
-    protected function createSocketServer(): void
+    /**
+     * Create socket server
+     * @throws ServerException Socket server could not be created
+     */
+    protected function createSocketServer(): SocketServer
     {
         try {
             $uri = new Uri("{$this->scheme}://0.0.0.0:{$this->port}");
             $this->server = $this->streamFactory->createSocketServer($uri, $this->configuration->getContext());
             /** @throws StreamException */
-            $this->watcher->attach($this->identity, $this->server, function (string $key, SocketServer $socket) {
-                $this->acceptHandler($socket);
-            });
+            $this->watcher->attach($this);
             $this->allowConnections = true;
             $this->configuration->getLogger()->info("[{$this->identity}] Starting server on {$uri}.");
         } catch (StreamException $e) {
             $error = "Server failed to start: {$e->getMessage()}";
             $this->configuration->getLogger()->error("[{$this->identity}] {$error}");
-            throw new ServerException($error);
+            throw new ServerException($this, $error, $e);
         } catch (Throwable $e) {
             $error = "Server error: {$e->getMessage()}";
             $this->configuration->getLogger()->error("[{$this->identity}] {$error}");
             throw $e;
         }
+        if (is_null($this->server)) {
+            $error = "Server failed to start.";
+            $this->configuration->getLogger()->error("[{$this->identity}] {$error}");
+            throw new ServerException($this, $error);
+        }
+        return $this->server;
     }
 
     // Accept connection on socket server
@@ -509,20 +535,18 @@ class Server implements LoggerAwareInterface, Stringable
         try {
             /** @var SocketStream $stream */
             $stream = $socket->accept();
-            $name = $stream->getRemoteName() ?? 'unknown';
-            $this->watcher->attach($name, $stream, function (string $key, SocketStream $stream) {
-                $this->selectHandler($key, $stream);
-            });
             $connection = new Connection(
+                $this,
                 $stream,
                 false,
                 true,
                 $this->isSsl(),
                 $this->httpFactory,
-                $this->configuration
+                $this->configuration,
             );
+            $this->watcher->attach($connection);
         } catch (StreamException $e) {
-            throw new ConnectionFailureException("Server failed to accept: {$e->getMessage()}");
+            throw new ConnectionFailureException(null, "Server failed to accept: {$e->getMessage()}", $e);
         }
         try {
             foreach ($this->middlewares as $middleware) {
@@ -530,8 +554,11 @@ class Server implements LoggerAwareInterface, Stringable
             }
             /** @throws StreamException */
             $request = $this->performHandshake($connection);
-            $this->connections[$name] = $connection;
-            $this->configuration->getLogger()->info("[{$this->identity}] Accepted connection from {$name}.");
+            $this->connections[$connection->getIdentity()] = $connection;
+            $this->configuration->getLogger()->info("[{identity}] Accepted connection from {connection.identity}.", [
+                'identity' => $this->identity,
+                'connection.identity' => $connection->getIdentity(),
+            ]);
             $this->dispatch('handshake', [
                 $this,
                 $connection,
@@ -541,7 +568,7 @@ class Server implements LoggerAwareInterface, Stringable
             $this->dispatch('connect', [$this, $connection, $request]);
         } catch (ExceptionInterface | StreamException $e) {
             $connection->disconnect();
-            throw new ConnectionFailureException("Server failed to accept: {$e->getMessage()}");
+            throw new ConnectionFailureException($connection, "Server failed to accept: {$e->getMessage()}", $e);
         }
     }
 
@@ -592,42 +619,48 @@ class Server implements LoggerAwareInterface, Stringable
         try {
             if ($request->getMethod() != 'GET') {
                 throw new HandshakeException(
+                    $connection,
+                    $response->withStatus(405),
                     "Handshake request with invalid method: '{$request->getMethod()}'",
-                    $response->withStatus(405)
                 );
             }
             $connectionHeader = trim($request->getHeaderLine('Connection'));
             if (!str_contains(strtolower($connectionHeader), 'upgrade')) {
                 throw new HandshakeException(
+                    $connection,
+                    $response->withStatus(426),
                     "Handshake request with invalid Connection header: '{$connectionHeader}'",
-                    $response->withStatus(426)
                 );
             }
             $upgradeHeader = trim($request->getHeaderLine('Upgrade'));
             if (strtolower($upgradeHeader) != 'websocket') {
                 throw new HandshakeException(
+                    $connection,
+                    $response->withStatus(426),
                     "Handshake request with invalid Upgrade header: '{$upgradeHeader}'",
-                    $response->withStatus(426)
                 );
             }
             $versionHeader = trim($request->getHeaderLine('Sec-WebSocket-Version'));
             if ($versionHeader != '13') {
                 throw new HandshakeException(
+                    $connection,
+                    $response->withStatus(426)->withHeader('Sec-WebSocket-Version', '13'),
                     "Handshake request with invalid Sec-WebSocket-Version header: '{$versionHeader}'",
-                    $response->withStatus(426)->withHeader('Sec-WebSocket-Version', '13')
                 );
             }
             $keyHeader = trim($request->getHeaderLine('Sec-WebSocket-Key'));
             if (empty($keyHeader)) {
                 throw new HandshakeException(
+                    $connection,
+                    $response->withStatus(426),
                     "Handshake request with invalid Sec-WebSocket-Key header: '{$keyHeader}'",
-                    $response->withStatus(426)
                 );
             }
             if (strlen(base64_decode($keyHeader)) != 16) {
                 throw new HandshakeException(
+                    $connection,
+                    $response->withStatus(426),
                     "Handshake request with invalid Sec-WebSocket-Key header: '{$keyHeader}'",
-                    $response->withStatus(426)
                 );
             }
 
@@ -646,7 +679,11 @@ class Server implements LoggerAwareInterface, Stringable
         /** @var Response */
         $response = $connection->pushHttp($response);
         if ($response->getStatusCode() != 101) {
-            $exception = new HandshakeException("Invalid status code {$response->getStatusCode()}", $response);
+            $exception = new HandshakeException(
+                $connection,
+                $response,
+                "Invalid status code {$response->getStatusCode()}",
+            );
         }
 
         if ($exception) {

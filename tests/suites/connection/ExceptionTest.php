@@ -17,7 +17,10 @@ use Phrity\Net\Mock\Stack\{
     ExpectSocketStreamTrait,
 };
 use RuntimeException;
-use WebSocket\Connection;
+use WebSocket\{
+    Client,
+    Connection,
+};
 use WebSocket\Exception\{
     BadOpcodeException,
     BadUriException,
@@ -51,13 +54,14 @@ class ExceptionTest extends TestCase
     public function testBadOpcodeException(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
             throw new BadOpcodeException();
@@ -73,13 +77,14 @@ class ExceptionTest extends TestCase
     public function testBadUriException(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
             throw new BadUriException();
@@ -94,16 +99,17 @@ class ExceptionTest extends TestCase
     public function testConnectionClosedException(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
 
-        $this->expectSocketStreamWrite()->setReturn(function () {
-            throw new ConnectionClosedException();
+        $this->expectSocketStreamWrite()->setReturn(function () use ($connection) {
+            throw new ConnectionClosedException($connection);
         });
         $this->expectException(ConnectionClosedException::class);
         $this->expectExceptionMessage('Connection has unexpectedly closed');
@@ -115,16 +121,17 @@ class ExceptionTest extends TestCase
     public function testConnectionFailureException(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
 
-        $this->expectSocketStreamWrite()->setReturn(function () {
-            throw new ConnectionFailureException();
+        $this->expectSocketStreamWrite()->setReturn(function () use ($connection) {
+            throw new ConnectionFailureException($connection);
         });
         $this->expectException(ConnectionFailureException::class);
         $this->expectExceptionMessage('Connection error');
@@ -136,13 +143,14 @@ class ExceptionTest extends TestCase
     public function testConnectionTimeoutException(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
             throw new ConnectionTimeoutException();
@@ -157,13 +165,14 @@ class ExceptionTest extends TestCase
     public function testGenericTimeoutException(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
             throw new RuntimeException('Generic error', 77);
@@ -182,13 +191,14 @@ class ExceptionTest extends TestCase
     public function testGenericEofException(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
             throw new RuntimeException('Generic error', 77);
@@ -207,13 +217,14 @@ class ExceptionTest extends TestCase
     public function testGenericUnconnectedException(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
             throw new RuntimeException('Generic error', 77);
@@ -231,13 +242,14 @@ class ExceptionTest extends TestCase
     public function testGenericConnectedException(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
             throw new RuntimeException('Generic error', 77);

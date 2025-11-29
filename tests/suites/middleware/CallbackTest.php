@@ -13,7 +13,10 @@ use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\SocketStream;
 use Psr\Log\NullLogger;
 use Stringable;
-use WebSocket\Connection;
+use WebSocket\{
+    Client,
+    Connection,
+};
 use WebSocket\Http\{
     Request,
     Response,
@@ -43,6 +46,7 @@ class CallbackTest extends TestCase
     public function testIncoming(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -50,7 +54,7 @@ class CallbackTest extends TestCase
         $stream = new SocketStream($temp);
 
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
 
         $middleware = new Callback(incoming: function ($stack, $connection) {
             $message = $stack->handleIncoming();
@@ -78,6 +82,7 @@ class CallbackTest extends TestCase
     public function testOutgoing(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -85,7 +90,7 @@ class CallbackTest extends TestCase
         $stream = new SocketStream($temp);
 
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
 
         $connection->addMiddleware(new Callback(outgoing: function ($stack, $connection, $message) {
             $this->assertEquals('Test message', $message->getContent());
@@ -104,6 +109,7 @@ class CallbackTest extends TestCase
     public function testHttpIncoming(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -111,7 +117,7 @@ class CallbackTest extends TestCase
         $stream = new SocketStream($temp);
 
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
 
         $connection->addMiddleware(new Callback(httpIncoming: function ($stack, $connection) {
             $message = $stack->handleHttpIncoming();
@@ -138,6 +144,7 @@ class CallbackTest extends TestCase
     public function testHttpOutgoing(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -145,7 +152,7 @@ class CallbackTest extends TestCase
         $stream = new SocketStream($temp);
 
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
 
         $connection->addMiddleware(new Callback(httpOutgoing: function ($stack, $connection, $message) {
             $message = $stack->handleHttpOutgoing($message);
@@ -164,6 +171,7 @@ class CallbackTest extends TestCase
     public function testTick(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -171,7 +179,7 @@ class CallbackTest extends TestCase
         $stream = new SocketStream($temp);
 
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
 
         $connection->addMiddleware(new Callback(tick: function ($stack, $connection) {
             $stack->handleTick();

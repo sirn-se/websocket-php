@@ -16,7 +16,10 @@ use WebSocket\Http\{
     Request,
     Response,
 };
-use WebSocket\Connection;
+use WebSocket\{
+    Client,
+    Connection,
+};
 use WebSocket\Exception\HandshakeException;
 use WebSocket\Middleware\SubprotocolNegotiation;
 use WebSocket\Test\MockStreamTrait;
@@ -42,6 +45,7 @@ class SubprotocolNegotiationTest extends TestCase
     public function testClientProtocolMatch(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $middleware = new SubprotocolNegotiation(['sp-1', 'sp-2', 'sp-3']);
         $this->assertEquals('WebSocket\Middleware\SubprotocolNegotiation', "{$middleware}");
@@ -53,7 +57,7 @@ class SubprotocolNegotiationTest extends TestCase
         $stream = new SocketStream($temp);
 
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
         $connection->addMiddleware($middleware);
 
         $this->expectSocketStreamWrite()->addAssert(
@@ -91,6 +95,7 @@ class SubprotocolNegotiationTest extends TestCase
     public function testClientProtocolNoMatch(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $middleware = new SubprotocolNegotiation(['sp-1', 'sp-2', 'sp-3']);
         $this->assertEquals('WebSocket\Middleware\SubprotocolNegotiation', "{$middleware}");
@@ -102,7 +107,7 @@ class SubprotocolNegotiationTest extends TestCase
         $stream = new SocketStream($temp);
 
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
         $connection->addMiddleware($middleware);
 
         $this->expectSocketStreamWrite()->addAssert(
@@ -137,6 +142,7 @@ class SubprotocolNegotiationTest extends TestCase
     public function testClientProtocolRequire(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $middleware = new SubprotocolNegotiation(['sp-1', 'sp-2', 'sp-3'], true);
         $this->assertEquals('WebSocket\Middleware\SubprotocolNegotiation', "{$middleware}");
@@ -148,7 +154,7 @@ class SubprotocolNegotiationTest extends TestCase
         $stream = new SocketStream($temp);
 
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
         $connection->addMiddleware($middleware);
 
         $this->expectSocketStreamWrite()->addAssert(
@@ -182,6 +188,7 @@ class SubprotocolNegotiationTest extends TestCase
     public function testServerProtocolMatch(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $middleware = new SubprotocolNegotiation(['sp-1', 'sp-2', 'sp-3']);
         $this->assertEquals('WebSocket\Middleware\SubprotocolNegotiation', "{$middleware}");
@@ -193,7 +200,7 @@ class SubprotocolNegotiationTest extends TestCase
         $stream = new SocketStream($temp);
 
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
         $connection->addMiddleware($middleware);
 
         $this->expectSocketStreamReadLine()->setReturn(function () {
@@ -237,6 +244,7 @@ class SubprotocolNegotiationTest extends TestCase
     public function testServerProtocolNoMatch(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $middleware = new SubprotocolNegotiation(['sp-1', 'sp-2', 'sp-3']);
         $this->assertEquals('WebSocket\Middleware\SubprotocolNegotiation', "{$middleware}");
@@ -248,7 +256,7 @@ class SubprotocolNegotiationTest extends TestCase
         $stream = new SocketStream($temp);
 
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
         $connection->addMiddleware($middleware);
 
         $this->expectSocketStreamReadLine()->setReturn(function () {
@@ -293,6 +301,7 @@ class SubprotocolNegotiationTest extends TestCase
     public function testServerProtocolRequire(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $middleware = new SubprotocolNegotiation(['sp-1', 'sp-2', 'sp-3'], true);
         $this->assertEquals('WebSocket\Middleware\SubprotocolNegotiation', "{$middleware}");
@@ -304,7 +313,7 @@ class SubprotocolNegotiationTest extends TestCase
         $stream = new SocketStream($temp);
 
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
         $connection->addMiddleware($middleware);
 
         $this->expectSocketStreamReadLine()->setReturn(function () {

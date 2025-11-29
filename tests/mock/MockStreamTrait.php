@@ -94,20 +94,16 @@ trait MockStreamTrait
         $this->expectContext()->addAssert(function ($method, $params) {
             $this->assertIsResource($params[0]);
         });
-        $this->expectSocketStreamGetRemoteName()->setReturn(function () use ($host, $port) {
-            return "{$host}:{$port}";
-        });
-        $this->expectStreamCollectionAttach();
         $this->expectSocketStreamGetLocalName()->setReturn(function () use ($local) {
             return "{$local}";
         });
         $this->expectSocketStreamGetRemoteName()->setReturn(function () use ($host, $port) {
             return "{$host}:{$port}";
         });
-
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($timeout) {
             $this->assertEquals($timeout, $params[0]);
         });
+        $this->expectStreamCollectionAttach();
         $this->expectSocketStreamIsConnected();
         if ($persistent) {
             $this->expectSocketStreamTell();
@@ -190,7 +186,7 @@ trait MockStreamTrait
 
         $this->expectSocketServerGetMetadata();
         $this->expectStreamCollectionAttach()->addAssert(function ($method, $params) use ($port) {
-            $this->assertEquals("server:{$port}", $params[1]);
+            $this->assertEquals("server/{$port}", $params[1]);
         });
     }
 
@@ -201,10 +197,9 @@ trait MockStreamTrait
     {
         $this->expectStreamCollectionCount();
         $this->expectStreamCollectionWaitRead()->setReturn(function ($params, $default, $collection) use ($keys) {
-            $keys = array_flip($keys);
             $selected = new StreamCollection();
             foreach ($collection as $key => $stream) {
-                if (array_key_exists($key, $keys)) {
+                if (in_array($key, $keys)) {
                     $selected->attach($stream, $key);
                 }
             }
@@ -223,10 +218,9 @@ trait MockStreamTrait
     private function expectWsClientSelectConnections(array $keys = []): StackItem
     {
         $this->expectStreamCollectionWaitRead()->setReturn(function ($params, $default, $collection) use ($keys) {
-            $keys = array_flip($keys);
             $selected = new StreamCollection();
             foreach ($collection as $key => $stream) {
-                if (array_key_exists($key, $keys)) {
+                if (in_array($key, $keys)) {
                     $selected->attach($stream, $key);
                 }
             }
@@ -239,6 +233,24 @@ trait MockStreamTrait
         return $last;
     }
 
+    private function expectWsServerAccept(
+        string $local = 'localhost:8000',
+        string $remote = '127.0.0.1:12345'
+    ): StackItem {
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectContext();
+        $this->expectSocketStreamGetLocalName()->setReturn(function () use ($local) {
+            return $local;
+        });
+        $this->expectSocketStreamGetRemoteName()->setReturn(function () use ($remote) {
+            return $remote;
+        });
+        $this->expectSocketStreamSetTimeout();
+        return $this->expectStreamCollectionAttach();
+    }
+
     /**
      * @param array<mixed> $headers
      */
@@ -246,7 +258,7 @@ trait MockStreamTrait
         string $host = 'localhost:8000',
         string $path = '/my/mock/path',
         array $headers = []
-    ): void {
+    ): StackItem {
         $this->expectSocketStreamReadLine()->addAssert(function (string $method, array $params): void {
             $this->assertEquals(1024, $params[0]);
         })->setReturn(function (array $params) use ($path) {
@@ -294,7 +306,7 @@ trait MockStreamTrait
         })->setReturn(function (array $params) {
             return "\r\n";
         });
-        $this->expectSocketStreamWrite()->addAssert(function (string $method, array $params): void {
+        return $this->expectSocketStreamWrite()->addAssert(function (string $method, array $params): void {
             $expect = "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
             . "Sec-WebSocket-Accept: YmysboNHNoWzWVeQpduY7xELjgU=\r\n\r\n";
             $this->assertEquals($expect, $params[0]);

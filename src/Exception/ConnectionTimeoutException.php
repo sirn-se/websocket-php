@@ -11,10 +11,7 @@ namespace WebSocket\Exception;
  * WebSocket\Exception\ConnectionTimeoutException class.
  * Connection operation has timed out.
  */
-class ConnectionTimeoutException extends Exception implements MessageLevelInterface
+class ConnectionTimeoutException extends AbstractMessageException
 {
-    public function __construct()
-    {
-        parent::__construct('Connection operation timeout');
-    }
+    protected static string $defaultMessage = 'Connection operation timeout';
 }

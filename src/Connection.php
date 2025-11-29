@@ -12,6 +12,8 @@ use Phrity\Http\HttpFactory;
 use Phrity\Net\{
     Context,
     SocketStream,
+    StreamContainerInterface,
+    StreamInterface,
 };
 use Psr\Http\Message\{
     MessageInterface,
@@ -37,6 +39,10 @@ use WebSocket\Middleware\{
     MiddlewareHandler,
     MiddlewareInterface
 };
+use WebSocket\Runtime\{
+    HandlerInterface,
+    SelectableInterface,
+};
 use WebSocket\Trait\{
     ConfigurationTrait,
     SendMethodsTrait,
@@ -47,12 +53,13 @@ use WebSocket\Trait\{
  * WebSocket\Connection class.
  * A client/server connection, wrapping socket stream.
  */
-class Connection implements Stringable
+class Connection implements Stringable, SelectableInterface
 {
     use ConfigurationTrait;
     use SendMethodsTrait;
     use StringableTrait;
 
+    private HandlerInterface $handler;
     private SocketStream $stream;
     private HttpHandler $httpHandler;
     private MessageHandler $messageHandler;
@@ -63,11 +70,13 @@ class Connection implements Stringable
     private ResponseInterface|null $handshakeResponse = null;
     /** @var array<string, mixed> $meta */
     private array $meta = [];
+    private string $identity = 'client/<unconnected>';
 
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
 
     public function __construct(
+        HandlerInterface $handler,
         SocketStream $stream,
         bool $pushMasked,
         bool $pullMaskedRequired,
@@ -75,6 +84,7 @@ class Connection implements Stringable
         HttpFactory|null $httpFactory = null,
         Configuration|null $configuration = null,
     ) {
+        $this->handler = $handler;
         $this->stream = $stream;
         $this->initConfiguration($configuration);
         $this->httpHandler = new HttpHandler($this->stream, $ssl, $httpFactory);
@@ -89,13 +99,28 @@ class Connection implements Stringable
         );
         $this->localName = $this->stream->getLocalName() ?? '<unknown>';
         $this->remoteName = $this->stream->getRemoteName() ?? '<unknown>';
-
         $this->stream->setTimeout($this->configuration->getTimeout());
+        $this->identity = sprintf(
+            '%s/connection/%s/%s',
+            $this->handler->getIdentity(),
+            $this->getIdentityPart($this->localName),
+            $this->getIdentityPart($this->remoteName),
+        );
+    }
+
+    public function getHandler(): HandlerInterface
+    {
+        return $this->handler;
     }
 
     public function __toString(): string
     {
         return $this->stringable('%s:%s', $this->localName, $this->remoteName);
+    }
+
+    public function getIdentity(): string
+    {
+        return $this->identity;
     }
 
 
@@ -332,6 +357,15 @@ class Connection implements Stringable
         return $this->handshakeResponse;
     }
 
+    public function getStream(): StreamInterface
+    {
+        return $this->stream;
+    }
+
+    public function onSelect(): void
+    {
+        $this->getHandler()->selectHandler($this);
+    }
 
     /* ---------- Internal helper methods -------------------------------------------------------------------------- */
 
@@ -381,7 +415,7 @@ class Connection implements Stringable
                     'meta' => $meta,
                     'scope' => 'connection',
                 ]);
-                throw new ConnectionClosedException();
+                throw new ConnectionClosedException($this, null, $e);
             }
         }
         $this->configuration->getLogger()->error("[{scope}] {message}", [
@@ -389,6 +423,12 @@ class Connection implements Stringable
             'message' => $e->getMessage(),
             'scope' => 'connection',
         ]);
-        throw new ConnectionFailureException();
+        throw new ConnectionFailureException($this, null, $e);
+    }
+
+    protected function getIdentityPart(string $source): string
+    {
+        preg_match('/([0-9]+)$/', $source, $result);
+        return empty($result) ? $source : array_shift($result);
     }
 }

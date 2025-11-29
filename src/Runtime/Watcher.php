@@ -22,25 +22,19 @@ use WebSocket\Exception\ExceptionInterface;
 class Watcher
 {
     private StreamCollection $streamCollection;
-    /** @var array<string, Closure> $selects */
-    private array $selects = [];
 
     public function __construct(StreamCollection $streamCollection)
     {
         $this->streamCollection = $streamCollection;
     }
 
-    public function attach(string $key, StreamInterface $attach, Closure $onSelect): void
+    public function attach(SelectableInterface $attach): void
     {
-        $this->selects[$key] = $onSelect;
-        $this->streamCollection->attach($attach, $key);
+        $this->streamCollection->attach($attach, $attach->getIdentity());
     }
 
     public function detach(string $key): void
     {
-        if (array_key_exists($key, $this->selects)) {
-            unset($this->selects[$key]);
-        }
         $this->streamCollection->detach($key);
     }
 
@@ -52,11 +46,9 @@ class Watcher
     {
         $readables = $this->streamCollection->waitRead($timeout);
         foreach ($readables as $key => $readable) {
-            /**
-             * @throws ExceptionInterface
-             * @throws StreamException
-             */
-            call_user_func($this->selects[$key], $key, $readable);
+            if ($readable instanceof SelectableInterface) {
+                $readable->onSelect();
+            }
         }
     }
 

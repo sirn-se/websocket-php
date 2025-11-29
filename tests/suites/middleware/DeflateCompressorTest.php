@@ -14,7 +14,10 @@ use Phrity\Net\Mock\SocketStream;
 use RangeException;
 use RuntimeException;
 use Stringable;
-use WebSocket\Connection;
+use WebSocket\{
+    Client,
+    Connection,
+};
 use WebSocket\Http\{
     Request,
     Response,
@@ -45,6 +48,7 @@ class DeflateCompressorTest extends TestCase
     public function testClientDefault(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -52,7 +56,7 @@ class DeflateCompressorTest extends TestCase
         $stream = new SocketStream($temp);
 
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
 
         $compressor = new DeflateCompressor();
         $this->assertInstanceOf(Stringable::class, $compressor);
@@ -138,6 +142,7 @@ class DeflateCompressorTest extends TestCase
     public function testServerDefault(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -145,7 +150,7 @@ class DeflateCompressorTest extends TestCase
         $stream = new SocketStream($temp);
 
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
 
         $compressor = new DeflateCompressor();
         $this->assertInstanceOf(Stringable::class, $compressor);
@@ -231,6 +236,7 @@ class DeflateCompressorTest extends TestCase
     public function testClientServerDeclines(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -238,7 +244,7 @@ class DeflateCompressorTest extends TestCase
         $stream = new SocketStream($temp);
 
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
 
         $compressor = new DeflateCompressor();
         $this->assertInstanceOf(Stringable::class, $compressor);
@@ -303,6 +309,7 @@ class DeflateCompressorTest extends TestCase
     public function testClientConfiguration(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -310,7 +317,7 @@ class DeflateCompressorTest extends TestCase
         $stream = new SocketStream($temp);
 
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
 
         $compressor = new DeflateCompressor(
             clientNoContextTakeover: true,
@@ -401,6 +408,7 @@ class DeflateCompressorTest extends TestCase
     public function testServerConfiguration(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -408,7 +416,7 @@ class DeflateCompressorTest extends TestCase
         $stream = new SocketStream($temp);
 
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
 
         $compressor = new DeflateCompressor(
             clientNoContextTakeover: true,
@@ -498,6 +506,7 @@ class DeflateCompressorTest extends TestCase
     public function testClientConfigurationByServer(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -505,7 +514,7 @@ class DeflateCompressorTest extends TestCase
         $stream = new SocketStream($temp);
 
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
 
         $compressor = new DeflateCompressor(
             clientMaxWindowBits: 10,
@@ -562,6 +571,7 @@ class DeflateCompressorTest extends TestCase
     public function testServerConfigurationByServer(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -569,7 +579,7 @@ class DeflateCompressorTest extends TestCase
         $stream = new SocketStream($temp);
 
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
 
         $compressor = new DeflateCompressor(
             clientNoContextTakeover: true,
