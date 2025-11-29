@@ -14,6 +14,7 @@
  * General improvement of exceptions (@sirn-se)
  * Many class local configuration setters removed (@sirn-se)
  * Remove deprecated code (@sirn-se)
+ * Fix typos and broken links (@pieterocp)
 
 ## `v3.6`
 
