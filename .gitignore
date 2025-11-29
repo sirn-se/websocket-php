@@ -4,4 +4,5 @@ build/
 composer.lock
 composer.phar
 coverage/
+docu.json
 vendor/
