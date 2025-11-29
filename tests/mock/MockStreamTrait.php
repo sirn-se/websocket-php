@@ -36,7 +36,7 @@ trait MockStreamTrait
     private string $lastWsKey = '';
 
 
-    /* ---------- WebSocket Client combinded asserts --------------------------------------------------------------- */
+    /* ---------- WebSocket Client combined asserts --------------------------------------------------------------- */
 
     /**
      * @param array<mixed> $context
@@ -155,7 +155,7 @@ trait MockStreamTrait
     }
 
 
-    /* ---------- WebSocket Server combinded asserts --------------------------------------------------------------- */
+    /* ---------- WebSocket Server combined asserts --------------------------------------------------------------- */
 
     /**
      * @param array<mixed> $context
