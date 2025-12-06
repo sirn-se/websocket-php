@@ -529,7 +529,7 @@ class Server implements LoggerAwareInterface, Stringable
         try {
             /** @var SocketStream $stream */
             $stream = $socket->accept();
-            $name = $stream->getRemoteName();
+            $name = $stream->getRemoteName() ?? 'unknown';
             $this->streams()->attach($stream, $name);
             $connection = new Connection(
                 $stream,
