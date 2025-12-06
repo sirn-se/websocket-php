@@ -6,6 +6,11 @@
 
  > PHP version `^8.1`
 
+### `3.6.1`
+
+ * Fix typos and broken links (@pieterocp)
+ * Repo setup, PHP 8.5 default, 8.6 unit test (@sirn-se)
+
 ### `3.6.0`
 
  * CloseConnection and ReconnectException in Client listener (@sirn-se)
