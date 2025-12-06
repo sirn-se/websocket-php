@@ -14,7 +14,7 @@ cs: composer.lock
 stan: composer.lock
 	./vendor/bin/phpstan analyse --memory-limit 256M
 
-coverage: composer.lock
+coverage: composer.lock clean-coverage
 	./vendor/bin/phpunit --coverage-clover coverage/clover.xml --coverage-html=coverage -d --min-coverage=100
 
 composer.phar:
@@ -25,7 +25,9 @@ composer.lock: composer.phar
 
 vendor/bin/phpunit: install
 
-clean:
-	rm composer.lock
-	rm -r vendor
-	rm -r coverage
+clean: clean-coverage
+	rm -f composer.lock
+	rm -rf vendor
+
+clean-coverage:
+	rm -rf coverage
