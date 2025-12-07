@@ -2,6 +2,7 @@
 .github/            export-ignore
 .gitignore          export-ignore
 docs/               export-ignore
+docu.json           export-ignore
 examples/           export-ignore
 Makefile            export-ignore
 phpcs.xml           export-ignore

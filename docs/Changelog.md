@@ -14,11 +14,15 @@
  * General improvement of exceptions (@sirn-se)
  * Many class local configuration setters removed (@sirn-se)
  * Remove deprecated code (@sirn-se)
- * Fix typos and broken links (@pieterocp)
 
 ## `v3.6`
 
  > PHP version `^8.1`
+
+### `3.6.1`
+
+ * Fix typos and broken links (@pieterocp)
+ * Repo setup, PHP 8.5 default, 8.6 unit test (@sirn-se)
 
 ### `3.6.0`
 

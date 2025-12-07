@@ -3,7 +3,6 @@
 # Websocket Client and Server for PHP
 
 [![Build Status](https://github.com/sirn-se/websocket-php/actions/workflows/acceptance.yml/badge.svg)](https://github.com/sirn-se/websocket-php/actions)
-[![Coverage Status](https://coveralls.io/repos/github/sirn-se/websocket-php/badge.svg?branch=v2.0-main)](https://coveralls.io/github/sirn-se/websocket-php)
 
 This library contains WebSocket client and server for PHP.
 
