@@ -17,7 +17,7 @@ use Phrity\Net\Mock\{
 use Stringable;
 use WebSocket\{
     Client,
-    Connection
+    Connection,
 };
 use WebSocket\Exception\{
     HandshakeException,
@@ -47,6 +47,7 @@ class FollowRedirectTest extends TestCase
     public function testRedirect(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $middleware = new FollowRedirect(2);
         $this->assertEquals('WebSocket\Middleware\FollowRedirect', "{$middleware}");
@@ -58,7 +59,7 @@ class FollowRedirectTest extends TestCase
         $stream = new SocketStream($temp);
 
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
         $connection->addMiddleware($middleware);
 
         $this->expectSocketStreamReadLine()->setReturn(function () {
@@ -78,6 +79,7 @@ class FollowRedirectTest extends TestCase
     public function testMaxRedirect(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $middleware = new FollowRedirect(0);
 
@@ -87,7 +89,7 @@ class FollowRedirectTest extends TestCase
         $stream = new SocketStream($temp);
 
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
         $connection->addMiddleware($middleware);
 
         $this->expectSocketStreamReadLine()->setReturn(function () {
@@ -107,6 +109,7 @@ class FollowRedirectTest extends TestCase
     public function testNoLocation(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $middleware = new FollowRedirect(0);
 
@@ -116,7 +119,7 @@ class FollowRedirectTest extends TestCase
         $stream = new SocketStream($temp);
 
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
         $connection->addMiddleware($middleware);
 
         $this->expectSocketStreamReadLine()->setReturn(function () {

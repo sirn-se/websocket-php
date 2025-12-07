@@ -37,7 +37,10 @@ use WebSocket\Middleware\{
     MiddlewareHandler,
     MiddlewareInterface
 };
-use WebSocket\Runtime\HandlerInterface;
+use WebSocket\Runtime\{
+    HandlerInterface,
+    IdentityInterface,
+};
 use WebSocket\Trait\{
     ConfigurationTrait,
     SendMethodsTrait,
@@ -48,13 +51,13 @@ use WebSocket\Trait\{
  * WebSocket\Connection class.
  * A client/server connection, wrapping socket stream.
  */
-class Connection implements Stringable
+class Connection implements IdentityInterface, Stringable
 {
     use ConfigurationTrait;
     use SendMethodsTrait;
     use StringableTrait;
 
-    private HandlerInterface|null $handler;
+    private HandlerInterface $handler;
     private SocketStream $stream;
     private HttpHandler $httpHandler;
     private MessageHandler $messageHandler;
@@ -65,18 +68,20 @@ class Connection implements Stringable
     private ResponseInterface|null $handshakeResponse = null;
     /** @var array<string, mixed> $meta */
     private array $meta = [];
+    /** @var non-empty-string $identity */
+    private string $identity = 'client/<unconnected>';
 
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
 
     public function __construct(
+        HandlerInterface $handler,
         SocketStream $stream,
         bool $pushMasked,
         bool $pullMaskedRequired,
         bool $ssl = false,
         HttpFactory|null $httpFactory = null,
         Configuration|null $configuration = null,
-        HandlerInterface|null $handler = null,
     ) {
         $this->handler = $handler;
         $this->stream = $stream;
@@ -93,18 +98,28 @@ class Connection implements Stringable
         );
         $this->localName = $this->stream->getLocalName() ?? '<unknown>';
         $this->remoteName = $this->stream->getRemoteName() ?? '<unknown>';
-
+        $this->identity = sprintf(
+            '%s/connection/%s/%s',
+            $this->handler->getIdentity(),
+            $this->getIdentityPart($this->localName),
+            $this->getIdentityPart($this->remoteName),
+        );
         $this->stream->setTimeout($this->configuration->getTimeout());
-    }
-
-    public function getHandler(): HandlerInterface|null
-    {
-        return $this->handler;
     }
 
     public function __toString(): string
     {
         return $this->stringable('%s:%s', $this->localName, $this->remoteName);
+    }
+
+    public function getHandler(): HandlerInterface
+    {
+        return $this->handler;
+    }
+
+    public function getIdentity(): string
+    {
+        return $this->identity;
     }
 
 
@@ -127,9 +142,9 @@ class Connection implements Stringable
     public function addMiddleware(MiddlewareInterface $middleware): self
     {
         $this->middlewareHandler->add($middleware);
-        $this->configuration->getLogger()->debug("[{scope}] Added middleware: {$middleware}", [
-            'middleware' => $middleware,
-            'scope' => 'connection',
+        $this->configuration->getLogger()->debug('[{identity}] Added middleware: {middleware}', [
+            'identity' => $this->identity,
+            'middleware' => (string)$middleware,
         ]);
         return $this;
     }
@@ -170,8 +185,8 @@ class Connection implements Stringable
      */
     public function disconnect(): self
     {
-        $this->configuration->getLogger()->info("[{scope}] Closing connection", [
-            'scope' => 'connection',
+        $this->configuration->getLogger()->info('[{identity}] Closing connection', [
+            'identity' => $this->identity,
         ]);
         $this->stream->close();
         return $this;
@@ -183,8 +198,8 @@ class Connection implements Stringable
      */
     public function closeRead(): self
     {
-        $this->configuration->getLogger()->info("[{scope}] Closing further reading", [
-            'scope' => 'connection',
+        $this->configuration->getLogger()->info('[{identity}] Closing further reading', [
+            'identity' => $this->identity,
         ]);
         $this->stream->closeRead();
         return $this;
@@ -196,8 +211,8 @@ class Connection implements Stringable
      */
     public function closeWrite(): self
     {
-        $this->configuration->getLogger()->info("[{scope}] Closing further writing", [
-            'scope' => 'connection',
+        $this->configuration->getLogger()->info('[{identity}] Closing further writing', [
+            'identity' => $this->identity,
         ]);
         $this->stream->closeWrite();
         return $this;
@@ -355,18 +370,18 @@ class Connection implements Stringable
     {
         // Internal exceptions are handled and re-thrown
         if ($e instanceof ReconnectException) {
-            $this->configuration->getLogger()->info("[{scope}] {message}", [
+            $this->configuration->getLogger()->info('[{identity}] {error}', [
+                'identity' => $this->identity,
                 'exception' => $e,
-                'message' => $e->getMessage(),
-                'scope' => 'connection',
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }
         if ($e instanceof ExceptionInterface) {
-            $this->configuration->getLogger()->error("[{scope}] {message}", [
+            $this->configuration->getLogger()->error('[{identity}] {error}', [
+                'identity' => $this->identity,
                 'exception' => $e,
-                'message' => $e->getMessage(),
-                'scope' => 'connection',
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }
@@ -375,29 +390,35 @@ class Connection implements Stringable
             $meta = $this->stream->getMetadata();
             $json = json_encode($meta);
             if (!empty($meta['timed_out'])) {
-                $this->configuration->getLogger()->error("[{scope}] {message}", [
+                $this->configuration->getLogger()->error('[{identity}] {error}', [
+                    'identity' => $this->identity,
                     'exception' => $e,
-                    'message' => $e->getMessage(),
+                    'error' => $e->getMessage(),
                     'meta' => $meta,
-                    'scope' => 'connection',
                 ]);
                 throw new ConnectionTimeoutException();
             }
             if (!empty($meta['eof'])) {
-                $this->configuration->getLogger()->error("[{scope}] {message}", [
+                $this->configuration->getLogger()->error('[{identity}] {error}', [
+                    'identity' => $this->identity,
                     'exception' => $e,
-                    'message' => $e->getMessage(),
+                    'error' => $e->getMessage(),
                     'meta' => $meta,
-                    'scope' => 'connection',
                 ]);
                 throw new ConnectionClosedException($this, null, $e);
             }
         }
-        $this->configuration->getLogger()->error("[{scope}] {message}", [
+        $this->configuration->getLogger()->error('[{identity}] {error}', [
+            'identity' => $this->identity,
             'exception' => $e,
-            'message' => $e->getMessage(),
-            'scope' => 'connection',
+            'error' => $e->getMessage(),
         ]);
         throw new ConnectionFailureException($this, null, $e);
+    }
+
+    protected function getIdentityPart(string $source): string
+    {
+        preg_match('/([0-9]+)$/', $source, $result);
+        return empty($result) ? $source : array_shift($result);
     }
 }

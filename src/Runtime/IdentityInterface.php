@@ -8,8 +8,12 @@
 namespace WebSocket\Runtime;
 
 /**
- * WebSocket\Runtime\HandlerInterface interface.
+ * WebSocket\Runtime\IdentityInterface interface.
  */
-interface HandlerInterface extends IdentityInterface
+interface IdentityInterface
 {
+    /**
+     * @return non-empty-string
+     */
+    public function getIdentity(): string;
 }

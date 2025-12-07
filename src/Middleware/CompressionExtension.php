@@ -89,20 +89,20 @@ class CompressionExtension implements
             if ($preferred = $this->getPreferred($message)) {
                 $connection->setMeta('compressionExtension.compressor', $preferred->compressor);
                 $connection->setMeta('compressionExtension.configuration', $preferred->configuration);
-                $this->configuration->getLogger()->debug(
-                    "[permessage-compression] Using {$preferred->compressor}",
-                    (array)$preferred->configuration
-                );
+                $this->configuration->getLogger()->debug('[permessage-compression] Using {compressor}', [
+                    'compressor' => $preferred->compressor,
+                    'configuration' => (array)$preferred->configuration,
+                ]);
             }
         } elseif ($message instanceof ResponseInterface) {
             // Incoming Response on Client
             if ($preferred = $this->getPreferred($message)) {
                 $connection->setMeta('compressionExtension.compressor', $preferred->compressor);
                 $connection->setMeta('compressionExtension.configuration', $preferred->configuration);
-                $this->configuration->getLogger()->debug(
-                    "[permessage-compression] Using {$preferred->compressor}",
-                    (array)$preferred->configuration
-                );
+                $this->configuration->getLogger()->debug('[permessage-compression] Using {compressor}', [
+                    'compressor' => $preferred->compressor,
+                    'configuration' => (array)$preferred->configuration,
+                ]);
             }
             // @todo: If not found?
         }

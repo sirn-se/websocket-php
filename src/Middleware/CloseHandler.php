@@ -40,15 +40,15 @@ class CloseHandler implements ProcessIncomingInterface, ProcessOutgoingInterface
         }
         if ($connection->isWritable()) {
             // Remote sent Close; acknowledge and close for further reading
-            $this->configuration->getLogger()->debug(
-                "[close-handler] Received 'close', status: {$message->getCloseStatus()}"
-            );
+            $this->configuration->getLogger()->debug('[close-handler] Received \'close\', status: {status}', [
+                'status' => $message->getCloseStatus(),
+            ]);
             $ack =  "Close acknowledged: {$message->getCloseStatus()}";
             $connection->closeRead();
             $connection->send(new Close($message->getCloseStatus(), $ack));
         } else {
             // Remote sent Close/Ack: disconnect
-            $this->configuration->getLogger()->debug("[close-handler] Received 'close' acknowledge, disconnecting");
+            $this->configuration->getLogger()->debug('[close-handler] Received \'close\', acknowledge, disconnecting');
             $connection->disconnect();
         }
         return $message;
@@ -62,13 +62,13 @@ class CloseHandler implements ProcessIncomingInterface, ProcessOutgoingInterface
         }
         if ($connection->isReadable()) {
             // Local sent Close: close for further writing, expect remote acknowledge
-            $this->configuration->getLogger()->debug(
-                "[close-handler] Sent 'close', status: {$message->getCloseStatus()}"
-            );
+            $this->configuration->getLogger()->debug('[close-handler] Sent \'close\', status: {status}', [
+                'status' => $message->getCloseStatus(),
+            ]);
             $connection->closeWrite();
         } else {
             // Local sent Close/Ack: disconnect
-            $this->configuration->getLogger()->debug("[close-handler] Sent 'close' acknowledge, disconnecting");
+            $this->configuration->getLogger()->debug('[close-handler] Sent \'close\', acknowledge, disconnecting');
             $connection->disconnect();
         }
         return $message;

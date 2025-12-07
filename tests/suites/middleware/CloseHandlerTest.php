@@ -12,7 +12,10 @@ namespace WebSocket\Test\Middleware;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\SocketStream;
 use Stringable;
-use WebSocket\Connection;
+use WebSocket\{
+    Client,
+    Connection,
+};
 use WebSocket\Message\Close;
 use WebSocket\Middleware\CloseHandler;
 use WebSocket\Test\MockStreamTrait;
@@ -38,6 +41,7 @@ class CloseHandlerTest extends TestCase
     public function testLocalClose(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -45,7 +49,7 @@ class CloseHandlerTest extends TestCase
         $stream = new SocketStream($temp);
 
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
 
         $middleware = new CloseHandler();
         $connection->addMiddleware($middleware);
@@ -72,6 +76,7 @@ class CloseHandlerTest extends TestCase
     public function testRemoteClose(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -79,7 +84,7 @@ class CloseHandlerTest extends TestCase
         $stream = new SocketStream($temp);
 
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
         $connection->addMiddleware(new CloseHandler());
 
         $this->expectWsReadMessage('iAY==', 'A+h0dGZu');
