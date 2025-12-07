@@ -12,7 +12,10 @@ namespace WebSocket\Test\Middleware;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\SocketStream;
 use Psr\Log\NullLogger;
-use WebSocket\Connection;
+use WebSocket\{
+    Client,
+    Connection,
+};
 use WebSocket\Message\Text;
 use WebSocket\Middleware\{
     Callback,
@@ -42,6 +45,7 @@ class ProcessStackTest extends TestCase
     public function testIncoming(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -49,7 +53,7 @@ class ProcessStackTest extends TestCase
         $stream = new SocketStream($temp);
 
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
 
         $connection->addMiddleware(new Callback(incoming: function ($stack, $connection) {
             $message = $stack->handleIncoming();
@@ -88,6 +92,7 @@ class ProcessStackTest extends TestCase
     public function testOutgoing(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -95,7 +100,7 @@ class ProcessStackTest extends TestCase
         $stream = new SocketStream($temp);
 
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
 
         $connection->addMiddleware(new Callback(outgoing: function ($stack, $connection, $message) {
             $this->assertEquals('Test message', $message->getContent());

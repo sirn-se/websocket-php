@@ -48,6 +48,7 @@ use WebSocket\Trait\{
 };
 use WebSocket\Runtime\{
     HandlerInterface,
+    IdentityInterface,
     Watcher,
 };
 
@@ -55,7 +56,7 @@ use WebSocket\Runtime\{
  * WebSocket\Client class.
  * Entry class for WebSocket client.
  */
-class Client implements HandlerInterface, LoggerAwareInterface, Stringable
+class Client implements HandlerInterface, IdentityInterface, LoggerAwareInterface, Stringable
 {
     use ConfigurationTrait;
     /** @use ListenerTrait<Client> */
@@ -77,6 +78,8 @@ class Client implements HandlerInterface, LoggerAwareInterface, Stringable
     private StreamFactory $streamFactory;
     private HttpFactory $httpFactory;
     private Watcher $watcher;
+    /** @var non-empty-string $identity */
+    private string $identity = 'client/<unconnected>';
 
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
@@ -100,6 +103,7 @@ class Client implements HandlerInterface, LoggerAwareInterface, Stringable
         $this->httpFactory = $httpFactory ?? new DefaultHttpFactory();
         $this->watcher = $watcher ?? new Watcher($this->streamFactory->createStreamCollection());
         $this->initConfiguration($configuration);
+        $this->identity = "client/{$this->socketUri->getHost()}";
     }
 
     /**
@@ -109,6 +113,11 @@ class Client implements HandlerInterface, LoggerAwareInterface, Stringable
     public function __toString(): string
     {
         return $this->stringable('%s', $this->connection ? $this->socketUri->__toString() : 'closed');
+    }
+
+    public function getIdentity(): string
+    {
+        return $this->identity;
     }
 
 
@@ -279,15 +288,15 @@ class Client implements HandlerInterface, LoggerAwareInterface, Stringable
     {
         // Check if running
         if ($this->running) {
-            $this->configuration->getLogger()->warning("[{scope}] Client is already running", [
-                'scope' => 'client',
+            $this->configuration->getLogger()->warning('[{identity}] Client is already running', [
+                'identity' => $this->identity,
             ]);
             return;
         }
         $this->running = true;
         $reconnect = false;
-        $this->configuration->getLogger()->info("[{scope}] Client is running", [
-            'scope' => 'client',
+        $this->configuration->getLogger()->info('[{identity}] Client is running', [
+            'identity' => $this->identity,
         ]);
 
         $connection = $this->connection();
@@ -304,10 +313,10 @@ class Client implements HandlerInterface, LoggerAwareInterface, Stringable
             } catch (CloseException $e) {
                 // Close connection
                 $connection->close($e->getCloseStatus(), $e->getMessage());
-                $this->configuration->getLogger()->error("[{scope}] {message}", [
+                $this->configuration->getLogger()->error('[{identity}] {error} (close)', [
+                    'identity' => $this->identity,
                     'exception' => $e,
-                    'message' => $e->getMessage(),
-                    'scope' => 'client',
+                    'error' => $e->getMessage(),
                 ]);
                 $this->dispatch('error', [$this, $connection, $e]);
             } catch (ReconnectException $e) {
@@ -317,32 +326,30 @@ class Client implements HandlerInterface, LoggerAwareInterface, Stringable
                     $this->socketUri = $uri;
                 }
                 $connection->close();
-                $this->configuration->getLogger()->error("[{scope}] {message}", [
+                $this->configuration->getLogger()->error('[{identity}] {error} (reconnect)', [
+                    'identity' => $this->identity,
                     'exception' => $e,
-                    'message' => $e->getMessage(),
-                    'scope' => 'client',
+                    'error' => $e->getMessage(),
                 ]);
                 $this->dispatch('error', [$this, $connection, $e]);
             } catch (ExceptionInterface $e) {
                 $this->disconnect();
                 $this->running = false;
-
                 // Low-level error
-                $this->configuration->getLogger()->error("[{scope}] {message}", [
+                $this->configuration->getLogger()->error('[{identity}] {error}', [
+                    'identity' => $this->identity,
                     'exception' => $e,
-                    'message' => $e->getMessage(),
-                    'scope' => 'client',
+                    'error' => $e->getMessage(),
                 ]);
                 $this->dispatch('error', [$this, null, $e]);
             } catch (Throwable $e) {
                 $this->disconnect();
                 $this->running = false;
-
                 // Crash it
-                $this->configuration->getLogger()->error("[{scope}] {message}", [
+                $this->configuration->getLogger()->error('[{identity}] {error}', [
+                    'identity' => $this->identity,
                     'exception' => $e,
-                    'message' => $e->getMessage(),
-                    'scope' => 'client',
+                    'error' => $e->getMessage(),
                 ]);
                 throw $e;
             }
@@ -365,24 +372,23 @@ class Client implements HandlerInterface, LoggerAwareInterface, Stringable
             $this->dispatch($message->getOpcode(), [$this, $connection, $message]);
         } catch (MessageLevelInterface $e) {
             // Error, but keep connection open
-            $this->configuration->getLogger()->error("[{scope}] {message}", [
+            $this->configuration->getLogger()->error('[{identity}] {error} (message)', [
+                'identity' => $this->identity,
                 'exception' => $e,
-                'message' => $e->getMessage(),
-                'scope' => 'client',
+                'error' => $e->getMessage(),
             ]);
             $this->dispatch('error', [$this, $connection, $e]);
         } catch (ConnectionLevelInterface $e) {
             // Error, disconnect connection
             $this->disconnect();
-            $this->configuration->getLogger()->error("[{scope}] {message}", [
+            $this->configuration->getLogger()->error('[{identity}] {error} (connection)', [
+                'identity' => $this->identity,
                 'exception' => $e,
-                'message' => $e->getMessage(),
-                'scope' => 'client',
+                'error' => $e->getMessage(),
             ]);
             $this->dispatch('error', [$this, $connection, $e]);
         }
     }
-
 
     /**
      * Stop client listener (resumable).
@@ -390,8 +396,8 @@ class Client implements HandlerInterface, LoggerAwareInterface, Stringable
     public function stop(): void
     {
         $this->running = false;
-        $this->configuration->getLogger()->info("[{scope}] Client is stopped", [
-            'scope' => 'client',
+        $this->configuration->getLogger()->info('[{identity}] Client is stopped', [
+            'identity' => $this->identity,
         ]);
     }
 
@@ -466,38 +472,38 @@ class Client implements HandlerInterface, LoggerAwareInterface, Stringable
             $stream = $client->connect();
         } catch (Throwable $e) {
             $error = "Could not open socket to \"{$hostUri}\": {$e->getMessage()}";
-            $this->configuration->getLogger()->error("[{scope}] {message}", [
+            $this->configuration->getLogger()->error('[{identity}] {error}', [
+                'identity' => $this->identity,
                 'exception' => $e,
-                'message' => $e->getMessage(),
-                'scope' => 'client',
+                'error' => $error,
             ]);
             throw new ClientException($this, $error, $e);
         }
-        $name = $stream->getRemoteName() ?? 'unknown';
-        $this->watcher->attach($name, $stream, function (string $key, SocketStream $stream) {
-            $this->selectHandler($key, $stream);
-        });
         $this->connection = new Connection(
+            $this,
             $stream,
             true,
             false,
             $hostUri->getScheme() === 'ssl',
             $this->httpFactory,
             $this->configuration,
-            $this
         );
-        foreach ($this->middlewares as $middleware) {
-            $this->connection->addMiddleware($middleware);
-        }
 
-        if (!$this->isConnected()) {
+        $this->watcher->attach($this->connection->getIdentity(), $stream, function (string $key, SocketStream $stream) {
+            $this->selectHandler($key, $stream);
+        });
+
+        if (is_null($this->connection) || !$this->isConnected()) {
             $error = "Invalid stream on \"{$hostUri}\".";
-            $this->configuration->getLogger()->error("[{scope}] {message}", [
-                'message' => $error,
-                'scope' => 'client',
+            $this->configuration->getLogger()->error('[{identity}] {error}', [
+                'identity' => $this->identity,
+                'error' => $error,
             ]);
             $this->disconnect();
             throw new ClientException($this, $error);
+        }
+        foreach ($this->middlewares as $middleware) {
+            $this->connection->addMiddleware($middleware);
         }
         try {
             if (!$this->configuration->isPersistent() || $stream->tell() == 0) {
@@ -505,10 +511,10 @@ class Client implements HandlerInterface, LoggerAwareInterface, Stringable
                 $response = $this->performHandshake($this->socketUri, $this->connection);
             }
         } catch (ReconnectException $e) {
-            $this->configuration->getLogger()->info("[{scope}] {message}", [
+            $this->configuration->getLogger()->error('[{identity}] {error}', [
+                'identity' => $this->identity,
                 'exception' => $e,
-                'message' => $e->getMessage(),
-                'scope' => 'client',
+                'error' => $e->getMessage(),
             ]);
             if ($uri = $e->getUri()) {
                 $this->socketUri = $uri;
@@ -516,10 +522,11 @@ class Client implements HandlerInterface, LoggerAwareInterface, Stringable
             $this->connect();
             return;
         }
-        $this->configuration->getLogger()->info("[{scope}] Client connected to {$this->socketUri}", [
-            'scope' => 'client',
+        $this->configuration->getLogger()->info('[{identity}] Client connected to {uri}', [
+            'identity' => $this->identity,
             'uri' => $this->socketUri,
         ]);
+
         $this->dispatch('handshake', [
             $this,
             $this->connection,
@@ -535,12 +542,12 @@ class Client implements HandlerInterface, LoggerAwareInterface, Stringable
     public function disconnect(): void
     {
         if ($this->connection) {
-            $this->watcher->detach($this->connection->getRemoteName());
+            $this->watcher->detach($this->connection->getIdentity());
         }
         if ($this->connection && $this->isConnected()) {
             $this->connection->disconnect();
-            $this->configuration->getLogger()->info("[{scope}] Client disconnected", [
-                'scope' => 'client',
+            $this->configuration->getLogger()->info('[{identity}] Client disconnected', [
+                'identity' => $this->identity,
             ]);
             $this->dispatch('disconnect', [$this, $this->connection]);
         }
@@ -642,18 +649,18 @@ class Client implements HandlerInterface, LoggerAwareInterface, Stringable
                 );
             }
         } catch (HandshakeException $e) {
-            $this->configuration->getLogger()->error("[{scope}] {message}", [
+            $this->configuration->getLogger()->error('[{identity}] {error} (handshake)', [
+                'identity' => $this->identity,
                 'exception' => $e,
-                'message' => $e->getMessage(),
-                'scope' => 'client',
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }
-
-        $this->configuration->getLogger()->debug("[{scope}] Handshake on {$uri->getPath()}", [
+        $this->configuration->getLogger()->debug('[{identity}] Handshake on {path}', [
+            'identity' => $this->identity,
             'path' => $uri->getPath(),
-            'scope' => 'client',
         ]);
+
         $connection->setHandshakeRequest($request);
         $connection->setHandshakeResponse($response);
 

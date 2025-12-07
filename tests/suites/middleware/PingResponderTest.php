@@ -12,7 +12,10 @@ namespace WebSocket\Test\Middleware;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\SocketStream;
 use Stringable;
-use WebSocket\Connection;
+use WebSocket\{
+    Client,
+    Connection,
+};
 use WebSocket\Message\Ping;
 use WebSocket\Middleware\PingResponder;
 use WebSocket\Test\MockStreamTrait;
@@ -38,6 +41,7 @@ class PingResponderTest extends TestCase
     public function testPingAutoResponse(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
@@ -45,7 +49,7 @@ class PingResponderTest extends TestCase
         $stream = new SocketStream($temp);
 
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
 
         $middleware = new PingResponder();
         $connection->addMiddleware($middleware);

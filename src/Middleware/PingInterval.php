@@ -45,7 +45,7 @@ class PingInterval implements ProcessOutgoingInterface, ProcessTickInterface, St
     {
         // Push if time exceeds timestamp for next ping
         if ($connection->isWritable() && microtime(true) >= $this->getNext($connection)) {
-            $this->configuration->getLogger()->debug("[ping-interval] Auto-pushing ping");
+            $this->configuration->getLogger()->debug('[ping-interval] Auto-pushing ping');
             $connection->send(new Ping());
             $this->setNext($connection); // Update timestamp for next ping
         }

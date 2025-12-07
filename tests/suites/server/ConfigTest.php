@@ -103,21 +103,8 @@ class ConfigTest extends TestCase
         $this->assertSame($server, $server->setStreamFactory(new StreamFactory()));
 
         $this->expectWsServerSetup(scheme: 'ssl', port: 9000);
-        $this->expectWsSelectConnections(['@server']);
-        // Accept connection
-        $this->expectSocketServerAccept();
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-        $this->expectContext();
-        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
-            return 'fake-connection-1';
-        });
-        $this->expectStreamCollectionAttach();
-        $this->expectSocketStreamGetLocalName()->setReturn(function () {
-            return 'fake-connection-1';
-        });
-        $this->expectSocketStreamGetRemoteName();
-        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($server) {
+        $this->expectWsSelectConnections(['server/9000']);
+        $this->expectWsServerAccept()->addAssert(function ($method, $params) use ($server) {
             $server->stop();
         });
         $this->expectWsServerPerformHandshake();
@@ -175,21 +162,8 @@ class ConfigTest extends TestCase
         $this->assertSame($context, $server->getContext());
 
         $this->expectWsServerSetup(context: ['ssl' => ['verify_peer' => false]]);
-        $this->expectWsSelectConnections(['@server']);
-        // Accept connection
-        $this->expectSocketServerAccept();
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-        $this->expectContext();
-        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
-            return 'fake-connection-1';
-        });
-        $this->expectStreamCollectionAttach();
-        $this->expectSocketStreamGetLocalName()->setReturn(function () {
-            return 'fake-connection-1';
-        });
-        $this->expectSocketStreamGetRemoteName();
-        $this->expectSocketStreamSetTimeout();
+        $this->expectWsSelectConnections(['server/8000']);
+        $this->expectWsServerAccept();
         $this->expectWsServerPerformHandshake();
         $server->start();
 

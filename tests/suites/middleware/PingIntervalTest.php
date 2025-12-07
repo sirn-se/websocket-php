@@ -12,7 +12,10 @@ namespace WebSocket\Test\Middleware;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\SocketStream;
 use Stringable;
-use WebSocket\Connection;
+use WebSocket\{
+    Client,
+    Connection,
+};
 use WebSocket\Middleware\PingInterval;
 use WebSocket\Test\MockStreamTrait;
 
@@ -37,6 +40,7 @@ class PingIntervalTest extends TestCase
     public function testPingInterval(): void
     {
         $temp = tmpfile();
+        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $middleware = new PingInterval(1);
         $this->assertEquals('WebSocket\Middleware\PingInterval', "{$middleware}");
@@ -48,7 +52,7 @@ class PingIntervalTest extends TestCase
         $stream = new SocketStream($temp);
 
         $this->expectWsConnectionCreate();
-        $connection = new Connection($stream, false, false);
+        $connection = new Connection($client, $stream, false, false);
         $connection->addMiddleware($middleware);
 
         // First tick set interval
