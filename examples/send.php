@@ -53,7 +53,7 @@ $options = array_merge([
     'opcode'    => 'text',
 ], getopt('', ['uri:', 'opcode:', 'timeout:', 'framesize:', 'deflate']));
 
-$message = array_pop($argv);
+$message = empty($argv) ? 'Test message' : array_pop($argv);
 
 // Initiate client.
 try {

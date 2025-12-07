@@ -155,7 +155,7 @@ Read more on [Configuration](Configuration.md).
 ### HTTP factories
 
 By default the Client uses a minimal [PSR-7 HTTP message](https://www.php-fig.org/psr/psr-7/) implementation.
-Other (more complete) implementations can be used by setting [PSR-17 HTTP factories](https://www.php-fig.org/psr/psr-17/) on the CLient.
+Other (more complete) implementations can be used by setting [PSR-17 HTTP factories](https://www.php-fig.org/psr/psr-17/) on the Client.
 
 Set a configured HttpFactory class on the Client.
 ```php
@@ -183,7 +183,7 @@ $client->addHeader("Sec-WebSocket-Protocol", "soap");
 
 ## Connection control
 
-Client will automatically connect when sending a message or starting the listner.
+Client will automatically connect when sending a message or starting the listener.
 You may also connect and disconnect manually.
 
 ```php

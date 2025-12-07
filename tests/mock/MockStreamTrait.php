@@ -36,7 +36,7 @@ trait MockStreamTrait
     private string $lastWsKey = '';
 
 
-    /* ---------- WebSocket Client combinded asserts --------------------------------------------------------------- */
+    /* ---------- WebSocket Client combined asserts --------------------------------------------------------------- */
 
     private function expectWsClientCreate(): void
     {
@@ -156,7 +156,7 @@ trait MockStreamTrait
     }
 
 
-    /* ---------- WebSocket Server combinded asserts --------------------------------------------------------------- */
+    /* ---------- WebSocket Server combined asserts --------------------------------------------------------------- */
 
     private function expectWsServerCreate(): void
     {
