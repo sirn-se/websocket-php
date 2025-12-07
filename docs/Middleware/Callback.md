@@ -32,7 +32,7 @@ $client_or_server
     ));
 ```
 
-* The `incoming` and `outgoing` callbacks **MUST** return a [Message](Message.md) instance
+* The `incoming` and `outgoing` callbacks **MUST** return a [Message](../Message.md) instance
 * The `httpIncoming` and `httpOutgoing` callbacks **MUST** return a HTTP request/response instance respectively
 * The `tick` callback returns nothing
 

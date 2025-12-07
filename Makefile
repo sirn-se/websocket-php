@@ -28,7 +28,6 @@ vendor/bin/phpunit: install
 clean: clean-coverage
 	rm -f composer.lock
 	rm -rf vendor
-	rm -rf coverage
 
 clean-coverage:
 	rm -rf coverage
