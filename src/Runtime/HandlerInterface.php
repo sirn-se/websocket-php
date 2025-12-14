@@ -12,7 +12,7 @@ use WebSocket\Connection;
 /**
  * WebSocket\Runtime\HandlerInterface interface.
  */
-interface HandlerInterface
+interface HandlerInterface extends IdentityInterface
 {
     public function getIdentity(): string;
     public function selectHandler(Connection $connection): void;

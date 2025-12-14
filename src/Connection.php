@@ -42,6 +42,7 @@ use WebSocket\Middleware\{
 use WebSocket\Runtime\{
     HandlerInterface,
     SelectableInterface,
+    IdentityInterface,
 };
 use WebSocket\Trait\{
     ConfigurationTrait,
@@ -53,7 +54,7 @@ use WebSocket\Trait\{
  * WebSocket\Connection class.
  * A client/server connection, wrapping socket stream.
  */
-class Connection implements Stringable, SelectableInterface
+class Connection implements IdentityInterface, SelectableInterface. Stringable
 {
     use ConfigurationTrait;
     use SendMethodsTrait;
@@ -70,6 +71,7 @@ class Connection implements Stringable, SelectableInterface
     private ResponseInterface|null $handshakeResponse = null;
     /** @var array<string, mixed> $meta */
     private array $meta = [];
+    /** @var non-empty-string $identity */
     private string $identity = 'client/<unconnected>';
 
 
@@ -108,14 +110,14 @@ class Connection implements Stringable, SelectableInterface
         );
     }
 
-    public function getHandler(): HandlerInterface
-    {
-        return $this->handler;
-    }
-
     public function __toString(): string
     {
         return $this->stringable('%s:%s', $this->localName, $this->remoteName);
+    }
+
+    public function getHandler(): HandlerInterface
+    {
+        return $this->handler;
     }
 
     public function getIdentity(): string
@@ -143,9 +145,9 @@ class Connection implements Stringable, SelectableInterface
     public function addMiddleware(MiddlewareInterface $middleware): self
     {
         $this->middlewareHandler->add($middleware);
-        $this->configuration->getLogger()->debug("[{scope}] Added middleware: {$middleware}", [
-            'middleware' => $middleware,
-            'scope' => 'connection',
+        $this->configuration->getLogger()->debug('[{identity}] Added middleware: {middleware}', [
+            'identity' => $this->identity,
+            'middleware' => (string)$middleware,
         ]);
         return $this;
     }
@@ -186,8 +188,8 @@ class Connection implements Stringable, SelectableInterface
      */
     public function disconnect(): self
     {
-        $this->configuration->getLogger()->info("[{scope}] Closing connection", [
-            'scope' => 'connection',
+        $this->configuration->getLogger()->info('[{identity}] Closing connection', [
+            'identity' => $this->identity,
         ]);
         $this->stream->close();
         return $this;
@@ -199,8 +201,8 @@ class Connection implements Stringable, SelectableInterface
      */
     public function closeRead(): self
     {
-        $this->configuration->getLogger()->info("[{scope}] Closing further reading", [
-            'scope' => 'connection',
+        $this->configuration->getLogger()->info('[{identity}] Closing further reading', [
+            'identity' => $this->identity,
         ]);
         $this->stream->closeRead();
         return $this;
@@ -212,8 +214,8 @@ class Connection implements Stringable, SelectableInterface
      */
     public function closeWrite(): self
     {
-        $this->configuration->getLogger()->info("[{scope}] Closing further writing", [
-            'scope' => 'connection',
+        $this->configuration->getLogger()->info('[{identity}] Closing further writing', [
+            'identity' => $this->identity,
         ]);
         $this->stream->closeWrite();
         return $this;
@@ -380,18 +382,18 @@ class Connection implements Stringable, SelectableInterface
     {
         // Internal exceptions are handled and re-thrown
         if ($e instanceof ReconnectException) {
-            $this->configuration->getLogger()->info("[{scope}] {message}", [
+            $this->configuration->getLogger()->info('[{identity}] {error}', [
+                'identity' => $this->identity,
                 'exception' => $e,
-                'message' => $e->getMessage(),
-                'scope' => 'connection',
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }
         if ($e instanceof ExceptionInterface) {
-            $this->configuration->getLogger()->error("[{scope}] {message}", [
+            $this->configuration->getLogger()->error('[{identity}] {error}', [
+                'identity' => $this->identity,
                 'exception' => $e,
-                'message' => $e->getMessage(),
-                'scope' => 'connection',
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }
@@ -400,28 +402,28 @@ class Connection implements Stringable, SelectableInterface
             $meta = $this->stream->getMetadata();
             $json = json_encode($meta);
             if (!empty($meta['timed_out'])) {
-                $this->configuration->getLogger()->error("[{scope}] {message}", [
+                $this->configuration->getLogger()->error('[{identity}] {error}', [
+                    'identity' => $this->identity,
                     'exception' => $e,
-                    'message' => $e->getMessage(),
+                    'error' => $e->getMessage(),
                     'meta' => $meta,
-                    'scope' => 'connection',
                 ]);
                 throw new ConnectionTimeoutException();
             }
             if (!empty($meta['eof'])) {
-                $this->configuration->getLogger()->error("[{scope}] {message}", [
+                $this->configuration->getLogger()->error('[{identity}] {error}', [
+                    'identity' => $this->identity,
                     'exception' => $e,
-                    'message' => $e->getMessage(),
+                    'error' => $e->getMessage(),
                     'meta' => $meta,
-                    'scope' => 'connection',
                 ]);
                 throw new ConnectionClosedException($this, null, $e);
             }
         }
-        $this->configuration->getLogger()->error("[{scope}] {message}", [
+        $this->configuration->getLogger()->error('[{identity}] {error}', [
+            'identity' => $this->identity,
             'exception' => $e,
-            'message' => $e->getMessage(),
-            'scope' => 'connection',
+            'error' => $e->getMessage(),
         ]);
         throw new ConnectionFailureException($this, null, $e);
     }

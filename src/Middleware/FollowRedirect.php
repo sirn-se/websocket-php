@@ -56,15 +56,20 @@ class FollowRedirect implements ProcessHttpIncomingInterface, Stringable
             && $message->getStatusCode() < 400
             && $locationHeader = $message->getHeaderLine('Location')
         ) {
-            $note = "{$this->attempts} of {$this->limit} redirect attempts";
             if ($this->attempts > $this->limit) {
-                $this->configuration->getLogger()->debug("[follow-redirect] Too many redirect attempts, giving up");
+                $this->configuration->getLogger()->warning('[follow-redirect] Too many redirect attempts, giving up', [
+                    'attempts' => $this->attempts,
+                    'limit' => $this->limit,
+                ]);
                 throw new HandshakeException($connection, $message, "Too many redirect attempts, giving up");
             }
             $this->attempts++;
-            $this->configuration->getLogger()->debug(
-                "[follow-redirect] {$message->getStatusCode()} {$locationHeader} ($note)"
-            );
+            $this->configuration->getLogger()->debug('[follow-redirect] Redirect {status} {location}', [
+                'status' => $message->getStatusCode(),
+                'location' => $locationHeader,
+                'attempts' => $this->attempts,
+                'limit' => $this->limit,
+            ]);
             throw new ReconnectException(new Uri($locationHeader), "Reconnect requested: {$locationHeader}");
         }
         return $message;

@@ -100,14 +100,14 @@ class FrameHandler implements Stringable
         }
 
         $frame = new Frame($opcode, $payload, $final, $rsv1, $rsv2, $rsv3);
-        $this->configuration->getLogger()->debug("[frame-handler] Pulled '{$opcode}' frame", [
+        $this->configuration->getLogger()->debug('[frame-handler] Pulled {opcode} frame', [
             'opcode' => $frame->getOpcode(),
             'final' => $frame->isFinal(),
             'content-length' => $frame->getPayloadLength(),
         ]);
 
         if ($this->pullMaskedRequired && !$masked) {
-            $this->configuration->getLogger()->error("[frame-handler] Masking required, but frame was unmasked");
+            $this->configuration->getLogger()->debug('[frame-handler] Masking required, but frame was unmasked');
             throw new CloseException(1002, 'Masking required');
         }
 
@@ -162,7 +162,7 @@ class FrameHandler implements Stringable
         // Write to stream.
         $written = $this->write($data);
 
-        $this->configuration->getLogger()->debug("[frame-handler] Pushed '{opcode}' frame", [
+        $this->configuration->getLogger()->debug('[frame-handler] Pushed {opcode} frame', [
             'opcode' => $frame->getOpcode(),
             'final' => $frame->isFinal(),
             'content-length' => $frame->getPayloadLength(),
