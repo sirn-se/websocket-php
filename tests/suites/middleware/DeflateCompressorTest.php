@@ -730,6 +730,11 @@ class DeflateCompressorTest extends TestCase
         $configuration = $compressor->getConfiguration($header, false);
         $this->assertSame(15, $configuration->clientMaxWindowBits);
         $this->assertSame(15, $configuration->serverMaxWindowBits);
+
+        $header = 'client_max_window_bits=8;server_max_window_bits=16;';
+        $configuration = $compressor->getConfiguration($header, false);
+        $this->assertSame(9, $configuration->clientMaxWindowBits);
+        $this->assertSame(15, $configuration->serverMaxWindowBits);
     }
 
 

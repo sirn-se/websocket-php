@@ -163,11 +163,11 @@ class DeflateCompressor implements CompressorInterface, Stringable
                     $configuration->clientNoContextTakeover = true;
                     break;
                 case 'server_max_window_bits':
-                    $bits = $this->intVal($value, self::MAX_WINDOW_SIZE);
+                    $bits = $this->intVal($value);
                     $configuration->serverMaxWindowBits = min($bits, $this->serverMaxWindowBits);
                     break;
                 case 'client_max_window_bits':
-                    $bits = $this->intVal($value, self::MAX_WINDOW_SIZE);
+                    $bits = $this->intVal($value);
                     $configuration->clientMaxWindowBits = min($bits, $this->clientMaxWindowBits);
                     break;
             }
@@ -235,12 +235,16 @@ class DeflateCompressor implements CompressorInterface, Stringable
         return $message;
     }
 
-    private function intVal(string|null $input, int $default): int
+    private function intVal(string|null $input): int
     {
         if (is_null($input)) {
-            return $default;
+            return self::MAX_WINDOW_SIZE;
         }
         preg_match('/([1-9][0-9]*)/', $input, $matches);
-        return empty($matches) ? $default : (int)array_shift($matches);
+        if (empty($matches)) {
+            return self::MAX_WINDOW_SIZE;
+        }
+        $value = (int)array_shift($matches);
+        return min(max($value, self::MIN_WINDOW_SIZE), self::MAX_WINDOW_SIZE);
     }
 }
