@@ -14,7 +14,7 @@ Please provide a clear and concise description of the suspected issue.
 If possible, provide information - possibly including code snippets - on how to reproduce the issue.
 
 **Logs**
-If possible, provide logs that indicate the issue. See https://github.com/Textalk/websocket-php/blob/master/docs/Examples.md#logger on how to use a logger.
+If possible, provide logs that indicate the issue. See [Examples: Logger](../../docs/Examples.md#logger) on how to use a logger.
 
 **Versions**
 * Version of this library
