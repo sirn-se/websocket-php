@@ -6,6 +6,11 @@
 
  > PHP version `^8.1`
 
+### `3.6.2`
+
+ * Deflate compression fuzzy header parsing fix (@sirn-se)
+ * More documentation (@sirn-se)
+
 ### `3.6.1`
 
  * Fix typos and broken links (@pieterocp)

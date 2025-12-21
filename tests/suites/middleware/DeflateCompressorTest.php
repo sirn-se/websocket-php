@@ -712,6 +712,31 @@ class DeflateCompressorTest extends TestCase
         new DeflateCompressor(clientMaxWindowBits: 16);
     }
 
+    public function testHeaderParsing(): void
+    {
+        $compressor = new DeflateCompressor();
+
+        $header = 'client_max_window_bits=10;server_max_window_bits=11;';
+        $configuration = $compressor->getConfiguration($header, false);
+        $this->assertSame(10, $configuration->clientMaxWindowBits);
+        $this->assertSame(11, $configuration->serverMaxWindowBits);
+
+        $header = ' client_max_window_bits = "10" ; server_max_window_bits=\'11\' ; ';
+        $configuration = $compressor->getConfiguration($header, false);
+        $this->assertSame(10, $configuration->clientMaxWindowBits);
+        $this->assertSame(11, $configuration->serverMaxWindowBits);
+
+        $header = 'client_max_window_bits; server_max_window_bits=invalid;';
+        $configuration = $compressor->getConfiguration($header, false);
+        $this->assertSame(15, $configuration->clientMaxWindowBits);
+        $this->assertSame(15, $configuration->serverMaxWindowBits);
+
+        $header = 'client_max_window_bits=8;server_max_window_bits=16;';
+        $configuration = $compressor->getConfiguration($header, false);
+        $this->assertSame(9, $configuration->clientMaxWindowBits);
+        $this->assertSame(15, $configuration->serverMaxWindowBits);
+    }
+
 
     /**
      * PhpStan cannot resolve otherwise

@@ -22,4 +22,5 @@
 
 ## Migration
 
+* [v1 -> v2](Migrate_1_2.md) - How to migrate from v1 to v2
 * [v2 -> v3](Migrate_2_3.md) - How to migrate from v2 to v3

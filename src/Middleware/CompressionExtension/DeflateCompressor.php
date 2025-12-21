@@ -149,7 +149,8 @@ class DeflateCompressor implements CompressorInterface, Stringable
         ];
         foreach (explode(';', $element) as $parameter) {
             $parts = explode('=', $parameter);
-            $key = trim($parts[0]);
+            $key = trim(array_shift($parts));
+            $value = array_shift($parts);
             // @todo: Error handling when parsing
             switch ($key) {
                 case 'permessage-deflate':
@@ -162,11 +163,11 @@ class DeflateCompressor implements CompressorInterface, Stringable
                     $configuration->clientNoContextTakeover = true;
                     break;
                 case 'server_max_window_bits':
-                    $bits = intval($parts[1] ?? self::MAX_WINDOW_SIZE);
+                    $bits = $this->intVal($value);
                     $configuration->serverMaxWindowBits = min($bits, $this->serverMaxWindowBits);
                     break;
                 case 'client_max_window_bits':
-                    $bits = intval($parts[1] ?? self::MAX_WINDOW_SIZE);
+                    $bits = $this->intVal($value);
                     $configuration->clientMaxWindowBits = min($bits, $this->clientMaxWindowBits);
                     break;
             }
@@ -232,5 +233,18 @@ class DeflateCompressor implements CompressorInterface, Stringable
         $message->setCompress(false);
         $message->setPayload($inflated);
         return $message;
+    }
+
+    private function intVal(string|null $input): int
+    {
+        if (is_null($input)) {
+            return self::MAX_WINDOW_SIZE;
+        }
+        preg_match('/([1-9][0-9]*)/', $input, $matches);
+        if (empty($matches)) {
+            return self::MAX_WINDOW_SIZE;
+        }
+        $value = (int)array_shift($matches);
+        return min(max($value, self::MIN_WINDOW_SIZE), self::MAX_WINDOW_SIZE);
     }
 }
