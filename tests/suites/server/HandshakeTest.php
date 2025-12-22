@@ -11,9 +11,11 @@ namespace WebSocket\Test\Server;
 
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\StreamException;
-use Phrity\Net\Mock\SocketStream;
-use Phrity\Net\Mock\StreamCollection;
-use Phrity\Net\Mock\StreamFactory;
+use Phrity\Net\Mock\{
+    SocketStream,
+    StreamCollection,
+    StreamFactory,
+};
 use Phrity\Net\Mock\Stack\{
     ExpectContextTrait,
     ExpectSocketServerTrait,
@@ -25,7 +27,6 @@ use WebSocket\{
     ConnectionException,
     Server
 };
-use WebSocket\Http\ServerRequest;
 use WebSocket\Test\{
     MockStreamTrait,
     MockUri

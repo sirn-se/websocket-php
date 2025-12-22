@@ -27,6 +27,10 @@ use Phrity\Net\{
     Uri,
 };
 use Phrity\Util\ErrorHandler;
+use Psr\Http\Message\{
+    RequestInterface,
+    ResponseInterface,
+};
 use Stringable;
 use WebSocket\{
     Client,
@@ -38,10 +42,6 @@ use WebSocket\Exception\{
     ClientException,
     CloseException,
     ReconnectException,
-};
-use WebSocket\Http\{
-    Request,
-    Response
 };
 use WebSocket\Test\MockStreamTrait;
 use WebSocket\Message\{
@@ -812,15 +812,15 @@ class ClientTest extends TestCase
         $client->onHandshake(function ($client, $connection, $request, $response) {
             $this->assertInstanceOf(Client::class, $client);
             $this->assertInstanceOf(Connection::class, $connection);
-            $this->assertInstanceOf(Request::class, $request);
-            $this->assertInstanceOf(Response::class, $response);
+            $this->assertInstanceOf(RequestInterface::class, $request);
+            $this->assertInstanceOf(ResponseInterface::class, $response);
             $this->assertTrue($client->isRunning());
         });
         $handler->withAll(function () use ($client) {
             $client->onConnect(function ($client, $connection, $response) {
                 $this->assertInstanceOf(Client::class, $client);
                 $this->assertInstanceOf(Connection::class, $connection);
-                $this->assertInstanceOf(Response::class, $response);
+                $this->assertInstanceOf(ResponseInterface::class, $response);
                 $this->assertTrue($client->isRunning());
                 $client->stop();
             });

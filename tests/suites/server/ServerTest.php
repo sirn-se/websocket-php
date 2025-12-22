@@ -22,6 +22,10 @@ use Phrity\Net\Mock\Stack\{
 };
 use Phrity\Net\StreamException;
 use Phrity\Util\ErrorHandler;
+use Psr\Http\Message\{
+    ResponseInterface,
+    ServerRequestInterface,
+};
 use Psr\Log\NullLogger;
 use Stringable;
 use WebSocket\{
@@ -33,10 +37,6 @@ use WebSocket\Exception\{
     CloseException,
     ConnectionClosedException,
     ServerException
-};
-use WebSocket\Http\{
-    Response,
-    ServerRequest
 };
 use WebSocket\Message\{
     Binary,
@@ -89,14 +89,14 @@ class ServerTest extends TestCase
         $server->onHandshake(function ($server, $connection, $request, $response) {
             $this->assertInstanceOf(Server::class, $server);
             $this->assertInstanceOf(Connection::class, $connection);
-            $this->assertInstanceOf(ServerRequest::class, $request);
-            $this->assertInstanceOf(Response::class, $response);
+            $this->assertInstanceOf(ServerRequestInterface::class, $request);
+            $this->assertInstanceOf(ResponseInterface::class, $response);
         });
         $handler->withAll(function () use ($server) {
             $server->onConnect(function ($server, $connection, $request) {
                 $this->assertInstanceOf(Server::class, $server);
                 $this->assertInstanceOf(Connection::class, $connection);
-                $this->assertInstanceOf(ServerRequest::class, $request);
+                $this->assertInstanceOf(ServerRequestInterface::class, $request);
                 $server->stop();
             });
         }, function (array $errors) {

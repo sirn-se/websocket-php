@@ -580,7 +580,6 @@ class Client implements LoggerAwareInterface, Stringable
             $request = $connection->pushHttp($request);
             /** @var ResponseInterface */
             $response = $connection->pullHttp();
-
             if ($response->getStatusCode() != 101) {
                 throw new HandshakeException("Invalid status code {$response->getStatusCode()}.", $response);
             }
@@ -652,6 +651,7 @@ class Client implements LoggerAwareInterface, Stringable
         if (!$uriInstance->getHost()) {
             throw new BadUriException("Invalid URI host.");
         }
+        $uriInstance = $uriInstance->withPath($uriInstance->getPath(), Uri::ABSOLUTE_PATH | Uri::NORMALIZE_PATH);
         return $uriInstance;
     }
 

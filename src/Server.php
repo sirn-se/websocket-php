@@ -18,6 +18,10 @@ use Phrity\Net\{
     StreamFactory,
     Uri
 };
+use Psr\Http\Message\{
+    ResponseInterface,
+    ServerRequestInterface,
+};
 use Psr\Log\{
     LoggerAwareInterface,
     LoggerInterface,
@@ -33,11 +37,7 @@ use WebSocket\Exception\{
     MessageLevelInterface,
     ServerException
 };
-use WebSocket\Http\{
-    DefaultHttpFactory,
-    Response,
-    ServerRequest,
-};
+use WebSocket\Http\DefaultHttpFactory;
 use WebSocket\Message\Message;
 use WebSocket\Middleware\MiddlewareInterface;
 use WebSocket\Trait\{
@@ -581,13 +581,13 @@ class Server implements LoggerAwareInterface, Stringable
     }
 
     // Perform upgrade handshake on new connections.
-    protected function performHandshake(Connection $connection): ServerRequest
+    protected function performHandshake(Connection $connection): ServerRequestInterface
     {
-        $response = $this->httpFactory->createResponse(101);
+        $response = $this->httpFactory->createResponse(101, 'Switching Protocols');
         $exception = null;
 
         // Read handshake request
-        /** @var ServerRequest */
+        /** @var ServerRequestInterface */
         $request = $connection->pullHttp();
 
         // Verify handshake request
@@ -645,7 +645,7 @@ class Server implements LoggerAwareInterface, Stringable
         }
 
         // Respond to handshake
-        /** @var Response */
+        /** @var ResponseInterface */
         $response = $connection->pushHttp($response);
         if ($response->getStatusCode() != 101) {
             $exception = new HandshakeException("Invalid status code {$response->getStatusCode()}", $response);

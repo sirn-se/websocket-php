@@ -16,11 +16,7 @@ use Psr\Http\Message\{
     ServerRequestInterface,
     UriInterface
 };
-use Stringable;
-use WebSocket\Http\{
-    Message,
-    ServerRequest
-};
+use WebSocket\Http\ServerRequest;
 
 /**
  * Test case for WebSocket\Http\ServerRequest.
@@ -36,23 +32,16 @@ class ServerRequestTest extends TestCase
     {
         $request = new ServerRequest();
         $this->assertInstanceOf(ServerRequest::class, $request);
-        $this->assertInstanceOf(Message::class, $request);
         $this->assertInstanceOf(ServerRequestInterface::class, $request);
         $this->assertEquals('/', $request->getRequestTarget());
         $this->assertEquals('GET', $request->getMethod());
         $this->assertInstanceOf(UriInterface::class, $request->getUri());
         $this->assertEquals('1.1', $request->getProtocolVersion());
-        $this->assertEquals(['Host' => ['']], $request->getHeaders());
+        $this->assertEquals([], $request->getHeaders());
         $this->assertFalse($request->hasHeader('none'));
         $this->assertEquals([], $request->getHeader('none'));
         $this->assertEquals('', $request->getHeaderLine('none'));
         $this->assertEquals([], $request->getQueryParams());
-        $this->assertInstanceOf(Stringable::class, $request);
-        $this->assertEquals('WebSocket\Http\ServerRequest(GET /)', "{$request}");
-        $this->assertEquals([
-            'GET / HTTP/1.1',
-            'Host: ',
-        ], $request->getAsArray());
     }
 
     public function testUriInstanceRequest(): void
@@ -67,118 +56,5 @@ class ServerRequestTest extends TestCase
         $this->assertEquals(['test.com:123'], $request->getHeader('Host'));
         $this->assertEquals('test.com:123', $request->getHeaderLine('Host'));
         $this->assertEquals(['a' => 'b', 'c' => 'd'], $request->getQueryParams());
-        $this->assertEquals('WebSocket\Http\ServerRequest(POST /a/path?a=b&c=d)', "{$request}");
-        $this->assertEquals([
-            'POST /a/path?a=b&c=d HTTP/1.1',
-            'Host: test.com:123',
-        ], $request->getAsArray());
-    }
-
-    public function testGetServerParamsError(): void
-    {
-        $request = new ServerRequest();
-        $this->expectException(BadMethodCallException::class);
-        $this->expectExceptionCode(0);
-        $this->expectExceptionMessage('Not implemented.');
-        $request->getServerParams();
-    }
-
-    public function testGetCookieParamsError(): void
-    {
-        $request = new ServerRequest();
-        $this->expectException(BadMethodCallException::class);
-        $this->expectExceptionCode(0);
-        $this->expectExceptionMessage('Not implemented.');
-        $request->getCookieParams();
-    }
-
-    public function testWithCookieParamsError(): void
-    {
-        $request = new ServerRequest();
-        $this->expectException(BadMethodCallException::class);
-        $this->expectExceptionCode(0);
-        $this->expectExceptionMessage('Not implemented.');
-        $request->withCookieParams([]);
-    }
-
-    public function testWithQueryParamsError(): void
-    {
-        $request = new ServerRequest();
-        $this->expectException(BadMethodCallException::class);
-        $this->expectExceptionCode(0);
-        $this->expectExceptionMessage('Not implemented.');
-        $request->withQueryParams([]);
-    }
-
-    public function testGetUploadedFilesError(): void
-    {
-        $request = new ServerRequest();
-        $this->expectException(BadMethodCallException::class);
-        $this->expectExceptionCode(0);
-        $this->expectExceptionMessage('Not implemented.');
-        $request->getUploadedFiles();
-    }
-
-    public function testWithUploadedFilesError(): void
-    {
-        $request = new ServerRequest();
-        $this->expectException(BadMethodCallException::class);
-        $this->expectExceptionCode(0);
-        $this->expectExceptionMessage('Not implemented.');
-        $request->withUploadedFiles([]);
-    }
-
-    public function testGetParsedBodyError(): void
-    {
-        $request = new ServerRequest();
-        $this->expectException(BadMethodCallException::class);
-        $this->expectExceptionCode(0);
-        $this->expectExceptionMessage('Not implemented.');
-        $request->getParsedBody();
-    }
-
-    public function testWithParsedBodyError(): void
-    {
-        $request = new ServerRequest();
-        $this->expectException(BadMethodCallException::class);
-        $this->expectExceptionCode(0);
-        $this->expectExceptionMessage('Not implemented.');
-        $request->withParsedBody(null);
-    }
-
-    public function testGetAttributesError(): void
-    {
-        $request = new ServerRequest();
-        $this->expectException(BadMethodCallException::class);
-        $this->expectExceptionCode(0);
-        $this->expectExceptionMessage('Not implemented.');
-        $request->getAttributes();
-    }
-
-    public function testGetAttributeError(): void
-    {
-        $request = new ServerRequest();
-        $this->expectException(BadMethodCallException::class);
-        $this->expectExceptionCode(0);
-        $this->expectExceptionMessage('Not implemented.');
-        $request->getAttribute('name');
-    }
-
-    public function testWithAttributeError(): void
-    {
-        $request = new ServerRequest();
-        $this->expectException(BadMethodCallException::class);
-        $this->expectExceptionCode(0);
-        $this->expectExceptionMessage('Not implemented.');
-        $request->withAttribute('name', 'value');
-    }
-
-    public function testWithoutAttributeError(): void
-    {
-        $request = new ServerRequest();
-        $this->expectException(BadMethodCallException::class);
-        $this->expectExceptionCode(0);
-        $this->expectExceptionMessage('Not implemented.');
-        $request->withoutAttribute('name');
     }
 }
