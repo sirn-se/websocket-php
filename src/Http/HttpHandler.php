@@ -120,7 +120,6 @@ class HttpHandler implements LoggerAwareInterface, Stringable
      */
     public function push(MessageInterface $message): MessageInterface
     {
-        $isRequest = $message instanceof RequestInterface;
         $data = $this->serializer->message($message);
         $this->stream->write($data);
         return $message;
