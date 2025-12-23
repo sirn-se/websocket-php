@@ -9,16 +9,17 @@ declare(strict_types=1);
 
 namespace WebSocket\Test\Middleware;
 
+use Nyholm\Psr7\Factory\Psr17Factory;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\SocketStream;
+use Psr\Http\Message\{
+    RequestInterface,
+    ResponseInterface,
+};
 use RangeException;
 use RuntimeException;
 use Stringable;
 use WebSocket\Connection;
-use WebSocket\Http\{
-    Request,
-    Response,
-};
 use WebSocket\Middleware\CompressionExtension;
 use WebSocket\Middleware\CompressionExtension\DeflateCompressor;
 use WebSocket\Test\MockStreamTrait;
@@ -31,10 +32,13 @@ class DeflateCompressorTest extends TestCase
 {
     use MockStreamTrait;
 
+    private Psr17Factory $psrFactory;
+
     public function setUp(): void
     {
         error_reporting(-1);
         $this->setUpStack();
+        $this->psrFactory = new Psr17Factory();
     }
 
     public function tearDown(): void
@@ -73,7 +77,7 @@ class DeflateCompressorTest extends TestCase
                 );
             }
         );
-        $request = new Request('GET', 'ws://test.url');
+        $request = $this->psrFactory->createRequest('GET', 'ws://test.url');
         $request = $connection->pushHttp($request);
         $this->assertEquals(['permessage-deflate'], $request->getHeader('Sec-WebSocket-Extensions'));
         $this->assertNull($connection->getMeta('compressionExtension.compressor'));
@@ -174,7 +178,7 @@ class DeflateCompressorTest extends TestCase
         $request = $connection->pullHttp();
         $this->assertEquals(['permessage-deflate'], $request->getHeader('Sec-WebSocket-Extensions'));
 
-        $response = new Response(200);
+        $response = $this->psrFactory->createResponse(200);
         $this->expectSocketStreamWrite()->addAssert(
             function (string $method, array $params): void {
                 $this->assertEquals(
@@ -265,7 +269,7 @@ class DeflateCompressorTest extends TestCase
                 );
             }
         );
-        $request = new Request('GET', 'ws://test.url');
+        $request = $this->psrFactory->createRequest('GET', 'ws://test.url');
         $request = $connection->pushHttp($request);
         $this->assertEquals(['permessage-deflate'], $request->getHeader('Sec-WebSocket-Extensions'));
 
@@ -346,7 +350,7 @@ class DeflateCompressorTest extends TestCase
                 );
             }
         );
-        $request = new Request('GET', 'ws://test.url');
+        $request = $this->psrFactory->createRequest('GET', 'ws://test.url');
         $request = $connection->pushHttp($request);
         $this->assertNull($connection->getMeta('compressionExtension.compressor'));
         $this->assertNull($connection->getMeta('compressionExtension.configuration'));
@@ -451,7 +455,7 @@ class DeflateCompressorTest extends TestCase
         $request = $connection->pullHttp();
         $this->assertEquals(['permessage-deflate'], $request->getHeader('Sec-WebSocket-Extensions'));
 
-        $response = new Response(200);
+        $response = $this->psrFactory->createResponse(200);
         $this->expectSocketStreamWrite()->addAssert(
             function (string $method, array $params): void {
                 $this->assertEquals(
@@ -545,7 +549,7 @@ class DeflateCompressorTest extends TestCase
                 );
             }
         );
-        $request = new Request('GET', 'ws://test.url');
+        $request = $this->psrFactory->createRequest('GET', 'ws://test.url');
         $request = $connection->pushHttp($request);
 
         // Receive heders from Server
@@ -618,7 +622,7 @@ class DeflateCompressorTest extends TestCase
         });
         $request = $connection->pullHttp();
 
-        $response = new Response(200);
+        $response = $this->psrFactory->createResponse(200);
         $this->expectSocketStreamWrite()->addAssert(
             function (string $method, array $params): void {
                 $this->assertEquals(

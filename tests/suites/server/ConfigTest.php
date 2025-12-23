@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace WebSocket\Test\Server;
 
-use GuzzleHttp\Psr7\HttpFactory as GuzzleFactory;
+use Nyholm\Psr7\Factory\Psr17Factory;
 use PHPUnit\Framework\TestCase;
 use Phrity\Http\HttpFactory;
 use Phrity\Net\Mock\{
@@ -226,7 +226,7 @@ class ConfigTest extends TestCase
 
     public function testHttpFactories(): void
     {
-        $httpFactory = new GuzzleFactory();
+        $httpFactory = new Psr17Factory();
         $this->expectContext();
         $context = new Context();
         $this->expectContextSetOptions();

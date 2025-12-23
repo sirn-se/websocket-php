@@ -9,15 +9,16 @@ declare(strict_types=1);
 
 namespace WebSocket\Test\Middleware;
 
+use Nyholm\Psr7\Factory\Psr17Factory;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\SocketStream;
 use Psr\Log\NullLogger;
+use Psr\Http\Message\{
+    RequestInterface,
+    ResponseInterface,
+};
 use Stringable;
 use WebSocket\Connection;
-use WebSocket\Http\{
-    Request,
-    Response,
-};
 use WebSocket\Message\Text;
 use WebSocket\Middleware\Callback;
 use WebSocket\Test\MockStreamTrait;
@@ -29,10 +30,13 @@ class CallbackTest extends TestCase
 {
     use MockStreamTrait;
 
+    private Psr17Factory $psrFactory;
+
     public function setUp(): void
     {
         error_reporting(-1);
         $this->setUpStack();
+        $this->psrFactory = new Psr17Factory();
     }
 
     public function tearDown(): void
@@ -134,7 +138,7 @@ class CallbackTest extends TestCase
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "\r\n";
         });
-        /** @var Request $message */
+        /** @var RequestInterface $message */
         $message = $connection->pullHttp();
         $this->assertEquals('POST', $message->getMethod());
 
@@ -163,8 +167,8 @@ class CallbackTest extends TestCase
             return $message;
         }));
         $this->expectSocketStreamWrite();
-        /** @var Response $message */
-        $message = $connection->pushHttp(new Response(200));
+        /** @var ResponseInterface $message */
+        $message = $connection->pushHttp($this->psrFactory->createResponse(200));
         $this->assertEquals(400, $message->getStatusCode());
 
         $this->expectSocketStreamIsConnected();

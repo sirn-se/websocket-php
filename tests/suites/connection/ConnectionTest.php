@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace WebSocket\Test\Connection;
 
+use Nyholm\Psr7\Factory\Psr17Factory;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\Context;
 use Phrity\Net\Mock\SocketStream;
@@ -16,6 +17,7 @@ use Phrity\Net\Mock\Stack\{
     ExpectContextTrait,
     ExpectSocketStreamTrait,
 };
+use Psr\Http\Message\ResponseInterface;
 use Psr\Log\NullLogger;
 use Stringable;
 use WebSocket\Connection;
@@ -25,10 +27,6 @@ use WebSocket\Exception\{
     ConnectionClosedException,
     ConnectionFailureException,
     ConnectionTimeoutException
-};
-use WebSocket\Http\{
-    Request,
-    Response
 };
 use WebSocket\Message\{
     Ping,
@@ -44,10 +42,13 @@ class ConnectionTest extends TestCase
     use ExpectContextTrait;
     use ExpectSocketStreamTrait;
 
+    private Psr17Factory $psrFactory;
+
     public function setUp(): void
     {
         error_reporting(-1);
         $this->setUpStack();
+        $this->psrFactory = new Psr17Factory();
     }
 
     public function tearDown(): void
@@ -151,7 +152,7 @@ class ConnectionTest extends TestCase
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
         $connection = new Connection($stream, false, false);
-        $request = new Request('GET', 'ws://test.com/path');
+        $request = $this->psrFactory->createRequest('GET', 'ws://test.com/path');
         $connection->setHandshakeRequest($request);
         $this->assertSame($request, $connection->getHandshakeRequest());
 
@@ -170,7 +171,7 @@ class ConnectionTest extends TestCase
             return "\r\n";
         });
         $response = $connection->pullHttp();
-        $this->assertInstanceOf(Response::class, $response);
+        $this->assertInstanceOf(ResponseInterface::class, $response);
 
         $connection->setHandshakeResponse($response);
         $this->assertSame($response, $connection->getHandshakeResponse());
@@ -236,7 +237,7 @@ class ConnectionTest extends TestCase
         $this->expectExceptionMessage('Connection has unexpectedly closed');
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        $connection->pushHttp(new Request());
+        $connection->pushHttp($this->psrFactory->createRequest('GET', '/'));
 
         unset($connection);
     }

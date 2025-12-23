@@ -19,6 +19,7 @@ use Phrity\Net\Mock\Stack\{
 };
 use Phrity\Net\StreamException;
 use Phrity\Net\Uri;
+use Psr\Http\Message\ResponseInterface;
 use WebSocket\Client;
 use WebSocket\Exception\{
     BadOpcodeException,
@@ -30,7 +31,6 @@ use WebSocket\Exception\{
     HandshakeException,
     ReconnectException,
 };
-use WebSocket\Http\Response;
 use WebSocket\Test\MockStreamTrait;
 
 /**
@@ -70,7 +70,7 @@ class HandshakeTest extends TestCase
         $client->connect();
 
         $response = $client->getHandshakeResponse();
-        $this->assertInstanceOf(Response::class, $response);
+        $this->assertInstanceOf(ResponseInterface::class, $response);
         $this->assertEquals(101, $response->getStatusCode());
         $this->assertEquals('Switching Protocols', $response->getReasonPhrase());
 
@@ -97,7 +97,7 @@ class HandshakeTest extends TestCase
             }
         );
         $this->expectSocketStreamReadLine()->setReturn(function (array $params) {
-            return "HTTP/1.1 101\r\n";
+            return "HTTP/1.1 101 Switching Protocols\r\n";
         });
         $this->expectSocketStreamReadLine()->setReturn(function (array $params) {
             return "Upgrade: websocket\r\n";
@@ -115,7 +115,7 @@ class HandshakeTest extends TestCase
         $client->connect();
 
         $response = $client->getHandshakeResponse();
-        $this->assertInstanceOf(Response::class, $response);
+        $this->assertInstanceOf(ResponseInterface::class, $response);
         $this->assertEquals(101, $response->getStatusCode());
         $this->assertEquals('Switching Protocols', $response->getReasonPhrase());
 
@@ -181,7 +181,7 @@ class HandshakeTest extends TestCase
             return "HTTP/1.1 101 Switching Protocols\r\n";
         });
         $this->expectSocketStreamReadLine()->setReturn(function () {
-            return "Upgrade: websocket\r\nInvalid upgrade\r\n";
+            return "Upgrade: Invalid upgrade\r\n";
         });
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "\r\n";
@@ -207,7 +207,7 @@ class HandshakeTest extends TestCase
             return "HTTP/1.1 101 Switching Protocols\r\n";
         });
         $this->expectSocketStreamReadLine()->setReturn(function () {
-            return "Upgrade: websocket\r\nInvalid upgrade\r\n";
+            return "Upgrade: websocket\r\n";
         });
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "Sec-WebSocket-Accept: BAD_KEY\r\n";
@@ -243,7 +243,7 @@ class HandshakeTest extends TestCase
         $client->connect();
 
         $response = $client->getHandshakeResponse();
-        $this->assertInstanceOf(Response::class, $response);
+        $this->assertInstanceOf(ResponseInterface::class, $response);
         $this->assertEquals(101, $response->getStatusCode());
         $this->assertEquals('Switching Protocols', $response->getReasonPhrase());
 

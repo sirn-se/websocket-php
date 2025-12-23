@@ -2,490 +2,514 @@
 
 # Class Synopsis
 
-Incomplete list of public API of core classes.
-
-## WebSocket
-
-### Client
+Public API of included classes.
 
 ```php
-class WebSocket\Client implements Psr\Log\LoggerAwareInterface, Stringable
+abstract class WebSocket\Exception\Exception extends RuntimeException imlements WebSocket\Exception\ExceptionInterface
 {
-    // Magic methods
-    public function __construct(Psr\Http\Message\UriInterface|string $uri);
-    public function __toString(): string;
-
-    // Configuration
-    public function setStreamFactory(Phrity\Net\StreamFactory $streamFactory): self;
-    public function setLogger(Psr\Log\LoggerInterface $logger): void;
-    public function setTimeout(int|float $timeout): self;
-    public function getTimeout(): int|float;
-    public function setFrameSize(int $frameSize): self;
-    public function getFrameSize(): int;
-    public function setPersistent(bool $persistent): self;
-    public function getContext(): Phrity\Net\Context;
-    public function setContext(Phrity\Net\Context|array $context): self;
-    public function addHeader(string $name, string $content): self;
-    public function addMiddleware(WebSocket\Middleware\MiddlewareInterface $middleware): self;
-
-    // Messaging operations
-    public function send(WebSocket\Message\Message $message): WebSocket\Message\Message;
-    public function receive(): WebSocket\Message\Message;
-    public function text(string $message): WebSocket\Message\Text;
-    public function binary(string $message): WebSocket\Message\Binary;
-    public function ping(string $message = ''): WebSocket\Message\Ping;
-    public function pong(string $message = ''): WebSocket\Message\Pong;
-    public function close(int $status = 1000, string $message = 'ttfn'): WebSocket\Message\Close;
-
-    // Listener operations
-    public function start(int|float|null $timeout = null): void;
-    public function stop(): void;
-    public function isRunning(): bool;
-
-    // Connection management
-    public function isConnected(): bool;
-    public function isReadable(): bool;
-    public function isWritable(): bool;
-    public function connect(): void;
-    public function disconnect(): void;
-
-    // Connection wrapper methods
-    public function getName(): string|null;
-    public function getRemoteName(): string|null;
-    public function getMeta(string $key): mixed; // @deprecated
-    public function getHandshakeResponse(): WebSocket\Http\Response|null;
-
-    // Listener methods
-    public function onConnect(Closure $closure): self; // @deprecated
-    public function onDisconnect(Closure $closure): self;
-    public function onHandshake(Closure $closure): self;
-    public function onText(Closure $closure): self;
-    public function onBinary(Closure $closure): self;
-    public function onPing(Closure $closure): self;
-    public function onPong(Closure $closure): self;
-    public function onClose(Closure $closure): self;
-    public function onError(Closure $closure): self;
-    public function onTick(Closure $closure): self;
 }
-```
 
-### Server
-
-```php
-class WebSocket\Server implements Psr\Log\LoggerAwareInterface, Stringable
+abstract class WebSocket\Message\Message imlements Stringable
 {
-    // Magic methods
-    public function __construct(int $port = 80, bool $ssl = false);
-    public function __toString(): string;
+    use WebSocket\Trait\StringableTrait;
 
-    // Configuration
-    public function setStreamFactory(Phrity\Net\StreamFactory $streamFactory): self;
-    public function setLogger(Psr\Log\LoggerInterface $logger): void;
-    public function setTimeout(int|float $timeout): self;
-    public function getTimeout(): int|float;
-    public function setFrameSize(int $frameSize): self;
-    public function getFrameSize(): int;
-    public function getPort(): int;
-    public function getScheme(): string;
-    public function isSsl(): bool;
-    public function getContext(): Phrity\Net\Context;
-    public function setContext(Phrity\Net\Context|array $context): self;
-    public function getConnectionCount(): int;
-    public function getConnections(): array;
-    public function getReadableConnections(): array;
-    public function getWritableConnections(): array;
-    public function addMiddleware(WebSocket\Middleware\MiddlewareInterface $middleware): self;
-    public function setMaxConnections(int|null $maxConnections): self;
-
-    // Messaging operations
-    public function send(WebSocket\Message\Message $message): WebSocket\Message\Message;
-    public function text(string $message): WebSocket\Message\Text;
-    public function binary(string $message): WebSocket\Message\Binary;
-    public function ping(string $message = ''): WebSocket\Message\Ping;
-    public function pong(string $message = ''): WebSocket\Message\Pong;
-    public function close(int $status = 1000, string $message = 'ttfn'): WebSocket\Message\Close;
-
-    // Listener operations
-    public function start(int|float|null $timeout = null): void;
-    public function stop(): void;
-    public function isRunning(): bool;
-
-    // Connection management
-    public function shutdown(int $closeStatus = 1001): void;
-    public function disconnect(): void;
-
-    // Listener methods
-    public function onConnect(Closure $closure): self; // @deprecated
-    public function onDisconnect(Closure $closure): self;
-    public function onHandshake(Closure $closure): self;
-    public function onText(Closure $closure): self;
-    public function onBinary(Closure $closure): self;
-    public function onPing(Closure $closure): self;
-    public function onPong(Closure $closure): self;
-    public function onClose(Closure $closure): self;
-    public function onError(Closure $closure): self;
-    public function onTick(Closure $closure): self;
+    public method __construct(string $content = "");
+    public method getContent(): string;
+    public method getFrames(int $frameSize = 4096): array;
+    public method getLength(): int;
+    public method getOpcode(): string;
+    public method getPayload(): string;
+    public method getTimestamp(): DateTimeInterface;
+    public method hasContent(): bool;
+    public method isCompressed(): bool;
+    public method setCompress(bool $compress): void;
+    public method setContent(string $content = ""): void;
+    public method setPayload(string $payload = ""): void;
 }
-```
 
-### Connection
-
-```php
-class WebSocket\Connection implements Psr\Log\LoggerAwareInterface, Stringable
+class WebSocket\Client imlements Psr\Log\LoggerAwareInterface, Stringable
 {
-    // Magic methods
-    public function __construct(Phrity\Net\SocketStream $stream, bool $pushMasked, bool $pullMaskedRequired, bool $ssl = false);
-    public function __destruct();
-    public function __toString(): string;
+    use WebSocket\Trait\ListenerTrait;
+    use WebSocket\Trait\LoggerAwareTrait;
+    use WebSocket\Trait\SendMethodsTrait;
+    use WebSocket\Trait\StringableTrait;
 
-    // Configuration
-    public function setLogger(Psr\Log\LoggerInterface $logger): void;
-    public function setTimeout(int|float $timeout): self;
-    public function getTimeout(): int|float;
-    public function setFrameSize(int $frameSize): self;
-    public function getFrameSize(): int;
-    public function getContext(): Phrity\Net\Context;
-    public function addMiddleware(WebSocket\Middleware\MiddlewareInterface $middleware): self;
-
-    // Connection management
-    public function isConnected(): bool;
-    public function isReadable(): bool;
-    public function isWritable(): bool;
-    public function disconnect(): self;
-    public function closeRead(): self;
-    public function closeWrite(): self;
-
-    // Connection state
-    public function getName(): string|null;
-    public function getRemoteName(): string|null;
-    public function setMeta(string $key, mixed $value): void;
-    public function getMeta(string $key): mixed;
-    public function tick(): void;
-
-    // WebSocket Message methods
-    public function send(WebSocket\Message\Message $message): WebSocket\Message\Message;
-    public function pushMessage(WebSocket\Message\Message $message): WebSocket\Message\Message;
-    public function pullMessage(): WebSocket\Message\Message;
-    public function text(string $message): WebSocket\Message\Text;
-    public function binary(string $message): WebSocket\Message\Binary;
-    public function ping(string $message = ''): WebSocket\Message\Ping;
-    public function pong(string $message = ''): WebSocket\Message\Pong;
-    public function close(int $status = 1000, string $message = 'ttfn'): WebSocket\Message\Close;
-
-    // HTTP Message methods
-    public function pushHttp(WebSocket\Http\Message $message): WebSocket\Http\Message;
-    public function pullHttp(): WebSocket\Http\Message;
-    public function setHandshakeRequest(WebSocket\Http\Request $request): self;
-    public function getHandshakeRequest(): WebSocket\Http\Request|null;
-    public function setHandshakeResponse(WebSocket\Http\Response $response): self;
-    public function getHandshakeResponse(): WebSocket\Http\Response|null;
+    public method __construct(Psr\Http\Message\UriInterface|string $uri);
+    public method __toString(): string;
+    public method addHeader(string $name, string $content): self;
+    public method addMiddleware(WebSocket\Middleware\MiddlewareInterface $middleware): self;
+    public method connect(): void;
+    public method disconnect(): void;
+    public method getContext(): Phrity\Net\Context;
+    public method getFrameSize(): int;
+    public method getHandshakeResponse(): Psr\Http\Message\ResponseInterface|null;
+    public method getMeta(string $key): mixed;
+    public method getName(): string|null;
+    public method getRemoteName(): string|null;
+    public method getTimeout(): int|float;
+    public method isConnected(): bool;
+    public method isReadable(): bool;
+    public method isRunning(): bool;
+    public method isWritable(): bool;
+    public method receive(): WebSocket\Message\Message;
+    public method send(WebSocket\Message\Message $message): WebSocket\Message\Message;
+    public method setContext(Phrity\Net\Context|array $context): self;
+    public method setFrameSize(int $frameSize): self;
+    public method setHttpFactory(Phrity\Http\HttpFactory $httpFactory): self;
+    public method setLogger(Psr\Log\LoggerInterface $logger): void;
+    public method setPersistent(bool $persistent): self;
+    public method setStreamFactory(Phrity\Net\StreamFactory $streamFactory): self;
+    public method setTimeout(int|float $timeout): self;
+    public method start(int|float|null $timeout = null): void;
+    public method stop(): void;
 }
-```
 
-## WebSocket / Exception
-
-### BadOpcodeException
-
-```php
-class WebSocket\Exception\BadOpcodeException extends WebSocket\Exception\Exception implements WebSocket\Exception\MessageLevelInterface
+class WebSocket\Connection imlements Psr\Log\LoggerAwareInterface, Stringable
 {
-    public function __construct(string $message = 'Bad Opcode');
+    use WebSocket\Trait\LoggerAwareTrait;
+    use WebSocket\Trait\SendMethodsTrait;
+    use WebSocket\Trait\StringableTrait;
+
+    public method __construct(Phrity\Net\SocketStream $stream, bool $pushMasked, bool $pullMaskedRequired, bool $ssl = false, Phrity\Http\HttpFactory|null $httpFactory = null);
+    public method __destruct();
+    public method __toString(): string;
+    public method addMiddleware(WebSocket\Middleware\MiddlewareInterface $middleware): self;
+    public method closeRead(): self;
+    public method closeWrite(): self;
+    public method disconnect(): self;
+    public method getContext(): Phrity\Net\Context;
+    public method getFrameSize(): int;
+    public method getHandshakeRequest(): Psr\Http\Message\RequestInterface|null;
+    public method getHandshakeResponse(): Psr\Http\Message\ResponseInterface|null;
+    public method getMeta(string $key): mixed;
+    public method getName(): string|null;
+    public method getRemoteName(): string|null;
+    public method getTimeout(): int|float;
+    public method isConnected(): bool;
+    public method isReadable(): bool;
+    public method isWritable(): bool;
+    public method pullHttp(): Psr\Http\Message\MessageInterface;
+    public method pullMessage(): WebSocket\Message\Message;
+    public method pushHttp(Psr\Http\Message\MessageInterface $message): Psr\Http\Message\MessageInterface;
+    public method pushMessage(WebSocket\Message\Message $message): WebSocket\Message\Message;
+    public method send(WebSocket\Message\Message $message): WebSocket\Message\Message;
+    public method setFrameSize(int $frameSize): self;
+    public method setHandshakeRequest(Psr\Http\Message\RequestInterface $request): self;
+    public method setHandshakeResponse(Psr\Http\Message\ResponseInterface $response): self;
+    public method setLogger(Psr\Log\LoggerInterface $logger): void;
+    public method setMeta(string $key, mixed $value): void;
+    public method setTimeout(int|float $timeout): self;
+    public method tick(): void;
 }
-```
 
-### BadUriException
+class WebSocket\Exception\BadOpcodeException extends WebSocket\Exception\Exception imlements WebSocket\Exception\MessageLevelInterface
+{
+    public method __construct(string $message = "Bad Opcode");
+}
 
-```php
 class WebSocket\Exception\BadUriException extends WebSocket\Exception\Exception
 {
-     public function __construct(string $message = 'Bad URI');
+    public method __construct(string $message = "Bad URI");
 }
-```
 
-### ClientException
-
-```php
 class WebSocket\Exception\ClientException extends WebSocket\Exception\Exception
 {
 }
-```
 
-### CloseException
-
-```php
 class WebSocket\Exception\CloseException extends WebSocket\Exception\Exception
 {
-    public function __construct(int|null $status = null, string $content = '');
-    public function getCloseStatus(): int|null;
+    public method __construct(int|null $status = null, string $content = "");
+    public method getCloseStatus(): int;
 }
-```
 
-### ConnectionClosedException
-
-```php
-class WebSocket\Exception\ConnectionClosedException extends WebSocket\Exception\Exception implements WebSocket\Exception\ConnectionLevelInterface
+class WebSocket\Exception\ConnectionClosedException extends WebSocket\Exception\Exception imlements WebSocket\Exception\ConnectionLevelInterface
 {
-    public function __construct();
+    public method __construct();
 }
-```
 
-### ConnectionFailureException
-
-```php
-class WebSocket\Exception\ConnectionFailureException extends WebSocket\Exception\Exception implements WebSocket\Exception\ConnectionLevelInterface
+class WebSocket\Exception\ConnectionFailureException extends WebSocket\Exception\Exception imlements WebSocket\Exception\ConnectionLevelInterface
 {
-    public function __construct();
+    public method __construct(string|null $message = null);
 }
-```
 
-### ConnectionLevelInterface
-
-```php
-interface WebSocket\Exception\ConnectionLevelInterface extends WebSocket\Exception\ExceptionInterface
+class WebSocket\Exception\ConnectionTimeoutException extends WebSocket\Exception\Exception imlements WebSocket\Exception\MessageLevelInterface
 {
+    public method __construct();
 }
-```
 
-### ConnectionTimeoutException
-
-```php
-class WebSocket\Exception\ConnectionTimeoutException extends WebSocket\Exception\Exception implements WebSocket\Exception\MessageLevelInterface
+class WebSocket\Exception\HandshakeException extends WebSocket\Exception\Exception imlements WebSocket\Exception\ConnectionLevelInterface
 {
-    public function __construct();
+    public method __construct(string $message, Psr\Http\Message\ResponseInterface $response);
+    public method getResponse(): Psr\Http\Message\ResponseInterface;
 }
-```
 
-### Exception
-
-```php
-abstract class WebSocket\Exception\Exception extends RuntimeException implements WebSocket\Exception\ExceptionInterface
-{
-}
-```
-
-### ExceptionInterface
-
-```php
-interface WebSocket\Exception\ExceptionInterface
-{
-}
-```
-
-### HandshakeException
-
-```php
-class WebSocket\Exception\HandshakeException extends WebSocket\Exception\Exception implements WebSocket\Exception\ConnectionLevelInterface
-{
-    public function __construct(string $message, WebSocket\Http\Response $response);
-    public function getResponse(): WebSocket\Http\Response;
-}
-```
-
-### MessageLevelInterface
-
-```php
-interface WebSocket\Exception\MessageLevelInterface extends WebSocket\Exception\ExceptionInterface
-{
-}
-```
-
-### ReconnectException
-
-```php
 class WebSocket\Exception\ReconnectException extends WebSocket\Exception\Exception
 {
-    public function __construct(Uri|null $uri = null);
+    public method __construct(Phrity\Net\Uri|null $uri = null);
+    public method getUri(): Phrity\Net\Uri|null;
 }
-```
 
-### ServerException
-
-```php
 class WebSocket\Exception\ServerException extends WebSocket\Exception\Exception
 {
 }
-```
 
-## WebSocket / Frame
-
-### FrameHandler
-
-```php
-class WebSocket\Frame\FrameHandler implements LoggerAwareInterface, Stringable
+class WebSocket\Frame\Frame imlements Stringable
 {
-    public function __construct(Phrity\Net\SocketStream $stream, bool $pushMasked, bool $pullMaskedRequired);
-    public function __toString(): string;
-    public function setLogger(Psr\Log\LoggerInterface $logger): void; // @deprecated
-    public function pull(): WebSocket\Frame\Frame;
-    public function push(WebSocket\Frame\Frame $frame): int;
+    use WebSocket\Trait\StringableTrait;
+
+    public method __construct(string $opcode, string $payload, bool $final, bool $rsv1 = false, bool $rsv2 = false, bool $rsv3 = false);
+    public method __toString(): string;
+    public method getOpcode(): string;
+    public method getPayload(): string;
+    public method getPayloadLength(): int;
+    public method getRsv1(): bool;
+    public method getRsv2(): bool;
+    public method getRsv3(): bool;
+    public method isContinuation(): bool;
+    public method isFinal(): bool;
+    public method setRsv1(bool $rsv1): void;
 }
-```
 
-### Frame
-
-```php
-class WebSocket\Frame\Frame implements Stringable
+class WebSocket\Frame\FrameHandler imlements Psr\Log\LoggerAwareInterface, Stringable
 {
-    public function __construct(string $opcode, string $payload, bool $final, bool $rsv1 = false, bool $rsv2 = false, bool $rsv3 = false);
-    public function __toString(): string;
-    public function isFinal(): bool;
-    public function getRsv1(): bool;
-    public function getRsv2(): bool;
-    public function getRsv3(): bool;
-    public function isContinuation(): bool;
-    public function getOpcode(): string;
-    public function getPayload(): string;
-    public function getPayloadLength(): int;
+    use WebSocket\Trait\LoggerAwareTrait;
+    use WebSocket\Trait\OpcodeTrait;
+    use WebSocket\Trait\StringableTrait;
+
+    public method __construct(Phrity\Net\SocketStream $stream, bool $pushMasked, bool $pullMaskedRequired);
+    public method pull(): WebSocket\Frame\Frame;
+    public method push(WebSocket\Frame\Frame $frame): int;
 }
-```
 
-## WebSocket / Http
-
-### HttpHandler
-
-```php
-class WebSocket\Http\HttpHandler implements LoggerAwareInterface, Stringable
+class WebSocket\Http\DefaultHttpFactory extends Phrity\Http\HttpFactory
 {
-    public function __construct(Phrity\Net\SocketStream $stream, bool $ssl = false);
-    public function __toString(): string;
-    public function pull(): Psr\Http\Message\MessageInterface;
-    public function push(Psr\Http\Message\MessageInterface $message): Psr\Http\Message\MessageInterface;
+    public method __construct();
+    public method createRequest(string $method, mixed $uri): Psr\Http\Message\RequestInterface;
+    public method createResponse(int $code = 200, string $reasonPhrase = ""): Psr\Http\Message\ResponseInterface;
+    public method createServerRequest(string $method, mixed $uri, array $serverParams = []): Psr\Http\Message\ServerRequestInterface;
+    public method createUri(string $uri = ""): Psr\Http\Message\UriInterface;
 }
-```
 
-### Message
-
-```php
-abstract class WebSocket\Http\Message implements Psr\Http\Message\MessageInterface, Stringable
+class WebSocket\Http\HttpHandler imlements Psr\Log\LoggerAwareInterface, Stringable
 {
-    public function __toString(): string;
-    public function getProtocolVersion(): string;
-    public function withProtocolVersion(string $version): self;
-    public function getHeaders(): array;
-    public function hasHeader(string $name): bool;
-    public function getHeader(string $name): array;
-    public function getHeaderLine(string $name): string;
-    public function withHeader(string $name, mixed $value): self;
-    public function withAddedHeader(string $name, mixed $value): self;
-    public function withoutHeader(string $name): self;
-    public function getAsArray(): array;
+    use WebSocket\Trait\StringableTrait;
+
+    public method __construct(Phrity\Net\SocketStream $stream, bool $ssl = false, Phrity\Http\HttpFactory|null $httpFactory = null);
+    public method pull(): Psr\Http\Message\MessageInterface;
+    public method push(Psr\Http\Message\MessageInterface $message): Psr\Http\Message\MessageInterface;
+    public method setLogger(Psr\Log\LoggerInterface $logger): void;
 }
-```
 
-### Request
-
-```php
-class WebSocket\Http\Request extends WebSocket\Http\Message implements Psr\Http\Message\RequestInterface
+class WebSocket\Http\Request extends Nyholm\Psr7\Request imlements Psr\Http\Message\RequestInterface
 {
-    public function __construct(string $method = 'GET', Psr\Http\Message\UriInterface|string|null $uri = null);
-    public function __toString(): string;
-    public function getRequestTarget(): string;
-    public function withRequestTarget(mixed $requestTarget): self;
-    public function getMethod(): string;
-    public function withMethod(string $method): self;
-    public function getUri(): Psr\Http\Message\UriInterface;
-    public function withUri(Psr\Http\Message\UriInterface $uri, bool $preserveHost = false): self;
-    public function getAsArray(): array;
+    public method __construct(string $method = "GET", Psr\Http\Message\UriInterface|string $uri = "");
 }
-```
 
-### Response
-
-```php
-class WebSocket\Http\Response extends WebSocket\Http\Message implements Psr\Http\Message\ResponseInterface
+class WebSocket\Http\Response extends Nyholm\Psr7\Response imlements Psr\Http\Message\ResponseInterface
 {
-    public function __construct(int $code = 200, string $reasonPhrase = '');
-    public function __toString(): string;
-    public function getStatusCode(): int;
-    public function withStatus(int $code, string $reasonPhrase = ''): self;
-    public function getReasonPhrase(): string;
-    public function getAsArray(): array;
+    public method __construct(int $code = 200, string $reasonPhrase = "");
 }
-```
 
-### ServerRequest
-
-```php
-class WebSocket\Http\ServerRequest extends WebSocket\Http\Request implements Psr\Http\Message\ServerRequestInterface
+class WebSocket\Http\ServerRequest extends Nyholm\Psr7\ServerRequest imlements Psr\Http\Message\ServerRequestInterface
 {
-    public function __toString(): string;
+    public method __construct(string $method = "GET", Psr\Http\Message\UriInterface|string $uri = "");
 }
-```
 
-## WebSocket / Message
-
-### Binary
-
-```php
 class WebSocket\Message\Binary extends WebSocket\Message\Message
 {
+    public method isCompressed(): bool;
+    public method setCompress(bool $compress): void;
 }
-```
 
-### Close
-
-```php
 class WebSocket\Message\Close extends WebSocket\Message\Message
 {
-    public function __construct(int|null $status = null, string $content = '');
-    public function getCloseStatus(): int|null;
-    public function setCloseStatus(int|null $status): void;
+    public method __construct(int|null $status = null, string $content = "");
+    public method getCloseStatus(): int|null;
+    public method getPayload(): string;
+    public method setCloseStatus(int|null $status): void;
+    public method setPayload(string $payload = ""): void;
 }
-```
 
-### Message
-
-```php
-class WebSocket\Message\Message implements Stringable
+class WebSocket\Message\MessageHandler imlements Psr\Log\LoggerAwareInterface, Stringable
 {
-    public function __construct(string $content = '');
-    public function __toString(): string;
-    public function getOpcode(): string;
-    public function getLength(): int;
-    public function getTimestamp(): DateTimeInterface;
-    public function getContent(): string;
-    public function setContent(string $content = ''): void;
-    public function hasContent(): bool;
-    public function getPayload(): string;
-    public function setPayload(string $payload = ''): void;
-    public function getFrames(int $frameSize = 4096): array;
+    use WebSocket\Trait\LoggerAwareTrait;
+    use WebSocket\Trait\StringableTrait;
+
+    public method __construct(WebSocket\Frame\FrameHandler $frameHandler);
+    public method pull(): WebSocket\Message\Message;
+    public method push(WebSocket\Message\Message $message, int $size = WebSocket\Message\MessageHandler::DEFAULT_SIZE): WebSocket\Message\Message;
+    public method setLogger(Psr\Log\LoggerInterface $logger): void;
 }
-```
 
-### MessageHandler
-
-```php
-class WebSocket\Message\MessageHandler implements Psr\Log\LoggerAwareInterface, Stringable
-{
-    public function __construct(WebSocket\Frame\FrameHandler $frameHandler);
-    public function __toString(): string;
-    public function setLogger(Psr\Log\LoggerInterface $logger): void;
-    public function push(WebSocket\Message\Message $message, int $size = self::DEFAULT_SIZE): WebSocket\Message\Message;
-    public function pull(): WebSocket\Message\Message;
-}
-```
-
-### Ping
-
-```php
 class WebSocket\Message\Ping extends WebSocket\Message\Message
 {
 }
-```
 
-### Pong
-
-```php
 class WebSocket\Message\Pong extends WebSocket\Message\Message
 {
 }
-```
 
-### Text
-
-```php
 class WebSocket\Message\Text extends WebSocket\Message\Message
 {
+    public method isCompressed(): bool;
+    public method setCompress(bool $compress): void;
+}
+
+class WebSocket\Middleware\Callback imlements Psr\Log\LoggerAwareInterface, WebSocket\Middleware\ProcessHttpIncomingInterface, WebSocket\Middleware\ProcessHttpOutgoingInterface, WebSocket\Middleware\ProcessIncomingInterface, WebSocket\Middleware\ProcessOutgoingInterface, WebSocket\Middleware\ProcessTickInterface, Stringable
+{
+    use WebSocket\Trait\LoggerAwareTrait;
+    use WebSocket\Trait\StringableTrait;
+
+    public method __construct(Closure|null $incoming = null, Closure|null $outgoing = null, Closure|null $httpIncoming = null, Closure|null $httpOutgoing = null, Closure|null $tick = null);
+    public method processHttpIncoming(WebSocket\Middleware\ProcessHttpStack $stack, WebSocket\Connection $connection): Psr\Http\Message\MessageInterface;
+    public method processHttpOutgoing(WebSocket\Middleware\ProcessHttpStack $stack, WebSocket\Connection $connection, Psr\Http\Message\MessageInterface $message): Psr\Http\Message\MessageInterface;
+    public method processIncoming(WebSocket\Middleware\ProcessStack $stack, WebSocket\Connection $connection): WebSocket\Message\Message;
+    public method processOutgoing(WebSocket\Middleware\ProcessStack $stack, WebSocket\Connection $connection, WebSocket\Message\Message $message): WebSocket\Message\Message;
+    public method processTick(WebSocket\Middleware\ProcessTickStack $stack, WebSocket\Connection $connection): void;
+}
+
+class WebSocket\Middleware\CloseHandler imlements Psr\Log\LoggerAwareInterface, WebSocket\Middleware\ProcessIncomingInterface, WebSocket\Middleware\ProcessOutgoingInterface, Stringable
+{
+    use WebSocket\Trait\LoggerAwareTrait;
+    use WebSocket\Trait\StringableTrait;
+
+    public method __construct();
+    public method processIncoming(WebSocket\Middleware\ProcessStack $stack, WebSocket\Connection $connection): WebSocket\Message\Message;
+    public method processOutgoing(WebSocket\Middleware\ProcessStack $stack, WebSocket\Connection $connection, WebSocket\Message\Message $message): WebSocket\Message\Message;
+}
+
+class WebSocket\Middleware\CompressionExtension imlements Psr\Log\LoggerAwareInterface, WebSocket\Middleware\ProcessHttpOutgoingInterface, WebSocket\Middleware\ProcessHttpIncomingInterface, WebSocket\Middleware\ProcessIncomingInterface, WebSocket\Middleware\ProcessOutgoingInterface, Stringable
+{
+    use WebSocket\Trait\LoggerAwareTrait;
+    use WebSocket\Trait\StringableTrait;
+
+    public method __construct(WebSocket\Middleware\CompressionExtension\CompressorInterface $compressors);
+    public method processHttpIncoming(WebSocket\Middleware\ProcessHttpStack $stack, WebSocket\Connection $connection): Psr\Http\Message\MessageInterface;
+    public method processHttpOutgoing(WebSocket\Middleware\ProcessHttpStack $stack, WebSocket\Connection $connection, Psr\Http\Message\MessageInterface $message): Psr\Http\Message\MessageInterface;
+    public method processIncoming(WebSocket\Middleware\ProcessStack $stack, WebSocket\Connection $connection): WebSocket\Message\Message;
+    public method processOutgoing(WebSocket\Middleware\ProcessStack $stack, WebSocket\Connection $connection, WebSocket\Message\Message $message): WebSocket\Message\Message;
+}
+
+class WebSocket\Middleware\CompressionExtension\DeflateCompressor imlements WebSocket\Middleware\CompressionExtension\CompressorInterface, Stringable
+{
+    use WebSocket\Trait\StringableTrait;
+
+    public method __construct(bool $serverNoContextTakeover = false, bool $clientNoContextTakeover = false, int $serverMaxWindowBits = WebSocket\Middleware\CompressionExtension\DeflateCompressor::MAX_WINDOW_SIZE, int $clientMaxWindowBits = WebSocket\Middleware\CompressionExtension\DeflateCompressor::MAX_WINDOW_SIZE, string $extension = "zlib");
+    public method compress(WebSocket\Message\Binary|WebSocket\Message\Text $message, object $configuration): WebSocket\Message\Binary|WebSocket\Message\Text;
+    public method decompress(WebSocket\Message\Binary|WebSocket\Message\Text $message, object $configuration): WebSocket\Message\Binary|WebSocket\Message\Text;
+    public method getConfiguration(string $element, bool $isServer): object;
+    public method getRequestHeaderValue(): string;
+    public method getResponseHeaderValue(object $configuration): string;
+    public method isEligable(object $configuration): bool;
+}
+
+class WebSocket\Middleware\FollowRedirect imlements Psr\Log\LoggerAwareInterface, WebSocket\Middleware\ProcessHttpIncomingInterface, Stringable
+{
+    use WebSocket\Trait\LoggerAwareTrait;
+    use WebSocket\Trait\StringableTrait;
+
+    public method __construct(int $limit = 10);
+    public method processHttpIncoming(WebSocket\Middleware\ProcessHttpStack $stack, WebSocket\Connection $connection): Psr\Http\Message\MessageInterface;
+}
+
+class WebSocket\Middleware\MiddlewareHandler imlements Psr\Log\LoggerAwareInterface, Stringable
+{
+    use WebSocket\Trait\LoggerAwareTrait;
+    use WebSocket\Trait\StringableTrait;
+
+    public method __construct(WebSocket\Message\MessageHandler $messageHandler, WebSocket\Http\HttpHandler $httpHandler);
+    public method add(WebSocket\Middleware\MiddlewareInterface $middleware): self;
+    public method processHttpIncoming(WebSocket\Connection $connection): Psr\Http\Message\MessageInterface;
+    public method processHttpOutgoing(WebSocket\Connection $connection, Psr\Http\Message\MessageInterface $message): Psr\Http\Message\MessageInterface;
+    public method processIncoming(WebSocket\Connection $connection): WebSocket\Message\Message;
+    public method processOutgoing(WebSocket\Connection $connection, WebSocket\Message\Message $message): WebSocket\Message\Message;
+    public method processTick(WebSocket\Connection $connection): void;
+    public method setLogger(Psr\Log\LoggerInterface $logger): void;
+}
+
+class WebSocket\Middleware\PingInterval imlements Psr\Log\LoggerAwareInterface, WebSocket\Middleware\ProcessOutgoingInterface, WebSocket\Middleware\ProcessTickInterface, Stringable
+{
+    use WebSocket\Trait\LoggerAwareTrait;
+    use WebSocket\Trait\StringableTrait;
+
+    public method __construct(int|float|null $interval = null);
+    public method processOutgoing(WebSocket\Middleware\ProcessStack $stack, WebSocket\Connection $connection, WebSocket\Message\Message $message): WebSocket\Message\Message;
+    public method processTick(WebSocket\Middleware\ProcessTickStack $stack, WebSocket\Connection $connection): void;
+}
+
+class WebSocket\Middleware\PingResponder imlements Psr\Log\LoggerAwareInterface, WebSocket\Middleware\ProcessIncomingInterface, Stringable
+{
+    use WebSocket\Trait\LoggerAwareTrait;
+    use WebSocket\Trait\StringableTrait;
+
+    public method __construct();
+    public method processIncoming(WebSocket\Middleware\ProcessStack $stack, WebSocket\Connection $connection): WebSocket\Message\Message;
+}
+
+class WebSocket\Middleware\ProcessHttpStack imlements Stringable
+{
+    use WebSocket\Trait\StringableTrait;
+
+    public method __construct(WebSocket\Connection $connection, WebSocket\Http\HttpHandler $httpHandler, array $processors);
+    public method handleHttpIncoming(): Psr\Http\Message\MessageInterface;
+    public method handleHttpOutgoing(Psr\Http\Message\MessageInterface $message): Psr\Http\Message\MessageInterface;
+}
+
+class WebSocket\Middleware\ProcessStack imlements Stringable
+{
+    use WebSocket\Trait\StringableTrait;
+
+    public method __construct(WebSocket\Connection $connection, WebSocket\Message\MessageHandler $messageHandler, array $processors);
+    public method handleIncoming(): WebSocket\Message\Message;
+    public method handleOutgoing(WebSocket\Message\Message $message): WebSocket\Message\Message;
+}
+
+class WebSocket\Middleware\ProcessTickStack imlements Stringable
+{
+    use WebSocket\Trait\StringableTrait;
+
+    public method __construct(WebSocket\Connection $connection, array $processors);
+    public method handleTick(): void;
+}
+
+class WebSocket\Middleware\SubprotocolNegotiation imlements Psr\Log\LoggerAwareInterface, WebSocket\Middleware\ProcessHttpOutgoingInterface, WebSocket\Middleware\ProcessHttpIncomingInterface, Stringable
+{
+    use WebSocket\Trait\LoggerAwareTrait;
+    use WebSocket\Trait\StringableTrait;
+
+    public method __construct(array $subprotocols, bool $require = false);
+    public method processHttpIncoming(WebSocket\Middleware\ProcessHttpStack $stack, WebSocket\Connection $connection): Psr\Http\Message\MessageInterface;
+    public method processHttpOutgoing(WebSocket\Middleware\ProcessHttpStack $stack, WebSocket\Connection $connection, Psr\Http\Message\MessageInterface $message): Psr\Http\Message\MessageInterface;
+}
+
+class WebSocket\Server imlements Psr\Log\LoggerAwareInterface, Stringable
+{
+    use WebSocket\Trait\ListenerTrait;
+    use WebSocket\Trait\LoggerAwareTrait;
+    use WebSocket\Trait\SendMethodsTrait;
+    use WebSocket\Trait\StringableTrait;
+
+    public method __construct(int $port = 80, bool $ssl = false);
+    public method __toString(): string;
+    public method addMiddleware(WebSocket\Middleware\MiddlewareInterface $middleware): self;
+    public method disconnect(): void;
+    public method getConnectionCount(): int;
+    public method getConnections(): array;
+    public method getContext(): Phrity\Net\Context;
+    public method getFrameSize(): int;
+    public method getPort(): int;
+    public method getReadableConnections(): array;
+    public method getScheme(): string;
+    public method getTimeout(): int|float;
+    public method getWritableConnections(): array;
+    public method isRunning(): bool;
+    public method isSsl(): bool;
+    public method send(WebSocket\Message\Message $message): WebSocket\Message\Message;
+    public method setContext(Phrity\Net\Context|array $context): self;
+    public method setFrameSize(int $frameSize): self;
+    public method setHttpFactory(Phrity\Http\HttpFactory $httpFactory): self;
+    public method setLogger(Psr\Log\LoggerInterface $logger): void;
+    public method setMaxConnections(int|null $maxConnections): self;
+    public method setStreamFactory(Phrity\Net\StreamFactory $streamFactory): self;
+    public method setTimeout(int|float $timeout): self;
+    public method shutdown(int $closeStatus = 1001): void;
+    public method start(int|float|null $timeout = null): void;
+    public method stop(): void;
+}
+
+inteface WebSocket\Constant
+{
+    public const GUID;
+}
+
+inteface WebSocket\Exception\ConnectionLevelInterface imlements WebSocket\Exception\ExceptionInterface
+{
+}
+
+inteface WebSocket\Exception\ExceptionInterface imlements Throwable
+{
+    public method getMessage(): string;
+}
+
+inteface WebSocket\Exception\MessageLevelInterface imlements WebSocket\Exception\ExceptionInterface
+{
+}
+
+inteface WebSocket\Middleware\CompressionExtension\CompressorInterface imlements Stringable
+{
+    public method compress(WebSocket\Message\Binary|WebSocket\Message\Text $message, object $configuration): WebSocket\Message\Binary|WebSocket\Message\Text;
+    public method decompress(WebSocket\Message\Binary|WebSocket\Message\Text $message, object $configuration): WebSocket\Message\Binary|WebSocket\Message\Text;
+    public method getConfiguration(string $element, bool $isServer): object;
+    public method getRequestHeaderValue(): string;
+    public method getResponseHeaderValue(object $configuration): string;
+    public method isEligable(object $configuration): bool;
+}
+
+inteface WebSocket\Middleware\MiddlewareInterface imlements Stringable
+{
+}
+
+inteface WebSocket\Middleware\ProcessHttpIncomingInterface imlements WebSocket\Middleware\MiddlewareInterface
+{
+    public method processHttpIncoming(WebSocket\Middleware\ProcessHttpStack $stack, WebSocket\Connection $connection): Psr\Http\Message\MessageInterface;
+}
+
+inteface WebSocket\Middleware\ProcessHttpOutgoingInterface imlements WebSocket\Middleware\MiddlewareInterface
+{
+    public method processHttpOutgoing(WebSocket\Middleware\ProcessHttpStack $stack, WebSocket\Connection $connection, Psr\Http\Message\MessageInterface $message): Psr\Http\Message\MessageInterface;
+}
+
+inteface WebSocket\Middleware\ProcessIncomingInterface imlements WebSocket\Middleware\MiddlewareInterface
+{
+    public method processIncoming(WebSocket\Middleware\ProcessStack $stack, WebSocket\Connection $connection): WebSocket\Message\Message;
+}
+
+inteface WebSocket\Middleware\ProcessOutgoingInterface imlements WebSocket\Middleware\MiddlewareInterface
+{
+    public method processOutgoing(WebSocket\Middleware\ProcessStack $stack, WebSocket\Connection $connection, WebSocket\Message\Message $message): WebSocket\Message\Message;
+}
+
+inteface WebSocket\Middleware\ProcessTickInterface imlements WebSocket\Middleware\MiddlewareInterface
+{
+    public method processTick(WebSocket\Middleware\ProcessTickStack $stack, WebSocket\Connection $connection): void;
+}
+
+trait WebSocket\Trait\ListenerTrait
+{
+    public method onBinary(Closure $closure): self;
+    public method onClose(Closure $closure): self;
+    public method onConnect(Closure $closure): self;
+    public method onDisconnect(Closure $closure): self;
+    public method onError(Closure $closure): self;
+    public method onHandshake(Closure $closure): self;
+    public method onPing(Closure $closure): self;
+    public method onPong(Closure $closure): self;
+    public method onText(Closure $closure): self;
+    public method onTick(Closure $closure): self;
+}
+
+trait WebSocket\Trait\LoggerAwareTrait
+{
+    public method attachLogger(mixed $instance): void;
+    public method initLogger(Psr\Log\LoggerInterface|null $logger = null): void;
+    public method setLogger(Psr\Log\LoggerInterface $logger): void;
+}
+
+trait WebSocket\Trait\OpcodeTrait
+{
+}
+
+trait WebSocket\Trait\SendMethodsTrait
+{
+    public method binary(string $message): WebSocket\Message\Binary;
+    public method close(int $status = 1000, string $message = "ttfn"): WebSocket\Message\Close;
+    public method ping(string $message = ""): WebSocket\Message\Ping;
+    public method pong(string $message = ""): WebSocket\Message\Pong;
+    public method text(string $message): WebSocket\Message\Text;
+}
+
+trait WebSocket\Trait\StringableTrait
+{
+    public method __toString(): string;
 }
 ```
-
