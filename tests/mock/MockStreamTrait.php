@@ -89,10 +89,6 @@ trait MockStreamTrait
         $this->expectContext()->addAssert(function ($method, $params) {
             $this->assertIsResource($params[0]);
         });
-        $this->expectSocketStreamGetRemoteName()->setReturn(function () use ($host, $port) {
-            return "{$host}:{$port}";
-        });
-        $this->expectStreamCollectionAttach();
         $this->expectSocketStreamGetLocalName()->setReturn(function () use ($local) {
             return "{$local}";
         });
@@ -100,6 +96,7 @@ trait MockStreamTrait
             return "{$host}:{$port}";
         });
 
+        $this->expectStreamCollectionAttach();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($timeout) {
             $this->assertEquals($timeout, $params[0]);
         });
@@ -179,8 +176,8 @@ trait MockStreamTrait
         $this->expectSocketServerGetMetadata();
         $this->expectStreamFactoryCreateStreamCollection();
         $this->expectStreamCollection();
-        $this->expectStreamCollectionAttach()->addAssert(function ($method, $params) {
-            $this->assertEquals('@server', $params[1]);
+        $this->expectStreamCollectionAttach()->addAssert(function ($method, $params) use ($port) {
+            $this->assertEquals("server/{$port}", $params[1]);
         });
     }
 
@@ -190,10 +187,9 @@ trait MockStreamTrait
     private function expectWsSelectConnections(array $keys = []): StackItem
     {
         $this->expectStreamCollectionWaitRead()->setReturn(function ($params, $default, $collection) use ($keys) {
-            $keys = array_flip($keys);
             $selected = new StreamCollection();
             foreach ($collection as $key => $stream) {
-                if (array_key_exists($key, $keys)) {
+                if (in_array($key, $keys)) {
                     $selected->attach($stream, $key);
                 }
             }
@@ -204,6 +200,24 @@ trait MockStreamTrait
             $last = $this->expectStreamCollectionAttach();
         }
         return $last;
+    }
+
+    private function expectWsServerAccept(
+        string $local = 'localhost:8000',
+        string $remote = '127.0.0.1:12345'
+    ): StackItem {
+        $this->expectSocketServerAccept();
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectContext();
+        $this->expectSocketStreamGetLocalName()->setReturn(function () use ($local) {
+            return $local;
+        });
+        $this->expectSocketStreamGetRemoteName()->setReturn(function () use ($remote) {
+            return $remote;
+        });
+        $this->expectStreamCollectionAttach();
+        return $this->expectSocketStreamSetTimeout();
     }
 
     /**

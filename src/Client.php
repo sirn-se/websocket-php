@@ -39,6 +39,7 @@ use WebSocket\Exception\{
 use WebSocket\Http\DefaultHttpFactory;
 use WebSocket\Message\Message;
 use WebSocket\Middleware\MiddlewareInterface;
+use WebSocket\Runtime\IdentityInterface;
 use WebSocket\Trait\{
     ListenerTrait,
     LoggerAwareTrait,
@@ -50,7 +51,7 @@ use WebSocket\Trait\{
  * WebSocket\Client class.
  * Entry class for WebSocket client.
  */
-class Client implements LoggerAwareInterface, Stringable
+class Client implements IdentityInterface, LoggerAwareInterface, Stringable
 {
     /** @use ListenerTrait<Client> */
     use ListenerTrait;
@@ -77,6 +78,8 @@ class Client implements LoggerAwareInterface, Stringable
     private StreamCollection|null $streams = null;
     private bool $running = false;
     private HttpFactory $httpFactory;
+    /** @var non-empty-string $identity */
+    private string $identity = 'client/<unconnected>';
 
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
@@ -91,6 +94,7 @@ class Client implements LoggerAwareInterface, Stringable
         $this->context = new Context();
         $this->setStreamFactory(new StreamFactory());
         $this->httpFactory = new DefaultHttpFactory();
+        $this->identity = "client/{$this->socketUri->getHost()}";
     }
 
     /**
@@ -104,6 +108,11 @@ class Client implements LoggerAwareInterface, Stringable
 
 
     /* ---------- Configuration ------------------------------------------------------------------------------------ */
+
+    public function getIdentity(): string
+    {
+        return $this->identity;
+    }
 
     /**
      * Set stream factory to use.
@@ -446,8 +455,6 @@ class Client implements LoggerAwareInterface, Stringable
             $this->logger->error("[client] {$error}", ['exception' => $e]);
             throw new ClientException($error);
         }
-        $name = $stream->getRemoteName();
-        $this->streams->attach($stream, $name);
         $this->connection = new Connection(
             $stream,
             true,
@@ -455,6 +462,8 @@ class Client implements LoggerAwareInterface, Stringable
             $hostUri->getScheme() === 'ssl',
             $this->httpFactory
         );
+        $this->streams->attach($stream, $this->connection->getIdentity());
+
         $this->connection->setFrameSize($this->frameSize);
         $this->connection->setTimeout($this->timeout);
         $this->connection->setLogger($this->logger);

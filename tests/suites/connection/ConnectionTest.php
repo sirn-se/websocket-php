@@ -77,6 +77,7 @@ class ConnectionTest extends TestCase
         $this->assertEquals('<unknown>', $connection->getName());
         $this->assertEquals('<unknown>', $connection->getRemoteName());
         $this->assertEquals('WebSocket\Connection(<unknown>:<unknown>)', "{$connection}");
+        $this->assertEquals('*/connection/<unknown>/<unknown>', $connection->getIdentity());
         $connection->tick();
         $connection->setMeta('test.meta.1', 'meta.data.1');
         $connection->setMeta('test.meta.2', 'meta.data.2');
