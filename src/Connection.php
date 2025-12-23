@@ -44,6 +44,7 @@ use WebSocket\Middleware\{
     MiddlewareHandler,
     MiddlewareInterface
 };
+use WebSocket\Runtime\IdentityInterface;
 use WebSocket\Trait\{
     LoggerAwareTrait,
     SendMethodsTrait,
@@ -54,7 +55,7 @@ use WebSocket\Trait\{
  * WebSocket\Connection class.
  * A client/server connection, wrapping socket stream.
  */
-class Connection implements LoggerAwareInterface, Stringable
+class Connection implements IdentityInterface, LoggerAwareInterface, Stringable
 {
     use LoggerAwareTrait;
     use SendMethodsTrait;
@@ -75,6 +76,8 @@ class Connection implements LoggerAwareInterface, Stringable
     /** @var array<string, mixed> $meta */
     private array $meta = [];
     private bool $closed = false;
+    /** @var non-empty-string $identity */
+    private string $identity = '*/connection/<unconnected>';
 
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
@@ -92,6 +95,11 @@ class Connection implements LoggerAwareInterface, Stringable
         $this->middlewareHandler = new MiddlewareHandler($this->messageHandler, $this->httpHandler);
         $this->localName = $this->stream->getLocalName() ?? '<unknown>';
         $this->remoteName = $this->stream->getRemoteName() ?? '<unknown>';
+        $this->identity = sprintf(
+            '*/connection/%s/%s',
+            $this->getIdentityPart($this->localName),
+            $this->getIdentityPart($this->remoteName),
+        );
         $this->initLogger();
     }
 
@@ -109,6 +117,11 @@ class Connection implements LoggerAwareInterface, Stringable
 
 
     /* ---------- Configuration ------------------------------------------------------------------------------------ */
+
+    public function getIdentity(): string
+    {
+        return $this->identity;
+    }
 
     /**
      * Set logger.
@@ -431,5 +444,11 @@ class Connection implements LoggerAwareInterface, Stringable
         }
         $this->logger->error("[connection] {$e->getMessage()}", ['exception' => $e]);
         throw new ConnectionFailureException();
+    }
+
+    protected function getIdentityPart(string $source): string
+    {
+        preg_match('/([0-9]+)$/', $source, $result);
+        return empty($result) ? $source : array_shift($result);
     }
 }

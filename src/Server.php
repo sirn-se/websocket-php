@@ -40,6 +40,7 @@ use WebSocket\Exception\{
 use WebSocket\Http\DefaultHttpFactory;
 use WebSocket\Message\Message;
 use WebSocket\Middleware\MiddlewareInterface;
+use WebSocket\Runtime\IdentityInterface;
 use WebSocket\Trait\{
     ListenerTrait,
     LoggerAwareTrait,
@@ -51,7 +52,7 @@ use WebSocket\Trait\{
  * WebSocket\Server class.
  * Entry class for WebSocket server.
  */
-class Server implements LoggerAwareInterface, Stringable
+class Server implements IdentityInterface, LoggerAwareInterface, Stringable
 {
     /** @use ListenerTrait<Server> */
     use ListenerTrait;
@@ -79,6 +80,8 @@ class Server implements LoggerAwareInterface, Stringable
     private array $middlewares = [];
     private int|null $maxConnections = null;
     private HttpFactory $httpFactory;
+    /** @var non-empty-string $identity */
+    private string $identity;
 
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
@@ -99,6 +102,7 @@ class Server implements LoggerAwareInterface, Stringable
         $this->context = new Context();
         $this->httpFactory = new DefaultHttpFactory();
         $this->setStreamFactory(new StreamFactory());
+        $this->identity = "server/{$port}";
     }
 
     /**
@@ -112,6 +116,11 @@ class Server implements LoggerAwareInterface, Stringable
 
 
     /* ---------- Configuration ------------------------------------------------------------------------------------ */
+
+    public function getIdentity(): string
+    {
+        return $this->identity;
+    }
 
     /**
      * Set stream factory to use.
@@ -511,7 +520,7 @@ class Server implements LoggerAwareInterface, Stringable
             $uri = new Uri("{$this->scheme}://0.0.0.0:{$this->port}");
             $this->server = $this->streamFactory->createSocketServer($uri, $this->context);
             $this->streams = $this->streamFactory->createStreamCollection();
-            $this->streams->attach($this->server, '@server');
+            $this->streams->attach($this->server, $this->identity);
             $this->logger->info("[server] Starting server on {$uri}.");
         } catch (Throwable $e) {
             $error = "Server failed to start: {$e->getMessage()}";
@@ -529,8 +538,6 @@ class Server implements LoggerAwareInterface, Stringable
         try {
             /** @var SocketStream $stream */
             $stream = $socket->accept();
-            $name = $stream->getRemoteName() ?? 'unknown';
-            $this->streams()->attach($stream, $name);
             $connection = new Connection(
                 $stream,
                 false,
@@ -538,6 +545,7 @@ class Server implements LoggerAwareInterface, Stringable
                 $this->isSsl(),
                 $this->httpFactory
             );
+            $this->streams()->attach($stream, $connection->getIdentity());
         } catch (StreamException $e) {
             throw new ConnectionFailureException("Server failed to accept: {$e->getMessage()}");
         }
@@ -552,8 +560,8 @@ class Server implements LoggerAwareInterface, Stringable
             }
             /** @throws StreamException */
             $request = $this->performHandshake($connection);
-            $this->connections[$name] = $connection;
-            $this->logger->info("[server] Accepted connection from {$name}.");
+            $this->connections[$connection->getIdentity()] = $connection;
+            $this->logger->info("[server] Accepted connection from {$connection->getIdentity()}.");
             $this->dispatch('handshake', [
                 $this,
                 $connection,

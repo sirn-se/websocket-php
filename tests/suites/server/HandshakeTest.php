@@ -62,18 +62,8 @@ class HandshakeTest extends TestCase
         $server->setStreamFactory(new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
-        $this->expectSocketServerAccept();
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-        $this->expectContext();
-        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
-            return "fake-connection";
-        });
-        $this->expectStreamCollectionAttach();
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
-        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($server) {
+        $this->expectWsSelectConnections(['server/8000']);
+        $this->expectWsServerAccept()->addAssert(function ($method, $params) use ($server) {
             $server->stop();
         });
         $this->expectWsServerPerformHandshake();
@@ -92,18 +82,8 @@ class HandshakeTest extends TestCase
         $server->setStreamFactory(new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
-        $this->expectSocketServerAccept();
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-        $this->expectContext();
-        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
-            return "fake-connection";
-        });
-        $this->expectStreamCollectionAttach();
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
-        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($server) {
+        $this->expectWsSelectConnections(['server/8000']);
+        $this->expectWsServerAccept()->addAssert(function ($method, $params) use ($server) {
             $server->stop();
         });
 
@@ -150,20 +130,11 @@ class HandshakeTest extends TestCase
         $server->setStreamFactory(new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
-        $this->expectSocketServerAccept();
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-        $this->expectContext();
-        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
-            return "fake-connection";
-        });
-        $this->expectStreamCollectionAttach();
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
-        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($server) {
+        $this->expectWsSelectConnections(['server/8000']);
+        $this->expectWsServerAccept()->addAssert(function ($method, $params) use ($server) {
             $server->stop();
         });
+
         $this->expectSocketStreamReadLine()->setReturn(function () {
             throw new StreamException(StreamException::FAIL_READ);
         });
@@ -182,20 +153,11 @@ class HandshakeTest extends TestCase
         $server->setStreamFactory(new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
-        $this->expectSocketServerAccept();
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-        $this->expectContext();
-        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
-            return "fake-connection";
-        });
-        $this->expectStreamCollectionAttach();
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
-        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($server) {
+        $this->expectWsSelectConnections(['server/8000']);
+        $this->expectWsServerAccept()->addAssert(function ($method, $params) use ($server) {
             $server->stop();
         });
+
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "POST / HTTP/1.1\r\n";
         });
@@ -233,20 +195,11 @@ class HandshakeTest extends TestCase
         $server->setStreamFactory(new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
-        $this->expectSocketServerAccept();
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-        $this->expectContext();
-        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
-            return "fake-connection";
-        });
-        $this->expectStreamCollectionAttach();
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
-        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($server) {
+        $this->expectWsSelectConnections(['server/8000']);
+        $this->expectWsServerAccept()->addAssert(function ($method, $params) use ($server) {
             $server->stop();
         });
+
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "GET / HTTP/1.1\r\n";
         });
@@ -284,20 +237,11 @@ class HandshakeTest extends TestCase
         $server->setStreamFactory(new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
-        $this->expectSocketServerAccept();
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-        $this->expectContext();
-        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
-            return "fake-connection";
-        });
-        $this->expectStreamCollectionAttach();
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
-        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($server) {
+        $this->expectWsSelectConnections(['server/8000']);
+        $this->expectWsServerAccept()->addAssert(function ($method, $params) use ($server) {
             $server->stop();
         });
+
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "GET / HTTP/1.1\r\n";
         });
@@ -335,20 +279,11 @@ class HandshakeTest extends TestCase
         $server->setStreamFactory(new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
-        $this->expectSocketServerAccept();
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-        $this->expectContext();
-        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
-            return "fake-connection";
-        });
-        $this->expectStreamCollectionAttach();
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
-        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($server) {
+        $this->expectWsSelectConnections(['server/8000']);
+        $this->expectWsServerAccept()->addAssert(function ($method, $params) use ($server) {
             $server->stop();
         });
+
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "GET / HTTP/1.1\r\n";
         });
@@ -386,20 +321,11 @@ class HandshakeTest extends TestCase
         $server->setStreamFactory(new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
-        $this->expectSocketServerAccept();
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-        $this->expectContext();
-        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
-            return "fake-connection";
-        });
-        $this->expectStreamCollectionAttach();
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
-        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($server) {
+        $this->expectWsSelectConnections(['server/8000']);
+        $this->expectWsServerAccept()->addAssert(function ($method, $params) use ($server) {
             $server->stop();
         });
+
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "GET / HTTP/1.1\r\n";
         });
@@ -434,20 +360,11 @@ class HandshakeTest extends TestCase
         $server->setStreamFactory(new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
-        $this->expectSocketServerAccept();
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-        $this->expectContext();
-        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
-            return "fake-connection";
-        });
-        $this->expectStreamCollectionAttach();
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
-        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($server) {
+        $this->expectWsSelectConnections(['server/8000']);
+        $this->expectWsServerAccept()->addAssert(function ($method, $params) use ($server) {
             $server->stop();
         });
+
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "GET / HTTP/1.1\r\n";
         });
@@ -485,20 +402,11 @@ class HandshakeTest extends TestCase
         $server->setStreamFactory(new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectWsSelectConnections(['@server']);
-        $this->expectSocketServerAccept();
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-        $this->expectContext();
-        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
-            return "fake-connection";
-        });
-        $this->expectStreamCollectionAttach();
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
-        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($server) {
+        $this->expectWsSelectConnections(['server/8000']);
+        $this->expectWsServerAccept()->addAssert(function ($method, $params) use ($server) {
             $server->stop();
         });
+
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "GET / HTTP/1.1\r\n";
         });
