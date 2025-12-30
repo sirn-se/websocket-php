@@ -57,6 +57,7 @@ class DeflateCompressorTest extends TestCase
 
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $compressor = new DeflateCompressor();
@@ -153,6 +154,7 @@ class DeflateCompressorTest extends TestCase
 
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $compressor = new DeflateCompressor();
@@ -249,6 +251,7 @@ class DeflateCompressorTest extends TestCase
 
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $compressor = new DeflateCompressor();
@@ -324,6 +327,7 @@ class DeflateCompressorTest extends TestCase
 
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $compressor = new DeflateCompressor(
@@ -425,6 +429,7 @@ class DeflateCompressorTest extends TestCase
 
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $compressor = new DeflateCompressor(
@@ -525,6 +530,7 @@ class DeflateCompressorTest extends TestCase
 
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $compressor = new DeflateCompressor(
@@ -592,6 +598,7 @@ class DeflateCompressorTest extends TestCase
 
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $compressor = new DeflateCompressor(

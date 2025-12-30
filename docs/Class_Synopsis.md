@@ -29,12 +29,12 @@ abstract class WebSocket\Message\Message imlements Stringable
 
 class WebSocket\Client imlements WebSocket\Runtime\IdentityInterface, Psr\Log\LoggerAwareInterface, Stringable
 {
+    use WebSocket\Trait\ConfigurationTrait;
     use WebSocket\Trait\ListenerTrait;
-    use WebSocket\Trait\LoggerAwareTrait;
     use WebSocket\Trait\SendMethodsTrait;
     use WebSocket\Trait\StringableTrait;
 
-    public method __construct(Psr\Http\Message\UriInterface|string $uri);
+    public method __construct(Psr\Http\Message\UriInterface|string $uri, WebSocket\Configuration|null $configuration = null);
     public method __toString(): string;
     public method addHeader(string $name, string $content): self;
     public method addMiddleware(WebSocket\Middleware\MiddlewareInterface $middleware): self;
@@ -65,13 +65,33 @@ class WebSocket\Client imlements WebSocket\Runtime\IdentityInterface, Psr\Log\Lo
     public method stop(): void;
 }
 
+class WebSocket\Configuration imlements Psr\Log\LoggerAwareInterface, Stringable
+{
+    use WebSocket\Trait\StringableTrait;
+
+    public method __construct(Psr\Log\LoggerInterface|null $logger = null, Phrity\Net\Context|null $context = null, int|float|null $timeout = null, int|null $frameSize = null, bool|null $persistent = null, int|null $maxConnections = null);
+    public method __toString(): string;
+    public method getContext(): Phrity\Net\Context;
+    public method getFrameSize(): int;
+    public method getLogger(): Psr\Log\LoggerInterface;
+    public method getMaxConnections(): int|null;
+    public method getTimeout(): int|float;
+    public method isPersistent(): bool;
+    public method setContext(Phrity\Net\Context $context): void;
+    public method setFrameSize(int $frameSize): void;
+    public method setLogger(Psr\Log\LoggerInterface $logger): void;
+    public method setMaxConnections(int|null $maxConnections): void;
+    public method setPersistent(bool $persistent): void;
+    public method setTimeout(int|float $timeout): void;
+}
+
 class WebSocket\Connection imlements WebSocket\Runtime\IdentityInterface, Psr\Log\LoggerAwareInterface, Stringable
 {
-    use WebSocket\Trait\LoggerAwareTrait;
+    use WebSocket\Trait\ConfigurationTrait;
     use WebSocket\Trait\SendMethodsTrait;
     use WebSocket\Trait\StringableTrait;
 
-    public method __construct(Phrity\Net\SocketStream $stream, bool $pushMasked, bool $pullMaskedRequired, bool $ssl = false, Phrity\Http\HttpFactory|null $httpFactory = null);
+    public method __construct(Phrity\Net\SocketStream $stream, bool $pushMasked, bool $pullMaskedRequired, bool $ssl = false, Phrity\Http\HttpFactory|null $httpFactory = null, WebSocket\Configuration|null $configuration = null);
     public method __destruct();
     public method __toString(): string;
     public method addMiddleware(WebSocket\Middleware\MiddlewareInterface $middleware): self;
@@ -174,13 +194,14 @@ class WebSocket\Frame\Frame imlements Stringable
 
 class WebSocket\Frame\FrameHandler imlements Psr\Log\LoggerAwareInterface, Stringable
 {
-    use WebSocket\Trait\LoggerAwareTrait;
+    use WebSocket\Trait\ConfigurationTrait;
     use WebSocket\Trait\OpcodeTrait;
     use WebSocket\Trait\StringableTrait;
 
-    public method __construct(Phrity\Net\SocketStream $stream, bool $pushMasked, bool $pullMaskedRequired);
+    public method __construct(Phrity\Net\SocketStream $stream, bool $pushMasked, bool $pullMaskedRequired, WebSocket\Configuration|null $configuration = null);
     public method pull(): WebSocket\Frame\Frame;
     public method push(WebSocket\Frame\Frame $frame): int;
+    public method setLogger(Psr\Log\LoggerInterface $logger): void;
 }
 
 class WebSocket\Http\DefaultHttpFactory extends Phrity\Http\HttpFactory
@@ -234,10 +255,10 @@ class WebSocket\Message\Close extends WebSocket\Message\Message
 
 class WebSocket\Message\MessageHandler imlements Psr\Log\LoggerAwareInterface, Stringable
 {
-    use WebSocket\Trait\LoggerAwareTrait;
+    use WebSocket\Trait\ConfigurationTrait;
     use WebSocket\Trait\StringableTrait;
 
-    public method __construct(WebSocket\Frame\FrameHandler $frameHandler);
+    public method __construct(WebSocket\Frame\FrameHandler $frameHandler, WebSocket\Configuration|null $configuration = null);
     public method pull(): WebSocket\Message\Message;
     public method push(WebSocket\Message\Message $message, int $size = WebSocket\Message\MessageHandler::DEFAULT_SIZE): WebSocket\Message\Message;
     public method setLogger(Psr\Log\LoggerInterface $logger): void;
@@ -259,7 +280,7 @@ class WebSocket\Message\Text extends WebSocket\Message\Message
 
 class WebSocket\Middleware\Callback imlements Psr\Log\LoggerAwareInterface, WebSocket\Middleware\ProcessHttpIncomingInterface, WebSocket\Middleware\ProcessHttpOutgoingInterface, WebSocket\Middleware\ProcessIncomingInterface, WebSocket\Middleware\ProcessOutgoingInterface, WebSocket\Middleware\ProcessTickInterface, Stringable
 {
-    use WebSocket\Trait\LoggerAwareTrait;
+    use WebSocket\Trait\ConfigurationTrait;
     use WebSocket\Trait\StringableTrait;
 
     public method __construct(Closure|null $incoming = null, Closure|null $outgoing = null, Closure|null $httpIncoming = null, Closure|null $httpOutgoing = null, Closure|null $tick = null);
@@ -268,21 +289,23 @@ class WebSocket\Middleware\Callback imlements Psr\Log\LoggerAwareInterface, WebS
     public method processIncoming(WebSocket\Middleware\ProcessStack $stack, WebSocket\Connection $connection): WebSocket\Message\Message;
     public method processOutgoing(WebSocket\Middleware\ProcessStack $stack, WebSocket\Connection $connection, WebSocket\Message\Message $message): WebSocket\Message\Message;
     public method processTick(WebSocket\Middleware\ProcessTickStack $stack, WebSocket\Connection $connection): void;
+    public method setLogger(Psr\Log\LoggerInterface $logger): void;
 }
 
 class WebSocket\Middleware\CloseHandler imlements Psr\Log\LoggerAwareInterface, WebSocket\Middleware\ProcessIncomingInterface, WebSocket\Middleware\ProcessOutgoingInterface, Stringable
 {
-    use WebSocket\Trait\LoggerAwareTrait;
+    use WebSocket\Trait\ConfigurationTrait;
     use WebSocket\Trait\StringableTrait;
 
     public method __construct();
     public method processIncoming(WebSocket\Middleware\ProcessStack $stack, WebSocket\Connection $connection): WebSocket\Message\Message;
     public method processOutgoing(WebSocket\Middleware\ProcessStack $stack, WebSocket\Connection $connection, WebSocket\Message\Message $message): WebSocket\Message\Message;
+    public method setLogger(Psr\Log\LoggerInterface $logger): void;
 }
 
 class WebSocket\Middleware\CompressionExtension imlements Psr\Log\LoggerAwareInterface, WebSocket\Middleware\ProcessHttpOutgoingInterface, WebSocket\Middleware\ProcessHttpIncomingInterface, WebSocket\Middleware\ProcessIncomingInterface, WebSocket\Middleware\ProcessOutgoingInterface, Stringable
 {
-    use WebSocket\Trait\LoggerAwareTrait;
+    use WebSocket\Trait\ConfigurationTrait;
     use WebSocket\Trait\StringableTrait;
 
     public method __construct(WebSocket\Middleware\CompressionExtension\CompressorInterface $compressors);
@@ -290,6 +313,7 @@ class WebSocket\Middleware\CompressionExtension imlements Psr\Log\LoggerAwareInt
     public method processHttpOutgoing(WebSocket\Middleware\ProcessHttpStack $stack, WebSocket\Connection $connection, Psr\Http\Message\MessageInterface $message): Psr\Http\Message\MessageInterface;
     public method processIncoming(WebSocket\Middleware\ProcessStack $stack, WebSocket\Connection $connection): WebSocket\Message\Message;
     public method processOutgoing(WebSocket\Middleware\ProcessStack $stack, WebSocket\Connection $connection, WebSocket\Message\Message $message): WebSocket\Message\Message;
+    public method setLogger(Psr\Log\LoggerInterface $logger): void;
 }
 
 class WebSocket\Middleware\CompressionExtension\DeflateCompressor imlements WebSocket\Middleware\CompressionExtension\CompressorInterface, Stringable
@@ -307,19 +331,20 @@ class WebSocket\Middleware\CompressionExtension\DeflateCompressor imlements WebS
 
 class WebSocket\Middleware\FollowRedirect imlements Psr\Log\LoggerAwareInterface, WebSocket\Middleware\ProcessHttpIncomingInterface, Stringable
 {
-    use WebSocket\Trait\LoggerAwareTrait;
+    use WebSocket\Trait\ConfigurationTrait;
     use WebSocket\Trait\StringableTrait;
 
     public method __construct(int $limit = 10);
     public method processHttpIncoming(WebSocket\Middleware\ProcessHttpStack $stack, WebSocket\Connection $connection): Psr\Http\Message\MessageInterface;
+    public method setLogger(Psr\Log\LoggerInterface $logger): void;
 }
 
 class WebSocket\Middleware\MiddlewareHandler imlements Psr\Log\LoggerAwareInterface, Stringable
 {
-    use WebSocket\Trait\LoggerAwareTrait;
+    use WebSocket\Trait\ConfigurationTrait;
     use WebSocket\Trait\StringableTrait;
 
-    public method __construct(WebSocket\Message\MessageHandler $messageHandler, WebSocket\Http\HttpHandler $httpHandler);
+    public method __construct(WebSocket\Message\MessageHandler $messageHandler, WebSocket\Http\HttpHandler $httpHandler, WebSocket\Configuration|null $configuration = null);
     public method add(WebSocket\Middleware\MiddlewareInterface $middleware): self;
     public method processHttpIncoming(WebSocket\Connection $connection): Psr\Http\Message\MessageInterface;
     public method processHttpOutgoing(WebSocket\Connection $connection, Psr\Http\Message\MessageInterface $message): Psr\Http\Message\MessageInterface;
@@ -331,21 +356,23 @@ class WebSocket\Middleware\MiddlewareHandler imlements Psr\Log\LoggerAwareInterf
 
 class WebSocket\Middleware\PingInterval imlements Psr\Log\LoggerAwareInterface, WebSocket\Middleware\ProcessOutgoingInterface, WebSocket\Middleware\ProcessTickInterface, Stringable
 {
-    use WebSocket\Trait\LoggerAwareTrait;
+    use WebSocket\Trait\ConfigurationTrait;
     use WebSocket\Trait\StringableTrait;
 
     public method __construct(int|float|null $interval = null);
     public method processOutgoing(WebSocket\Middleware\ProcessStack $stack, WebSocket\Connection $connection, WebSocket\Message\Message $message): WebSocket\Message\Message;
     public method processTick(WebSocket\Middleware\ProcessTickStack $stack, WebSocket\Connection $connection): void;
+    public method setLogger(Psr\Log\LoggerInterface $logger): void;
 }
 
 class WebSocket\Middleware\PingResponder imlements Psr\Log\LoggerAwareInterface, WebSocket\Middleware\ProcessIncomingInterface, Stringable
 {
-    use WebSocket\Trait\LoggerAwareTrait;
+    use WebSocket\Trait\ConfigurationTrait;
     use WebSocket\Trait\StringableTrait;
 
     public method __construct();
     public method processIncoming(WebSocket\Middleware\ProcessStack $stack, WebSocket\Connection $connection): WebSocket\Message\Message;
+    public method setLogger(Psr\Log\LoggerInterface $logger): void;
 }
 
 class WebSocket\Middleware\ProcessHttpStack imlements Stringable
@@ -376,22 +403,23 @@ class WebSocket\Middleware\ProcessTickStack imlements Stringable
 
 class WebSocket\Middleware\SubprotocolNegotiation imlements Psr\Log\LoggerAwareInterface, WebSocket\Middleware\ProcessHttpOutgoingInterface, WebSocket\Middleware\ProcessHttpIncomingInterface, Stringable
 {
-    use WebSocket\Trait\LoggerAwareTrait;
+    use WebSocket\Trait\ConfigurationTrait;
     use WebSocket\Trait\StringableTrait;
 
     public method __construct(array $subprotocols, bool $require = false);
     public method processHttpIncoming(WebSocket\Middleware\ProcessHttpStack $stack, WebSocket\Connection $connection): Psr\Http\Message\MessageInterface;
     public method processHttpOutgoing(WebSocket\Middleware\ProcessHttpStack $stack, WebSocket\Connection $connection, Psr\Http\Message\MessageInterface $message): Psr\Http\Message\MessageInterface;
+    public method setLogger(Psr\Log\LoggerInterface $logger): void;
 }
 
 class WebSocket\Server imlements WebSocket\Runtime\IdentityInterface, Psr\Log\LoggerAwareInterface, Stringable
 {
+    use WebSocket\Trait\ConfigurationTrait;
     use WebSocket\Trait\ListenerTrait;
-    use WebSocket\Trait\LoggerAwareTrait;
     use WebSocket\Trait\SendMethodsTrait;
     use WebSocket\Trait\StringableTrait;
 
-    public method __construct(int $port = 80, bool $ssl = false);
+    public method __construct(int $port = 80, bool $ssl = false, WebSocket\Configuration|null $configuration = null);
     public method __toString(): string;
     public method addMiddleware(WebSocket\Middleware\MiddlewareInterface $middleware): self;
     public method disconnect(): void;
@@ -482,6 +510,13 @@ inteface WebSocket\Runtime\IdentityInterface
     public method getIdentity(): string;
 }
 
+trait WebSocket\Trait\ConfigurationTrait
+{
+    public method getConfiguration(): WebSocket\Configuration;
+    public method initConfiguration(WebSocket\Configuration|null $configuration = null): self;
+    public method setConfiguration(WebSocket\Configuration $configuration): self;
+}
+
 trait WebSocket\Trait\ListenerTrait
 {
     public method onBinary(Closure $closure): self;
@@ -494,13 +529,6 @@ trait WebSocket\Trait\ListenerTrait
     public method onPong(Closure $closure): self;
     public method onText(Closure $closure): self;
     public method onTick(Closure $closure): self;
-}
-
-trait WebSocket\Trait\LoggerAwareTrait
-{
-    public method attachLogger(mixed $instance): void;
-    public method initLogger(Psr\Log\LoggerInterface|null $logger = null): void;
-    public method setLogger(Psr\Log\LoggerInterface $logger): void;
 }
 
 trait WebSocket\Trait\OpcodeTrait

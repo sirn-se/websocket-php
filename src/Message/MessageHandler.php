@@ -12,13 +12,14 @@ use Psr\Log\{
     LoggerInterface,
 };
 use Stringable;
+use WebSocket\Configuration;
 use WebSocket\Exception\BadOpcodeException;
 use WebSocket\Frame\{
     Frame,
     FrameHandler,
 };
 use WebSocket\Trait\{
-    LoggerAwareTrait,
+    ConfigurationTrait,
     StringableTrait,
 };
 
@@ -28,24 +29,30 @@ use WebSocket\Trait\{
  */
 class MessageHandler implements LoggerAwareInterface, Stringable
 {
-    use LoggerAwareTrait;
+    use ConfigurationTrait;
     use StringableTrait;
 
     private const DEFAULT_SIZE = 4096;
+    private const SCOPE = 'message-handler';
 
     private FrameHandler $frameHandler;
     /** @var array<Frame> $frameBuffer */
     private array $frameBuffer = [];
 
-    public function __construct(FrameHandler $frameHandler)
+    public function __construct(FrameHandler $frameHandler, Configuration|null $configuration = null)
     {
         $this->frameHandler = $frameHandler;
-        $this->initLogger();
+        $this->initConfiguration($configuration);
     }
 
+    /**
+     * Set logger.
+     * @param LoggerInterface $logger Logger implementation
+     * @deprecated Will be removed in future version, set on Configuration instead
+     */
     public function setLogger(LoggerInterface $logger): void
     {
-        $this->logger = $logger;
+        $this->configuration->setLogger($logger);
         $this->frameHandler->setLogger($logger);
     }
 
@@ -62,7 +69,9 @@ class MessageHandler implements LoggerAwareInterface, Stringable
         foreach ($frames as $frame) {
             $this->frameHandler->push($frame);
         }
-        $this->logger->info("[message-handler] Pushed {$message}", [
+        $this->configuration->getLogger()->info("[{scope}] Pushed {message}", [
+            'scope' => self::SCOPE,
+            'message' => $message,
             'opcode' => $message->getOpcode(),
             'content-length' => $message->getLength(),
             'frames' => count($frames),
@@ -108,7 +117,9 @@ class MessageHandler implements LoggerAwareInterface, Stringable
             return $carry . $item->getPayload();
         }, ''));
         $message->setCompress($frames[0]->getRsv1() ?? false);
-        $this->logger->info("[message-handler] Pulled {$message}", [
+        $this->configuration->getLogger()->info("[{scope}] Pulled {message}", [
+            'scope' => self::SCOPE,
+            'message' => $message,
             'opcode' => $message->getOpcode(),
             'content-length' => $message->getLength(),
             'frames' => count($frames),

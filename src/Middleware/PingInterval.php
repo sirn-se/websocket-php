@@ -7,15 +7,21 @@
 
 namespace WebSocket\Middleware;
 
-use Psr\Log\LoggerAwareInterface;
+use Psr\Log\{
+    LoggerInterface,
+    LoggerAwareInterface,
+};
 use Stringable;
-use WebSocket\Connection;
+use WebSocket\{
+    Configuration,
+    Connection,
+};
 use WebSocket\Message\{
     Ping,
     Message
 };
 use WebSocket\Trait\{
-    LoggerAwareTrait,
+    ConfigurationTrait,
     StringableTrait,
 };
 
@@ -25,15 +31,27 @@ use WebSocket\Trait\{
  */
 class PingInterval implements LoggerAwareInterface, ProcessOutgoingInterface, ProcessTickInterface, Stringable
 {
-    use LoggerAwareTrait;
+    use ConfigurationTrait;
     use StringableTrait;
+
+    private const SCOPE = 'ping-interval';
 
     private int|float|null $interval;
 
     public function __construct(int|float|null $interval = null)
     {
         $this->interval = $interval;
-        $this->initLogger();
+        $this->initConfiguration();
+    }
+
+    /**
+     * Set logger.
+     * @param LoggerInterface $logger
+     * @deprecated Will be removed in future version, retrieved from Configuration instead
+     */
+    public function setLogger(LoggerInterface $logger): void
+    {
+        $this->configuration->setLogger($logger);
     }
 
     public function processOutgoing(ProcessStack $stack, Connection $connection, Message $message): Message
@@ -46,7 +64,10 @@ class PingInterval implements LoggerAwareInterface, ProcessOutgoingInterface, Pr
     {
         // Push if time exceeds timestamp for next ping
         if ($connection->isWritable() && microtime(true) >= $this->getNext($connection)) {
-            $this->logger->debug("[ping-interval] Auto-pushing ping");
+            $this->configuration->getLogger()->debug("[{scope}] Auto-pushing ping", [
+                'scope' => self::SCOPE,
+                'connection' => $connection->getIdentity(),
+            ]);
             $connection->send(new Ping());
             $this->setNext($connection); // Update timestamp for next ping
         }

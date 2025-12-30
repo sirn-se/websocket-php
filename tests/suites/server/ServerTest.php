@@ -387,7 +387,8 @@ class ServerTest extends TestCase
 
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamIsConnected();
-        $this->expectWsSelectConnections(['*/connection/8000/12345', '*/connection/8000/23456']);
+        // The @server handler should be blocked now
+        $this->expectWsSelectConnections(['server/8000', '*/connection/8000/12345', '*/connection/8000/23456']);
 
         // Receive close ack connection 1
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {

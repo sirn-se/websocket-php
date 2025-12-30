@@ -46,6 +46,7 @@ class PingResponderTest extends TestCase
 
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $middleware = new PingResponder();

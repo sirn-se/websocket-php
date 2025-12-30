@@ -95,11 +95,10 @@ trait MockStreamTrait
         $this->expectSocketStreamGetRemoteName()->setReturn(function () use ($host, $port) {
             return "{$host}:{$port}";
         });
-
-        $this->expectStreamCollectionAttach();
         $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) use ($timeout) {
             $this->assertEquals($timeout, $params[0]);
         });
+        $this->expectStreamCollectionAttach();
         $this->expectSocketStreamIsConnected();
         if ($persistent) {
             $this->expectSocketStreamTell();
@@ -216,8 +215,8 @@ trait MockStreamTrait
         $this->expectSocketStreamGetRemoteName()->setReturn(function () use ($remote) {
             return $remote;
         });
-        $this->expectStreamCollectionAttach();
-        return $this->expectSocketStreamSetTimeout();
+        $this->expectSocketStreamSetTimeout();
+        return $this->expectStreamCollectionAttach();
     }
 
     /**

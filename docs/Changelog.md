@@ -2,6 +2,17 @@
 
 # Websocket: Changelog
 
+## `v3.7`
+
+ > PHP version `^8.1`
+
+### `3.7.0`
+
+ * Configuration class for various settings (@sirn-se)
+ * Identity interface and implementation (@sirn-se)
+ * Using Nyholm PSR HTTP (intermediate solution) (@sirn-se)
+ * Preparations for v4 (@sirn-se)
+
 ## `v3.6`
 
  > PHP version `^8.1`

@@ -56,6 +56,7 @@ class ExceptionTest extends TestCase
         $stream = new SocketStream($temp);
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -81,6 +82,7 @@ class ExceptionTest extends TestCase
         $stream = new SocketStream($temp);
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -105,6 +107,7 @@ class ExceptionTest extends TestCase
         $stream = new SocketStream($temp);
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -129,6 +132,7 @@ class ExceptionTest extends TestCase
         $stream = new SocketStream($temp);
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -153,6 +157,7 @@ class ExceptionTest extends TestCase
         $stream = new SocketStream($temp);
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -177,6 +182,7 @@ class ExceptionTest extends TestCase
         $stream = new SocketStream($temp);
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -205,6 +211,7 @@ class ExceptionTest extends TestCase
         $stream = new SocketStream($temp);
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -233,6 +240,7 @@ class ExceptionTest extends TestCase
         $stream = new SocketStream($temp);
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -260,6 +268,7 @@ class ExceptionTest extends TestCase
         $stream = new SocketStream($temp);
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -288,6 +297,7 @@ class ExceptionTest extends TestCase
         $stream = new SocketStream($temp);
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $this->expectException(InvalidArgumentException::class);
@@ -309,6 +319,7 @@ class ExceptionTest extends TestCase
         $stream = new SocketStream($temp);
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $this->expectException(InvalidArgumentException::class);

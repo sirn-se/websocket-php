@@ -46,7 +46,7 @@ use WebSocket\Middleware\{
 };
 use WebSocket\Runtime\IdentityInterface;
 use WebSocket\Trait\{
-    LoggerAwareTrait,
+    ConfigurationTrait,
     SendMethodsTrait,
     StringableTrait
 };
@@ -57,18 +57,16 @@ use WebSocket\Trait\{
  */
 class Connection implements IdentityInterface, LoggerAwareInterface, Stringable
 {
-    use LoggerAwareTrait;
+    use ConfigurationTrait;
     use SendMethodsTrait;
     use StringableTrait;
+
+    private const SCOPE = 'connection';
 
     private SocketStream $stream;
     private HttpHandler $httpHandler;
     private MessageHandler $messageHandler;
     private MiddlewareHandler $middlewareHandler;
-    /** @var int<1, max> $frameSize */
-    private int $frameSize = 4096;
-    /** @var int<0, max>|float $timeout */
-    private int|float $timeout = 60;
     private string $localName;
     private string $remoteName;
     private RequestInterface|null $handshakeRequest = null;
@@ -87,7 +85,8 @@ class Connection implements IdentityInterface, LoggerAwareInterface, Stringable
         bool $pushMasked,
         bool $pullMaskedRequired,
         bool $ssl = false,
-        HttpFactory|null $httpFactory = null
+        HttpFactory|null $httpFactory = null,
+        Configuration|null $configuration = null,
     ) {
         $this->stream = $stream;
         $this->httpHandler = new HttpHandler($this->stream, $ssl, $httpFactory);
@@ -100,7 +99,8 @@ class Connection implements IdentityInterface, LoggerAwareInterface, Stringable
             $this->getIdentityPart($this->localName),
             $this->getIdentityPart($this->remoteName),
         );
-        $this->initLogger();
+        $this->initConfiguration($configuration);
+        $this->stream->setTimeout($this->configuration->getTimeout());
     }
 
     public function __destruct()
@@ -126,13 +126,18 @@ class Connection implements IdentityInterface, LoggerAwareInterface, Stringable
     /**
      * Set logger.
      * @param LoggerInterface $logger Logger implementation
+     * @deprecated Will be removed in future version, set on Configuration instead
      */
     public function setLogger(LoggerInterface $logger): void
     {
-        $this->logger = $logger;
+        $this->configuration->setLogger($logger);
         $this->messageHandler->setLogger($logger);
         $this->middlewareHandler->setLogger($logger);
-        $this->logger->debug("[connection] Setting logger: " . get_class($logger));
+        $this->configuration->getLogger()->debug("[{scope}] Setting logger: {logger}", [
+            'scope' => self::SCOPE,
+            'connection' => $this->identity,
+            'logger' => get_class($logger),
+        ]);
     }
 
     /**
@@ -140,25 +145,28 @@ class Connection implements IdentityInterface, LoggerAwareInterface, Stringable
      * @param int<0, max>|float $timeout Timeout part in seconds
      * @return self
      * @throws InvalidArgumentException
+     * @deprecated Will be removed in future version, set on Configuration instead
      */
     public function setTimeout(int|float $timeout): self
     {
-        if ($timeout < 0) {
-            throw new InvalidArgumentException("Invalid timeout '{$timeout}' provided");
-        }
-        $this->timeout = $timeout;
+        $this->configuration->setTimeout($timeout);
         $this->stream->setTimeout($timeout);
-        $this->logger->debug("[connection] Setting timeout: {$timeout} seconds");
+        $this->configuration->getLogger()->debug("[{scope}] Setting timeout: {timeout} seconds", [
+            'scope' => self::SCOPE,
+            'connection' => $this->identity,
+            'timeout' => $timeout,
+        ]);
         return $this;
     }
 
     /**
      * Get timeout.
      * @return int<0, max>|float Timeout in seconds.
+     * @deprecated Will be removed in future version, get from Configuration instead
      */
     public function getTimeout(): int|float
     {
-        return $this->timeout;
+        return $this->configuration->getTimeout();
     }
 
     /**
@@ -166,23 +174,22 @@ class Connection implements IdentityInterface, LoggerAwareInterface, Stringable
      * @param int<1, max> $frameSize Frame size in bytes.
      * @return self
      * @throws InvalidArgumentException
+     * @deprecated Will be removed in future version, set on Configuration instead
      */
     public function setFrameSize(int $frameSize): self
     {
-        if ($frameSize < 1) {
-            throw new InvalidArgumentException("Invalid frameSize '{$frameSize}' provided");
-        }
-        $this->frameSize = $frameSize;
+        $this->configuration->setFrameSize($frameSize);
         return $this;
     }
 
     /**
      * Get frame size.
      * @return int<1, max> Frame size in bytes
+     * @deprecated Will be removed in future version, get from Configuration instead
      */
     public function getFrameSize(): int
     {
-        return max(1, $this->frameSize);
+        return $this->configuration->getFrameSize();
     }
 
     /**
@@ -202,7 +209,11 @@ class Connection implements IdentityInterface, LoggerAwareInterface, Stringable
     public function addMiddleware(MiddlewareInterface $middleware): self
     {
         $this->middlewareHandler->add($middleware);
-        $this->logger->debug("[connection] Added middleware: {$middleware}");
+        $this->configuration->getLogger()->debug("[{scope}] Added middleware: {middleware}", [
+            'scope' => self::SCOPE,
+            'connection' => $this->identity,
+            'middleware' => $middleware,
+        ]);
         return $this;
     }
 
@@ -242,7 +253,10 @@ class Connection implements IdentityInterface, LoggerAwareInterface, Stringable
      */
     public function disconnect(): self
     {
-        $this->logger->info('[connection] Closing connection');
+        $this->configuration->getLogger()->info("[{scope}] Closing connection", [
+            'scope' => self::SCOPE,
+            'connection' => $this->identity,
+        ]);
         $this->stream->close();
         $this->closed = true;
         return $this;
@@ -254,7 +268,10 @@ class Connection implements IdentityInterface, LoggerAwareInterface, Stringable
      */
     public function closeRead(): self
     {
-        $this->logger->info('[connection] Closing further reading');
+        $this->configuration->getLogger()->info("[{scope}] Closing further reading", [
+            'scope' => self::SCOPE,
+            'connection' => $this->identity,
+        ]);
         $this->stream->closeRead();
         return $this;
     }
@@ -265,7 +282,10 @@ class Connection implements IdentityInterface, LoggerAwareInterface, Stringable
      */
     public function closeWrite(): self
     {
-        $this->logger->info('[connection] Closing further writing');
+        $this->configuration->getLogger()->info("[{scope}] Closing further writing", [
+            'scope' => self::SCOPE,
+            'connection' => $this->identity,
+        ]);
         $this->stream->closeWrite();
         return $this;
     }
@@ -422,11 +442,21 @@ class Connection implements IdentityInterface, LoggerAwareInterface, Stringable
     {
         // Internal exceptions are handled and re-thrown
         if ($e instanceof ReconnectException) {
-            $this->logger->info("[connection] {$e->getMessage()}", ['exception' => $e]);
+            $this->configuration->getLogger()->info("[{scope}] {message}", [
+                'scope' => self::SCOPE,
+                'connection' => $this->identity,
+                'exception' => $e,
+                'message' => $e->getMessage(),
+            ]);
             throw $e;
         }
         if ($e instanceof ExceptionInterface) {
-            $this->logger->error("[connection] {$e->getMessage()}", ['exception' => $e]);
+            $this->configuration->getLogger()->error("[{scope}] {message}", [
+                'scope' => self::SCOPE,
+                'connection' => $this->identity,
+                'exception' => $e,
+                'message' => $e->getMessage(),
+            ]);
             throw $e;
         }
         // External exceptions are converted to internal
@@ -434,15 +464,32 @@ class Connection implements IdentityInterface, LoggerAwareInterface, Stringable
             $meta = $this->stream->getMetadata();
             $json = json_encode($meta);
             if (!empty($meta['timed_out'])) {
-                $this->logger->error("[connection] {$e->getMessage()}", ['exception' => $e, 'meta' => $meta]);
+                $this->configuration->getLogger()->error("[{scope}] {message}", [
+                    'scope' => self::SCOPE,
+                    'connection' => $this->identity,
+                    'exception' => $e,
+                    'message' => $e->getMessage(),
+                    'meta' => $meta
+                ]);
                 throw new ConnectionTimeoutException();
             }
             if (!empty($meta['eof'])) {
-                $this->logger->error("[connection] {$e->getMessage()}", ['exception' => $e, 'meta' => $meta]);
+                $this->configuration->getLogger()->error("[{scope}] {message}", [
+                    'scope' => self::SCOPE,
+                    'connection' => $this->identity,
+                    'exception' => $e,
+                    'message' => $e->getMessage(),
+                    'meta' => $meta
+                ]);
                 throw new ConnectionClosedException();
             }
         }
-        $this->logger->error("[connection] {$e->getMessage()}", ['exception' => $e]);
+        $this->configuration->getLogger()->error("[{scope}] {message}", [
+            'scope' => self::SCOPE,
+            'connection' => $this->identity,
+            'exception' => $e,
+            'message' => $e->getMessage(),
+        ]);
         throw new ConnectionFailureException();
     }
 

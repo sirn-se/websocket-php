@@ -13,10 +13,14 @@
             {
                 "name": "Server",
                 "source": "docs/Server.md"
-            },
+            }
         ],
         "name": "Resources",
         "content": [
+            {
+                "name": "Configuration",
+                "source": "docs/Configuration.md"
+            },
             {
                 "name": "Connection",
                 "source": "docs/Connection.md"
@@ -64,9 +68,9 @@
                     {
                         "name": "Creating your own middleware",
                         "source": "docs/Middleware/Creating.md"
-                    },
+                    }
                 ]
-            },
+            }
         ],
         "name": "Developer resources",
         "content": [
@@ -85,14 +89,18 @@
             {
                 "name": "Class synopsis",
                 "source": "docs/Class_Synopsis.md"
-            },
+            }
         ],
         "name": "Migration",
         "content": [
             {
+                "name": "Migration v1 -> v2",
+                "source": "docs/Migrate_1_2.md"
+            },
+            {
                 "name": "Migration v2 -> v3",
                 "source": "docs/Migrate_2_3.md"
-            },
+            }
         ]
     },
     {

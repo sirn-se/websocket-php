@@ -64,6 +64,7 @@ class ConfigErrorTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionCode(0);
         $this->expectExceptionMessage("Invalid maxConnections '0' provided");
+        // @phpstan-ignore argument.type
         $server->setMaxConnections(0);
     }
 }

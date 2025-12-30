@@ -49,6 +49,7 @@ class PingIntervalTest extends TestCase
 
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
         $connection->addMiddleware($middleware);
 

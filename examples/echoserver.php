@@ -53,7 +53,7 @@ echo "# Echo server! [phrity/websocket]\n";
  *     ssl: bool,
  *     timeout: int<0, max>|float,
  *     framesize: int<1, max>,
- *     connections: int<0, max>|null,
+ *     connections: int<1, max>|null,
  *     deflate: bool,
  * } $options
  */
@@ -63,29 +63,31 @@ $options = array_merge([
 
 // Initiate server.
 try {
-    $server = new Server($options['port'], isset($options['ssl']));
+    // Configuration
+    $configuration = new Configuration();
+    if (class_exists(ConsoleLogger::class)) {
+        $configuration->setLogger(new ConsoleLogger(format: '{level} | {message}', cliOptions: true));
+        echo "# Using logger\n";
+    }
+    if (isset($options['timeout'])) {
+        $configuration->setTimeout($options['timeout']);
+        echo "# Set timeout: {$options['timeout']}\n";
+    }
+    if (isset($options['framesize'])) {
+        $configuration->setFrameSize($options['framesize']);
+        echo "# Set frame size: {$options['framesize']}\n";
+    }
+    if (isset($options['connections'])) {
+        $configuration->setMaxConnections($options['connections']);
+        echo "# Set max connections: {$options['connections']}\n";
+    }
+
+    $server = new Server($options['port'], isset($options['ssl']), $configuration);
     $server
         ->addMiddleware(new CloseHandler())
         ->addMiddleware(new PingResponder())
         ;
 
-    // If debug mode and logger is available
-    if (class_exists(ConsoleLogger::class)) {
-        $server->setLogger(new ConsoleLogger(format: '{level} | {message}', cliOptions: true));
-        echo "# Using logger\n";
-    }
-    if (isset($options['timeout'])) {
-        $server->setTimeout($options['timeout']);
-        echo "# Set timeout: {$options['timeout']}\n";
-    }
-    if (isset($options['framesize'])) {
-        $server->setFrameSize($options['framesize']);
-        echo "# Set frame size: {$options['framesize']}\n";
-    }
-    if (isset($options['connections'])) {
-        $server->setMaxConnections($options['connections']);
-        echo "# Set max connections: {$options['connections']}\n";
-    }
     if (isset($options['deflate'])) {
         $server->addMiddleware(new CompressionExtension(new DeflateCompressor()));
         echo "# Using per-message: deflate compression\n";
@@ -121,8 +123,8 @@ try {
                 $msg .= "  - Connected:   " . json_encode($connection->isConnected()) . "\n";
                 $msg .= "  - Readable:    " . json_encode($connection->isReadable()) . "\n";
                 $msg .= "  - Writable:    " . json_encode($connection->isWritable()) . "\n";
-                $msg .= "  - Timeout:     {$connection->getTimeout()}s\n";
-                $msg .= "  - Frame size:  {$connection->getFrameSize()}b\n";
+                $msg .= "  - Timeout:     {$connection->getConfiguration()->getTimeout()}s\n";
+                $msg .= "  - Frame size:  {$connection->getConfiguration()->getFrameSize()}b\n";
                 echo "< [{$connection->getRemoteName()}] {$msg}";
                 $server->send(new Text($msg));
                 break;

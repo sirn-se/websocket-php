@@ -50,6 +50,7 @@ class ProcessStackTest extends TestCase
 
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $connection->addMiddleware(new Callback(incoming: function ($stack, $connection) {
@@ -100,6 +101,7 @@ class ProcessStackTest extends TestCase
 
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $connection->addMiddleware(new Callback(outgoing: function ($stack, $connection, $message) {
