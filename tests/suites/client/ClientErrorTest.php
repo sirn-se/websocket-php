@@ -84,8 +84,8 @@ class ClientErrorTest extends TestCase
         $this->expectContext();
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
-        $this->expectStreamCollectionAttach();
         $this->expectSocketStreamSetTimeout();
+        $this->expectStreamCollectionAttach();
         $this->expectSocketStreamIsConnected()->setReturn(function () {
             return false;
         });

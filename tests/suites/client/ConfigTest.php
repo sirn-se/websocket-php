@@ -28,6 +28,7 @@ use Phrity\Util\ErrorHandler;
 use Psr\Log\NullLogger;
 use WebSocket\{
     Client,
+    Configuration,
     Connection,
 };
 use WebSocket\Middleware\CloseHandler;
@@ -353,5 +354,22 @@ class ConfigTest extends TestCase
         $this->assertSame($client, $client->setHttpFactory(HttpFactory::create($httpFactory)));
 
         unset($client);
+    }
+
+    public function testConfiguration(): void
+    {
+        $logger = new NullLogger();
+        $this->expectContext();
+        $context = new Context();
+        $configuration = new Configuration(
+            logger: $logger,
+            context: $context,
+            timeout: 120,
+            frameSize: 64,
+            persistent: true,
+        );
+        $client = new Client('ws://localhost:8000/my/mock/path');
+        $this->assertInstanceOf(Configuration::class, $client->getConfiguration());
+        $this->assertSame($client, $client->setConfiguration($configuration));
     }
 }

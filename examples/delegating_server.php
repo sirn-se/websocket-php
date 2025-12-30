@@ -54,7 +54,7 @@ echo "# Delegating server! [phrity/websocket]\n";
  *     ssl: bool,
  *     timeout: int<0, max>|float,
  *     framesize: int<1, max>,
- *     connections: int<0, max>|null,
+ *     connections: int<1, max>|null,
  *     deflate: bool,
  * } $options
  */
@@ -69,42 +69,41 @@ if (is_null($options['remote'])) {
 }
 
 try {
+    // Configuration
+    $configuration = new Configuration();
+    $configuration->setTimeout($options['timeout']);
+    echo "# Set timeout: {$options['timeout']}\n";
+    if (class_exists(ConsoleLogger::class)) {
+        $logger = new ConsoleLogger(format: '{level} | {message}', cliOptions: true);
+        $configuration->setLogger($logger);
+        echo "# Using logger\n";
+    }
+    if (isset($options['framesize'])) {
+        $configuration->setFrameSize($options['framesize']);
+        echo "# Set frame size: {$options['framesize']}\n";
+    }
+    if (isset($options['connections'])) {
+        $configuration->setMaxConnections($options['connections']);
+        echo "# Set max connections: {$options['connections']}\n";
+    }
+
     // Initiate server
     echo "# Setting up Server\n";
-    $server = new Server($options['port'], isset($options['ssl']));
+    $server = new Server($options['port'], isset($options['ssl']), $configuration);
     $server
         ->addMiddleware(new CloseHandler())
         ->addMiddleware(new PingResponder())
-        ->setTimeout($options['timeout'])
         ;
 
     // Initiate client
     echo "# Setting up Client\n";
-    $client = new Client($options['remote']);
+    $client = new Client($options['remote'], $configuration);
     $client
         ->addMiddleware(new CloseHandler())
         ->addMiddleware(new PingResponder())
         ->addMiddleware(new PingInterval(30))
-        ->setTimeout($options['timeout'])
         ;
 
-    // Configuration
-    echo "# Set timeout: {$options['timeout']}\n";
-    if (class_exists(ConsoleLogger::class)) {
-        $logger = new ConsoleLogger(format: '{level} | {message}', cliOptions: true);
-        $server->setLogger($logger);
-        $client->setLogger($logger);
-        echo "# Using logger\n";
-    }
-    if (isset($options['framesize'])) {
-        $server->setFrameSize($options['framesize']);
-        $client->setFrameSize($options['framesize']);
-        echo "# Set frame size: {$options['framesize']}\n";
-    }
-    if (isset($options['connections'])) {
-        $server->setMaxConnections($options['connections']);
-        echo "# Set max connections: {$options['connections']}\n";
-    }
     if (isset($options['deflate'])) {
         $server->addMiddleware(new CompressionExtension(new DeflateCompressor()));
         $client->addMiddleware(new CompressionExtension(new DeflateCompressor()));
@@ -148,6 +147,8 @@ try {
             $client->stop();
         });
 
+    echo "# Listening on port {$server->getPort()}\n";
+
     // Run loop
     // @phpstan-ignore while.alwaysTrue
     while (true) {
@@ -155,5 +156,5 @@ try {
         $server->start();
     }
 } catch (Throwable $e) {
-    echo "# ERROR: {$e->getMessage()}\n";
+    echo "# ERROR: {$e->getMessage()}\n $e \n";
 }

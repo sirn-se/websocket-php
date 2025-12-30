@@ -55,6 +55,7 @@ class CallbackTest extends TestCase
 
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
         $middleware = new Callback(incoming: function ($stack, $connection) {
             $message = $stack->handleIncoming();
@@ -92,6 +93,7 @@ class CallbackTest extends TestCase
 
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $connection->addMiddleware(new Callback(outgoing: function ($stack, $connection, $message) {
@@ -121,6 +123,7 @@ class CallbackTest extends TestCase
 
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $connection->addMiddleware(new Callback(httpIncoming: function ($stack, $connection) {
@@ -158,6 +161,7 @@ class CallbackTest extends TestCase
 
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $connection->addMiddleware(new Callback(httpOutgoing: function ($stack, $connection, $message) {
@@ -187,6 +191,7 @@ class CallbackTest extends TestCase
 
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $connection->addMiddleware(new Callback(tick: function ($stack, $connection) {

@@ -14,14 +14,17 @@ use Psr\Log\{
     LoggerAwareInterface,
 };
 use Stringable;
-use WebSocket\Connection;
+use WebSocket\{
+    Configuration,
+    Connection,
+};
 use WebSocket\Http\HttpHandler;
 use WebSocket\Message\{
     Message,
     MessageHandler
 };
 use WebSocket\Trait\{
-    LoggerAwareTrait,
+    ConfigurationTrait,
     StringableTrait,
 };
 
@@ -31,8 +34,10 @@ use WebSocket\Trait\{
  */
 class MiddlewareHandler implements LoggerAwareInterface, Stringable
 {
-    use LoggerAwareTrait;
+    use ConfigurationTrait;
     use StringableTrait;
+
+    private const SCOPE = 'middleware-handler';
 
     // Processor collections
     /** @var array<MiddlewareInterface> */
@@ -57,22 +62,28 @@ class MiddlewareHandler implements LoggerAwareInterface, Stringable
      * @param MessageHandler $messageHandler
      * @param HttpHandler $httpHandler
      */
-    public function __construct(MessageHandler $messageHandler, HttpHandler $httpHandler)
-    {
+    public function __construct(
+        MessageHandler $messageHandler,
+        HttpHandler $httpHandler,
+        Configuration|null $configuration = null,
+    ) {
         $this->messageHandler = $messageHandler;
         $this->httpHandler = $httpHandler;
-        $this->initLogger();
+        $this->initConfiguration($configuration);
     }
 
     /**
      * Set logger on MiddlewareHandler and all LoggerAware middlewares.
      * @param LoggerInterface $logger
+     * @deprecated Will be removed in future version, set on Configuration instead
      */
     public function setLogger(LoggerInterface $logger): void
     {
-        $this->logger = $logger;
+        $this->configuration->setLogger($logger);
         foreach ($this->middlewares as $middleware) {
-            $this->attachLogger($middleware);
+            if ($middleware instanceof LoggerAwareInterface) {
+                $middleware->setLogger($logger);
+            }
         }
     }
 
@@ -83,27 +94,33 @@ class MiddlewareHandler implements LoggerAwareInterface, Stringable
      */
     public function add(MiddlewareInterface $middleware): self
     {
+        $context = [
+            'scope' => self::SCOPE,
+            'middleware' => $middleware,
+        ];
         if ($middleware instanceof ProcessIncomingInterface) {
-            $this->logger->info("[middleware-handler] Added incoming: {$middleware}");
+            $this->configuration->getLogger()->info("[{scope}] Added incoming: {middleware}", $context);
             $this->incoming[] = $middleware;
         }
         if ($middleware instanceof ProcessOutgoingInterface) {
-            $this->logger->info("[middleware-handler] Added outgoing: {$middleware}");
+            $this->configuration->getLogger()->info("[{scope}] Added outgoing: {middleware}", $context);
             $this->outgoing[] = $middleware;
         }
         if ($middleware instanceof ProcessHttpIncomingInterface) {
-            $this->logger->info("[middleware-handler] Added http incoming: {$middleware}");
+            $this->configuration->getLogger()->info("[{scope}] Added http incoming: {middleware}", $context);
             $this->httpIncoming[] = $middleware;
         }
         if ($middleware instanceof ProcessHttpOutgoingInterface) {
-            $this->logger->info("[middleware-handler] Added http outgoing: {$middleware}");
+            $this->configuration->getLogger()->info("[{scope}] Added http outgoing: {middleware}", $context);
             $this->httpOutgoing[] = $middleware;
         }
         if ($middleware instanceof ProcessTickInterface) {
-            $this->logger->info("[middleware-handler] Added tick: {$middleware}");
+            $this->configuration->getLogger()->info("[{scope}] Added tick: {middleware}", $context);
             $this->tick[] = $middleware;
         }
-        $this->attachLogger($middleware);
+        if ($middleware instanceof LoggerAwareInterface) {
+            $middleware->setLogger($this->configuration->getLogger());
+        }
         $this->middlewares[] = $middleware;
         return $this;
     }
@@ -115,7 +132,10 @@ class MiddlewareHandler implements LoggerAwareInterface, Stringable
      */
     public function processIncoming(Connection $connection): Message
     {
-        $this->logger->info("[middleware-handler] Processing incoming");
+        $this->configuration->getLogger()->info("[{scope}] Processing incoming", [
+            'scope' => self::SCOPE,
+            'connection' => $connection->getIdentity(),
+        ]);
         $stack = new ProcessStack($connection, $this->messageHandler, $this->incoming);
         return $stack->handleIncoming();
     }
@@ -129,7 +149,10 @@ class MiddlewareHandler implements LoggerAwareInterface, Stringable
      */
     public function processOutgoing(Connection $connection, Message $message): Message
     {
-        $this->logger->info("[middleware-handler] Processing outgoing");
+        $this->configuration->getLogger()->info("[{scope}] Processing outgoing", [
+            'scope' => self::SCOPE,
+            'connection' => $connection->getIdentity(),
+        ]);
         $stack = new ProcessStack($connection, $this->messageHandler, $this->outgoing);
         return $stack->handleOutgoing($message);
     }
@@ -141,7 +164,10 @@ class MiddlewareHandler implements LoggerAwareInterface, Stringable
      */
     public function processHttpIncoming(Connection $connection): MessageInterface
     {
-        $this->logger->info("[middleware-handler] Processing http incoming");
+        $this->configuration->getLogger()->info("[{scope}] Processing http incoming", [
+            'scope' => self::SCOPE,
+            'connection' => $connection->getIdentity(),
+        ]);
         $stack = new ProcessHttpStack($connection, $this->httpHandler, $this->httpIncoming);
         return $stack->handleHttpIncoming();
     }
@@ -154,7 +180,10 @@ class MiddlewareHandler implements LoggerAwareInterface, Stringable
      */
     public function processHttpOutgoing(Connection $connection, MessageInterface $message): MessageInterface
     {
-        $this->logger->info("[middleware-handler] Processing http outgoing");
+        $this->configuration->getLogger()->info("[{scope}] Processing http outgoing", [
+            'scope' => self::SCOPE,
+            'connection' => $connection->getIdentity(),
+        ]);
         $stack = new ProcessHttpStack($connection, $this->httpHandler, $this->httpOutgoing);
         return $stack->handleHttpOutgoing($message);
     }
@@ -165,7 +194,10 @@ class MiddlewareHandler implements LoggerAwareInterface, Stringable
      */
     public function processTick(Connection $connection): void
     {
-        $this->logger->info("[middleware-handler] Processing tick");
+        $this->configuration->getLogger()->info("[{scope}] Processing tick", [
+            'scope' => self::SCOPE,
+            'connection' => $connection->getIdentity(),
+        ]);
         $stack = new ProcessTickStack($connection, $this->tick);
         $stack->handleTick();
     }

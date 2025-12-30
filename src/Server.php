@@ -42,8 +42,8 @@ use WebSocket\Message\Message;
 use WebSocket\Middleware\MiddlewareInterface;
 use WebSocket\Runtime\IdentityInterface;
 use WebSocket\Trait\{
+    ConfigurationTrait,
     ListenerTrait,
-    LoggerAwareTrait,
     SendMethodsTrait,
     StringableTrait
 };
@@ -54,20 +54,17 @@ use WebSocket\Trait\{
  */
 class Server implements IdentityInterface, LoggerAwareInterface, Stringable
 {
+    use ConfigurationTrait;
     /** @use ListenerTrait<Server> */
     use ListenerTrait;
-    use LoggerAwareTrait;
     use SendMethodsTrait;
     use StringableTrait;
+
+    private const SCOPE = 'server';
 
     // Settings
     private int $port;
     private string $scheme;
-    /** @var int<0, max>|float $timeout */
-    private int|float $timeout = 60;
-    /** @var int<1, max> $frameSize */
-    private int $frameSize = 4096;
-    private Context $context;
 
     // Internal resources
     private StreamFactory $streamFactory;
@@ -78,7 +75,7 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
     private array $connections = [];
     /** @var array<MiddlewareInterface> $middlewares */
     private array $middlewares = [];
-    private int|null $maxConnections = null;
+    private bool $allowConnections = false;
     private HttpFactory $httpFactory;
     /** @var non-empty-string $identity */
     private string $identity;
@@ -89,20 +86,20 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
     /**
      * @param int $port Socket port to listen to
      * @param bool $ssl If SSL should be used
+     * @param Configuration|null $configuration
      * @throws InvalidArgumentException If invalid port provided
      */
-    public function __construct(int $port = 80, bool $ssl = false)
+    public function __construct(int $port = 80, bool $ssl = false, Configuration|null $configuration = null)
     {
         if ($port < 0 || $port > 65535) {
             throw new InvalidArgumentException("Invalid port '{$port}' provided");
         }
         $this->port = $port;
         $this->scheme = $ssl ? 'ssl' : 'tcp';
-        $this->initLogger();
-        $this->context = new Context();
         $this->httpFactory = new DefaultHttpFactory();
         $this->setStreamFactory(new StreamFactory());
         $this->identity = "server/{$port}";
+        $this->initConfiguration($configuration);
     }
 
     /**
@@ -147,12 +144,13 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
     /**
      * Set logger.
      * @param LoggerInterface $logger Logger implementation
+     * @deprecated Will be removed in future version, set on Configuration instead
      */
     public function setLogger(LoggerInterface $logger): void
     {
-        $this->logger = $logger;
+        $this->configuration->setLogger($logger);
         foreach ($this->connections as $connection) {
-            $connection->setLogger($this->logger);
+            $connection->setLogger($logger);
         }
     }
 
@@ -161,13 +159,11 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
      * @param int<0, max>|float $timeout Timeout in seconds
      * @return self
      * @throws InvalidArgumentException If invalid timeout provided
+     * @deprecated Will be removed in future version, set on Configuration instead
      */
     public function setTimeout(int|float $timeout): self
     {
-        if ($timeout < 0) {
-            throw new InvalidArgumentException("Invalid timeout '{$timeout}' provided");
-        }
-        $this->timeout = $timeout;
+        $this->configuration->setTimeout($timeout);
         foreach ($this->connections as $connection) {
             $connection->setTimeout($timeout);
         }
@@ -177,10 +173,11 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
     /**
      * Get timeout.
      * @return int<0, max>|float Timeout in seconds
+     * @deprecated Will be removed in future version, get from Configuration instead
      */
     public function getTimeout(): int|float
     {
-        return $this->timeout;
+        return $this->configuration->getTimeout();
     }
 
     /**
@@ -188,13 +185,11 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
      * @param int<1, max> $frameSize Frame size in bytes
      * @return self
      * @throws InvalidArgumentException If invalid frameSize provided
+     * @deprecated Will be removed in future version, set on Configuration instead
      */
     public function setFrameSize(int $frameSize): self
     {
-        if ($frameSize < 3) {
-            throw new InvalidArgumentException("Invalid frameSize '{$frameSize}' provided");
-        }
-        $this->frameSize = $frameSize;
+        $this->configuration->setFrameSize($frameSize);
         foreach ($this->connections as $connection) {
             $connection->setFrameSize($frameSize);
         }
@@ -204,10 +199,11 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
     /**
      * Get frame size.
      * @return int Frame size in bytes
+     * @deprecated Will be removed in future version, get from Configuration instead
      */
     public function getFrameSize(): int
     {
-        return $this->frameSize;
+        return $this->configuration->getFrameSize();
     }
 
     /**
@@ -282,13 +278,14 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
      * @param Context|array<string, mixed> $context Context or options as array
      * @see https://www.php.net/manual/en/context.php
      * @return self
+     * @deprecated Will be removed in future version, set on Configuration instead
      */
     public function setContext(Context|array $context): self
     {
         if ($context instanceof Context) {
-            $this->context = $context;
+            $this->configuration->setContext($context);
         } else {
-            $this->context->setOptions($context);
+            $this->configuration->getContext()->setOptions($context);
             trigger_error('Calling Server.setContext with array is deprecated, use Context class.', E_USER_DEPRECATED);
         }
         return $this;
@@ -297,10 +294,11 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
     /**
      * Get current stream context.
      * @return Context
+     * @deprecated Will be removed in future version, get from Configuration instead
      */
     public function getContext(): Context
     {
-        return $this->context;
+        return $this->configuration->getContext();
     }
 
     /**
@@ -319,16 +317,14 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
 
     /**
      * Set maximum number of connections allowed, null means unlimited.
-     * @param int|null $maxConnections
+     * @param int<1, max>|null $maxConnections
      * @return self
      * @throws InvalidArgumentException If number provided
+     * @deprecated Will be removed in future version, set on Configuration instead
      */
     public function setMaxConnections(int|null $maxConnections): self
     {
-        if ($maxConnections !== null && $maxConnections < 1) {
-            throw new InvalidArgumentException("Invalid maxConnections '{$maxConnections}' provided");
-        }
-        $this->maxConnections = $maxConnections;
+        $this->configuration->setMaxConnections($maxConnections);
         return $this;
     }
 
@@ -367,11 +363,17 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
 
         // Check if running
         if ($this->running) {
-            $this->logger->warning("[server] Server is already running");
+            $this->configuration->getLogger()->warning("[{scope}] Server is already running", [
+                'scope' => self::SCOPE,
+                'server' => $this->identity,
+            ]);
             return;
         }
         $this->running = true;
-        $this->logger->info("[server] Server is running");
+        $this->configuration->getLogger()->info("[{scope}] Server is running", [
+            'scope' => self::SCOPE,
+            'server' => $this->identity,
+        ]);
 
         /** @var StreamCollection */
         $streams = $this->streams;
@@ -387,7 +389,7 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
                 }
 
                 // Get streams with readable content
-                $readables = $this->streams->waitRead($timeout ?? $this->timeout);
+                $readables = $this->streams->waitRead($timeout ?? $this->configuration->getTimeout());
                 foreach ($readables as $key => $readable) {
                     try {
                         $connection = null;
@@ -402,7 +404,13 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
                         $this->dispatch($message->getOpcode(), [$this, $connection, $message]);
                     } catch (MessageLevelInterface $e) {
                         // Error, but keep connection open
-                        $this->logger->error("[server] {$e->getMessage()}", ['exception' => $e]);
+                        $this->configuration->getLogger()->error("[{scope}] {message}", [
+                            'scope' => self::SCOPE,
+                            'server' => $this->identity,
+                            'connection' => $connection->getIdentity(),
+                            'exception' => $e,
+                            'message' => $e->getMessage(),
+                        ]);
                         $this->dispatch('error', [$this, $connection, $e]);
                     } catch (ConnectionLevelInterface $e) {
                         // Error, disconnect connection
@@ -411,14 +419,25 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
                             unset($this->connections[$key]);
                             $connection->disconnect();
                         }
-                        $this->logger->error("[server] {$e->getMessage()}", ['exception' => $e]);
+                        $this->configuration->getLogger()->error("[{scope}] {message}", [
+                            'scope' => self::SCOPE,
+                            'server' => $this->identity,
+                            'exception' => $e,
+                            'message' => $e->getMessage(),
+                        ]);
                         $this->dispatch('error', [$this, $connection, $e]);
                     } catch (CloseException $e) {
                         // Should close
                         if ($connection) {
                             $connection->close($e->getCloseStatus(), $e->getMessage());
                         }
-                        $this->logger->error("[server] {$e->getMessage()}", ['exception' => $e]);
+                        $this->configuration->getLogger()->error("[{scope}] {message}", [
+                            'scope' => self::SCOPE,
+                            'server' => $this->identity,
+                            'connection' => $connection->getIdentity(),
+                            'exception' => $e,
+                            'message' => $e->getMessage(),
+                        ]);
                         $this->dispatch('error', [$this, $connection, $e]);
                     }
                 }
@@ -428,11 +447,21 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
                 $this->dispatch('tick', [$this]);
             } catch (ExceptionInterface $e) {
                 // Low-level error
-                $this->logger->error("[server] {$e->getMessage()}", ['exception' => $e]);
+                $this->configuration->getLogger()->error("[{scope}] {message}", [
+                    'scope' => self::SCOPE,
+                    'server' => $this->identity,
+                    'exception' => $e,
+                    'message' => $e->getMessage(),
+                ]);
                 $this->dispatch('error', [$this, null, $e]);
             } catch (Throwable $e) {
                 // Crash it
-                $this->logger->error("[server] {$e->getMessage()}", ['exception' => $e]);
+                $this->configuration->getLogger()->error("[{scope}] {message}", [
+                    'scope' => self::SCOPE,
+                    'server' => $this->identity,
+                    'exception' => $e,
+                    'message' => $e->getMessage(),
+                ]);
                 $this->disconnect();
                 throw $e;
             }
@@ -446,7 +475,10 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
     public function stop(): void
     {
         $this->running = false;
-        $this->logger->info("[server] Server is stopped");
+        $this->configuration->getLogger()->info("[{scope}] Server is stopped", [
+            'scope' => self::SCOPE,
+            'server' => $this->identity,
+        ]);
     }
 
     /**
@@ -467,24 +499,25 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
      */
     public function shutdown(int $closeStatus = 1001): void
     {
-        $this->logger->info('[server] Shutting down');
+        $this->configuration->getLogger()->info("[{scope}] Shutting down", [
+            'scope' => self::SCOPE,
+            'server' => $this->identity,
+        ]);
         if ($this->getConnectionCount() == 0) {
             $this->disconnect();
             return;
         }
         // Store and reset settings, lock new connections, reset listeners
-        $max = $this->maxConnections;
-        $this->maxConnections = 0;
+        $this->allowConnections = false;
         $listeners = $this->listeners;
         $this->listeners = [];
         // Track disconnects
-        $this->onDisconnect(function () use ($max, $listeners) {
+        $this->onDisconnect(function () use ($listeners) {
             if ($this->getConnectionCount() > 0) {
                 return;
             }
             $this->disconnect();
             // Restore settings
-            $this->maxConnections = $max;
             $this->listeners = $listeners;
         });
         // Close all current connections, listen to acks
@@ -507,7 +540,10 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
             $this->server->close();
         }
         $this->server = $this->streams = null;
-        $this->logger->info('[server] Server disconnected');
+        $this->configuration->getLogger()->info("[{scope}] Server disconnected", [
+            'scope' => self::SCOPE,
+            'server' => $this->identity,
+        ]);
     }
 
 
@@ -518,10 +554,16 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
     {
         try {
             $uri = new Uri("{$this->scheme}://0.0.0.0:{$this->port}");
-            $this->server = $this->streamFactory->createSocketServer($uri, $this->context);
+            $this->server = $this->streamFactory->createSocketServer($uri, $this->configuration->getContext());
             $this->streams = $this->streamFactory->createStreamCollection();
             $this->streams->attach($this->server, $this->identity);
-            $this->logger->info("[server] Starting server on {$uri}.");
+            $this->allowConnections = true;
+            $this->configuration->getLogger()->info("[server] Starting server on {uri}.");
+            $this->configuration->getLogger()->info("[{scope}] Server disconnected", [
+                'scope' => self::SCOPE,
+                'server' => $this->identity,
+                'uri' => $uri,
+            ]);
         } catch (Throwable $e) {
             $error = "Server failed to start: {$e->getMessage()}";
             throw new ServerException($error);
@@ -531,8 +573,21 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
     // Accept connection on socket server
     protected function acceptSocket(SocketServer $socket): void
     {
-        if (!is_null($this->maxConnections) && $this->getConnectionCount() >= $this->maxConnections) {
-            $this->logger->warning("[server] Denied connection, reached max {$this->maxConnections}");
+        $maxConnections = $this->configuration->getMaxConnections();
+        if (!is_null($maxConnections) && $this->getConnectionCount() >= $maxConnections) {
+            $this->configuration->getLogger()->warning("[{scope}] Denied connection, reached max {maxConnections}", [
+                'scope' => self::SCOPE,
+                'server' => $this->identity,
+                'connections' => $this->getConnectionCount(),
+                'maxConnections' => $maxConnections,
+            ]);
+            return;
+        }
+        if (!$this->allowConnections) {
+            $this->configuration->getLogger()->warning("[{scope}] Denied connection, shutting down", [
+                'scope' => self::SCOPE,
+                'server' => $this->identity,
+            ]);
             return;
         }
         try {
@@ -543,25 +598,26 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
                 false,
                 true,
                 $this->isSsl(),
-                $this->httpFactory
+                $this->httpFactory,
+                clone $this->configuration
             );
             $this->streams()->attach($stream, $connection->getIdentity());
         } catch (StreamException $e) {
             throw new ConnectionFailureException("Server failed to accept: {$e->getMessage()}");
         }
         try {
-            $connection->setLogger($this->logger);
-            $connection
-                ->setFrameSize($this->frameSize)
-                ->setTimeout($this->timeout)
-                ;
             foreach ($this->middlewares as $middleware) {
                 $connection->addMiddleware($middleware);
             }
             /** @throws StreamException */
             $request = $this->performHandshake($connection);
             $this->connections[$connection->getIdentity()] = $connection;
-            $this->logger->info("[server] Accepted connection from {$connection->getIdentity()}.");
+            $this->configuration->getLogger()->info("[{scope}] Accepted connection from {connection}", [
+                'scope' => self::SCOPE,
+                'server' => $this->identity,
+                'connection' => $connection->getIdentity(),
+            ]);
+
             $this->dispatch('handshake', [
                 $this,
                 $connection,
@@ -582,7 +638,11 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
             if (!$connection->isConnected()) {
                 $this->streams()->detach($key);
                 unset($this->connections[$key]);
-                $this->logger->info("[server] Disconnected {$key}.");
+                $this->configuration->getLogger()->info("[{scope}] Disconnected {connection}", [
+                    'scope' => self::SCOPE,
+                    'server' => $this->identity,
+                    'connection' => $connection->getIdentity(),
+                ]);
                 $this->dispatch('disconnect', [$this, $connection]);
             }
         }
@@ -647,7 +707,13 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
                 ->withHeader('Connection', 'Upgrade')
                 ->withHeader('Sec-WebSocket-Accept', $responseKey);
         } catch (HandshakeException $e) {
-            $this->logger->warning("[server] {$e->getMessage()}", ['exception' => $e]);
+            $this->configuration->getLogger()->warning("[{scope}] {message}", [
+                'scope' => self::SCOPE,
+                'server' => $this->identity,
+                'connection' => $connection->getIdentity(),
+                'exception' => $e,
+                'message' => $e->getMessage(),
+            ]);
             $response = $e->getResponse();
             $exception = $e;
         }
@@ -663,7 +729,13 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
             throw $exception;
         }
 
-        $this->logger->debug("[server] Handshake on {$request->getUri()->getPath()}");
+        $this->configuration->getLogger()->debug("[{scope}] Handshake on {path}", [
+            'scope' => self::SCOPE,
+            'server' => $this->identity,
+            'connection' => $connection->getIdentity(),
+            'path' => $request->getUri()->getPath(),
+        ]);
+
         $connection->setHandshakeRequest($request);
         $connection->setHandshakeResponse($response);
 

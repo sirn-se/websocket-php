@@ -77,7 +77,22 @@ while (true) {
     ], getopt('', ['uri:', 'timeout:', 'framesize:', 'deflate']));
 
     try {
-        $client = new Client($options['uri']);
+        // Configuration
+        $configuration = new Configuration();
+        if (class_exists(ConsoleLogger::class)) {
+            $configuration->setLogger(new ConsoleLogger(format: '{level} | {message}', cliOptions: true));
+            echo "# Using logger\n";
+        }
+        if (isset($options['timeout'])) {
+            $configuration->setTimeout($options['timeout']);
+            echo "# Set timeout: {$options['timeout']}\n";
+        }
+        if (isset($options['framesize'])) {
+            $configuration->setFrameSize($options['framesize']);
+            echo "# Set frame size: {$options['framesize']}\n";
+        }
+
+        $client = new Client($options['uri'], $configuration);
         $client
             ->addMiddleware(new CloseHandler())
             ->addMiddleware(new PingResponder())
@@ -86,20 +101,6 @@ while (true) {
         if (isset($options['deflate'])) {
             $client->addMiddleware(new CompressionExtension(new DeflateCompressor()));
             echo "# Using per-message: deflate compression\n";
-        }
-
-        // If debug mode and logger is available
-        if (class_exists(ConsoleLogger::class)) {
-            $client->setLogger(new ConsoleLogger(format: '{level} | {message}', cliOptions: true));
-            echo "# Using logger\n";
-        }
-        if (isset($options['timeout'])) {
-            $client->setTimeout($options['timeout']);
-            echo "# Set timeout: {$options['timeout']}\n";
-        }
-        if (isset($options['framesize'])) {
-            $client->setFrameSize($options['framesize']);
-            echo "# Set frame size: {$options['framesize']}\n";
         }
 
         echo "# Listening on {$options['uri']}\n";

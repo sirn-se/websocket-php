@@ -25,6 +25,7 @@ use Phrity\Net\Mock\Stack\{
 use Phrity\Util\ErrorHandler;
 use Psr\Log\NullLogger;
 use WebSocket\{
+    Configuration,
     Connection,
     Server,
 };
@@ -56,7 +57,7 @@ class ConfigTest extends TestCase
         $this->tearDownStack();
     }
 
-    public function xxxtestServerDefaults(): void
+    public function testServerDefaults(): void
     {
         $this->expectStreamFactory();
         $server = new Server(8000);
@@ -213,6 +214,24 @@ class ConfigTest extends TestCase
 
         $this->assertSame($server, $server->setHttpFactory(HttpFactory::create($httpFactory)));
 
+        unset($server);
+    }
+
+    public function testConfiguration(): void
+    {
+        $logger = new NullLogger();
+        $this->expectContext();
+        $context = new Context();
+        $configuration = new Configuration(
+            logger: $logger,
+            context: $context,
+            timeout: 120,
+            frameSize: 64,
+            maxConnections: 1,
+        );
+        $server = new Server(8000, configuration: $configuration);
+        $this->assertInstanceOf(Configuration::class, $server->getConfiguration());
+        $this->assertSame($server, $server->setConfiguration($configuration));
         unset($server);
     }
 }

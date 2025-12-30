@@ -14,15 +14,21 @@ use Psr\Http\Message\{
     MessageInterface,
     ResponseInterface,
 };
-use Psr\Log\LoggerAwareInterface;
+use Psr\Log\{
+    LoggerInterface,
+    LoggerAwareInterface,
+};
 use Stringable;
-use WebSocket\Connection;
+use WebSocket\{
+    Configuration,
+    Connection,
+};
 use WebSocket\Exception\{
     HandshakeException,
     ReconnectException,
 };
 use WebSocket\Trait\{
-    LoggerAwareTrait,
+    ConfigurationTrait,
     StringableTrait,
 };
 
@@ -32,8 +38,10 @@ use WebSocket\Trait\{
  */
 class FollowRedirect implements LoggerAwareInterface, ProcessHttpIncomingInterface, Stringable
 {
-    use LoggerAwareTrait;
+    use ConfigurationTrait;
     use StringableTrait;
+
+    private const SCOPE = 'follow-redirect';
 
     private int $limit;
     private int $attempts = 1;
@@ -41,7 +49,17 @@ class FollowRedirect implements LoggerAwareInterface, ProcessHttpIncomingInterfa
     public function __construct(int $limit = 10)
     {
         $this->limit = $limit;
-        $this->initLogger();
+        $this->initConfiguration();
+    }
+
+    /**
+     * Set logger.
+     * @param LoggerInterface $logger
+     * @deprecated Will be removed in future version, retrieved from Configuration instead
+     */
+    public function setLogger(LoggerInterface $logger): void
+    {
+        $this->configuration->setLogger($logger);
     }
 
     /**
@@ -57,13 +75,20 @@ class FollowRedirect implements LoggerAwareInterface, ProcessHttpIncomingInterfa
             && $message->getStatusCode() < 400
             && $locationHeader = $message->getHeaderLine('Location')
         ) {
-            $note = "{$this->attempts} of {$this->limit} redirect attempts";
+            $context = [
+                'scope' => self::SCOPE,
+                'connection' => $connection->getIdentity(),
+                'attempts' => $this->attempts,
+                'limit' => $this->limit,
+                'status' => $message->getStatusCode(),
+                'location' => $locationHeader,
+            ];
             if ($this->attempts > $this->limit) {
-                $this->logger->debug("[follow-redirect] Too many redirect attempts, giving up");
+                $this->configuration->getLogger()->warning("[{scope}] Too many redirect attempts, giving up", $context);
                 throw new HandshakeException("Too many redirect attempts, giving up", $message);
             }
             $this->attempts++;
-            $this->logger->debug("[follow-redirect] {$message->getStatusCode()} {$locationHeader} ($note)");
+            $this->configuration->getLogger()->info("[{scope}] Redirect {status} to {location}", $context);
             throw new ReconnectException(new Uri($locationHeader));
         }
         return $message;

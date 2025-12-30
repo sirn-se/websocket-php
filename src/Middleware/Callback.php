@@ -9,12 +9,18 @@ namespace WebSocket\Middleware;
 
 use Closure;
 use Psr\Http\Message\MessageInterface;
-use Psr\Log\LoggerAwareInterface;
+use Psr\Log\{
+    LoggerInterface,
+    LoggerAwareInterface,
+};
 use Stringable;
-use WebSocket\Connection;
+use WebSocket\{
+    Configuration,
+    Connection,
+};
 use WebSocket\Message\Message;
 use WebSocket\Trait\{
-    LoggerAwareTrait,
+    ConfigurationTrait,
     StringableTrait,
 };
 
@@ -31,7 +37,7 @@ class Callback implements
     ProcessTickInterface,
     Stringable
 {
-    use LoggerAwareTrait;
+    use ConfigurationTrait;
     use StringableTrait;
 
     private Closure|null $incoming;
@@ -52,7 +58,17 @@ class Callback implements
         $this->httpIncoming = $httpIncoming;
         $this->httpOutgoing = $httpOutgoing;
         $this->tick = $tick;
-        $this->initLogger();
+        $this->initConfiguration();
+    }
+
+    /**
+     * Set logger.
+     * @param LoggerInterface $logger
+     * @deprecated Will be removed in future version, retrieved from Configuration instead
+     */
+    public function setLogger(LoggerInterface $logger): void
+    {
+        $this->configuration->setLogger($logger);
     }
 
     public function processIncoming(ProcessStack $stack, Connection $connection): Message

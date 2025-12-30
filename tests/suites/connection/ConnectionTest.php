@@ -20,7 +20,10 @@ use Phrity\Net\Mock\Stack\{
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\NullLogger;
 use Stringable;
-use WebSocket\Connection;
+use WebSocket\{
+    Configuration,
+    Connection,
+};
 use WebSocket\Exception\{
     BadOpcodeException,
     BadUriException,
@@ -67,6 +70,7 @@ class ConnectionTest extends TestCase
 
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
         $this->assertInstanceOf(Connection::class, $connection);
         $this->assertInstanceOf(Stringable::class, $connection);
@@ -130,6 +134,7 @@ class ConnectionTest extends TestCase
 
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamIsConnected();
@@ -152,6 +157,7 @@ class ConnectionTest extends TestCase
 
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
         $request = $this->psrFactory->createRequest('GET', 'ws://test.com/path');
         $connection->setHandshakeRequest($request);
@@ -194,6 +200,7 @@ class ConnectionTest extends TestCase
 
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
         $message = new Text('Test message');
 
@@ -229,6 +236,7 @@ class ConnectionTest extends TestCase
 
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -254,6 +262,7 @@ class ConnectionTest extends TestCase
 
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamReadLine()->setReturn(function () {
@@ -279,6 +288,7 @@ class ConnectionTest extends TestCase
 
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamWrite()->setReturn(function () {
@@ -304,6 +314,7 @@ class ConnectionTest extends TestCase
 
         $this->expectSocketStreamGetLocalName();
         $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
         $connection = new Connection($stream, false, false);
 
         $this->expectSocketStreamRead()->setReturn(function () {
