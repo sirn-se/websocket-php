@@ -12,6 +12,7 @@ use Phrity\Http\HttpFactory;
 use Phrity\Net\{
     Context,
     SocketStream,
+    StreamContainerInterface,
 };
 use Psr\Http\Message\{
     MessageInterface,
@@ -55,7 +56,7 @@ use WebSocket\Trait\{
  * WebSocket\Connection class.
  * A client/server connection, wrapping socket stream.
  */
-class Connection implements IdentityInterface, LoggerAwareInterface, Stringable
+class Connection implements IdentityInterface, LoggerAwareInterface, StreamContainerInterface, Stringable
 {
     use ConfigurationTrait;
     use SendMethodsTrait;
@@ -73,7 +74,6 @@ class Connection implements IdentityInterface, LoggerAwareInterface, Stringable
     private ResponseInterface|null $handshakeResponse = null;
     /** @var array<string, mixed> $meta */
     private array $meta = [];
-    private bool $closed = false;
     /** @var non-empty-string $identity */
     private string $identity = '*/connection/<unconnected>';
 
@@ -101,13 +101,6 @@ class Connection implements IdentityInterface, LoggerAwareInterface, Stringable
         );
         $this->initConfiguration($configuration);
         $this->stream->setTimeout($this->configuration->getTimeout());
-    }
-
-    public function __destruct()
-    {
-        if (!$this->closed && $this->isConnected()) {
-            $this->stream->close();
-        }
     }
 
     public function __toString(): string
@@ -258,7 +251,6 @@ class Connection implements IdentityInterface, LoggerAwareInterface, Stringable
             'connection' => $this->identity,
         ]);
         $this->stream->close();
-        $this->closed = true;
         return $this;
     }
 
@@ -426,6 +418,11 @@ class Connection implements IdentityInterface, LoggerAwareInterface, Stringable
     public function getHandshakeResponse(): ResponseInterface|null
     {
         return $this->handshakeResponse;
+    }
+
+    public function getStream(): SocketStream
+    {
+        return $this->stream;
     }
 
 

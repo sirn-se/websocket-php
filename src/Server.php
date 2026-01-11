@@ -14,8 +14,10 @@ use Phrity\Net\{
     SocketServer,
     SocketStream,
     StreamCollection,
+    StreamContainerInterface,
     StreamException,
     StreamFactory,
+    StreamInterface,
     Uri
 };
 use Psr\Http\Message\{
@@ -40,7 +42,10 @@ use WebSocket\Exception\{
 use WebSocket\Http\DefaultHttpFactory;
 use WebSocket\Message\Message;
 use WebSocket\Middleware\MiddlewareInterface;
-use WebSocket\Runtime\IdentityInterface;
+use WebSocket\Runtime\{
+    IdentityInterface,
+    Runner,
+};
 use WebSocket\Trait\{
     ConfigurationTrait,
     ListenerTrait,
@@ -52,7 +57,7 @@ use WebSocket\Trait\{
  * WebSocket\Server class.
  * Entry class for WebSocket server.
  */
-class Server implements IdentityInterface, LoggerAwareInterface, Stringable
+class Server implements IdentityInterface, LoggerAwareInterface, StreamContainerInterface, Stringable
 {
     use ConfigurationTrait;
     /** @use ListenerTrait<Server> */
@@ -69,7 +74,8 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
     // Internal resources
     private StreamFactory $streamFactory;
     private SocketServer|null $server = null;
-    private StreamCollection|null $streams = null;
+    private Runner $runner;
+
     private bool $running = false;
     /** @var array<Connection> $connections */
     private array $connections = [];
@@ -87,19 +93,25 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
      * @param int $port Socket port to listen to
      * @param bool $ssl If SSL should be used
      * @param Configuration|null $configuration
+     * @param StreamFactory|null $streamFactory
      * @throws InvalidArgumentException If invalid port provided
      */
-    public function __construct(int $port = 80, bool $ssl = false, Configuration|null $configuration = null)
-    {
+    public function __construct(
+        int $port = 80,
+        bool $ssl = false,
+        Configuration|null $configuration = null,
+        StreamFactory|null $streamFactory = null,
+    ) {
         if ($port < 0 || $port > 65535) {
             throw new InvalidArgumentException("Invalid port '{$port}' provided");
         }
         $this->port = $port;
         $this->scheme = $ssl ? 'ssl' : 'tcp';
         $this->httpFactory = new DefaultHttpFactory();
-        $this->setStreamFactory(new StreamFactory());
+        $this->streamFactory = $streamFactory ?? new StreamFactory();
         $this->identity = "server/{$port}";
         $this->initConfiguration($configuration);
+        $this->runner = new Runner($this->streamFactory);
     }
 
     /**
@@ -123,9 +135,11 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
      * Set stream factory to use.
      * @param StreamFactory $streamFactory
      * @return self
+     * @depracated Remove in v4
      */
     public function setStreamFactory(StreamFactory $streamFactory): self
     {
+        trigger_error('Server.setStreamFactory is deprecated and will be removed in v4.', E_USER_DEPRECATED);
         $this->streamFactory = $streamFactory;
         return $this;
     }
@@ -375,72 +389,20 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
             'server' => $this->identity,
         ]);
 
-        /** @var StreamCollection */
-        $streams = $this->streams;
-
         // Run handler
         while ($this->running) {
             try {
                 // Clear closed connections
                 $this->detachUnconnected();
-                if (is_null($this->streams)) {
+
+                if (!$this->server) {
                     $this->stop();
                     return;
                 }
 
-                // Get streams with readable content
-                $readables = $this->streams->waitRead($timeout ?? $this->configuration->getTimeout());
-                foreach ($readables as $key => $readable) {
-                    try {
-                        $connection = null;
-                        // Accept new client connection
-                        if ($readable instanceof SocketServer) {
-                            $this->acceptSocket($readable);
-                            continue;
-                        }
-                        // Read from connection
-                        $connection = $this->connections[$key];
-                        $message = $connection->pullMessage();
-                        $this->dispatch($message->getOpcode(), [$this, $connection, $message]);
-                    } catch (MessageLevelInterface $e) {
-                        // Error, but keep connection open
-                        $this->configuration->getLogger()->error("[{scope}] {message}", [
-                            'scope' => self::SCOPE,
-                            'server' => $this->identity,
-                            'connection' => $connection->getIdentity(),
-                            'exception' => $e,
-                            'message' => $e->getMessage(),
-                        ]);
-                        $this->dispatch('error', [$this, $connection, $e]);
-                    } catch (ConnectionLevelInterface $e) {
-                        // Error, disconnect connection
-                        if ($connection) {
-                            $this->streams()->detach($key);
-                            unset($this->connections[$key]);
-                            $connection->disconnect();
-                        }
-                        $this->configuration->getLogger()->error("[{scope}] {message}", [
-                            'scope' => self::SCOPE,
-                            'server' => $this->identity,
-                            'exception' => $e,
-                            'message' => $e->getMessage(),
-                        ]);
-                        $this->dispatch('error', [$this, $connection, $e]);
-                    } catch (CloseException $e) {
-                        // Should close
-                        if ($connection) {
-                            $connection->close($e->getCloseStatus(), $e->getMessage());
-                        }
-                        $this->configuration->getLogger()->error("[{scope}] {message}", [
-                            'scope' => self::SCOPE,
-                            'server' => $this->identity,
-                            'connection' => $connection->getIdentity(),
-                            'exception' => $e,
-                            'message' => $e->getMessage(),
-                        ]);
-                        $this->dispatch('error', [$this, $connection, $e]);
-                    }
-                }
+                // Run attached handlers on selected streams
+                $this->runner->handle($timeout ?? $this->configuration->getTimeout());
+
                 foreach ($this->connections as $connection) {
                     $connection->tick();
                 }
@@ -533,44 +495,58 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
         $this->running = false;
         foreach ($this->connections as $connection) {
             $connection->disconnect();
+            $this->runner->detach($connection->getIdentity());
             $this->dispatch('disconnect', [$this, $connection]);
         }
         $this->connections = [];
         if ($this->server) {
             $this->server->close();
+            $this->runner->detach($this->identity);
         }
-        $this->server = $this->streams = null;
+        $this->server = null;
         $this->configuration->getLogger()->info("[{scope}] Server disconnected", [
             'scope' => self::SCOPE,
             'server' => $this->identity,
         ]);
     }
 
+    public function getStream(): SocketServer
+    {
+        return $this->server ?? $this->createSocketServer();
+    }
+
 
     /* ---------- Internal helper methods -------------------------------------------------------------------------- */
 
     // Create socket server
-    protected function createSocketServer(): void
+    protected function createSocketServer(): SocketServer
     {
         try {
             $uri = new Uri("{$this->scheme}://0.0.0.0:{$this->port}");
-            $this->server = $this->streamFactory->createSocketServer($uri, $this->configuration->getContext());
-            $this->streams = $this->streamFactory->createStreamCollection();
-            $this->streams->attach($this->server, $this->identity);
+            $this->server = $server = $this->streamFactory->createSocketServer(
+                $uri,
+                $this->configuration->getContext()
+            );
+            $this->runner->attach($this, function (Runner $runner, Server $server) {
+                $this->acceptSocket($server->getStream());
+            });
             $this->allowConnections = true;
-            $this->configuration->getLogger()->info("[server] Starting server on {uri}.");
-            $this->configuration->getLogger()->info("[{scope}] Server disconnected", [
+            $this->configuration->getLogger()->info("[{scope}] Starting server on {uri}", [
                 'scope' => self::SCOPE,
                 'server' => $this->identity,
                 'uri' => $uri,
             ]);
+            return $server;
         } catch (Throwable $e) {
             $error = "Server failed to start: {$e->getMessage()}";
             throw new ServerException($error);
         }
     }
 
-    // Accept connection on socket server
+    /**
+     * Accept connection on socket server
+     * @throws ConnectionFailureException
+     */
     protected function acceptSocket(SocketServer $socket): void
     {
         $maxConnections = $this->configuration->getMaxConnections();
@@ -601,7 +577,47 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
                 $this->httpFactory,
                 clone $this->configuration
             );
-            $this->streams()->attach($stream, $connection->getIdentity());
+            $this->runner->attach($connection, function (Runner $runner, Connection $connection) {
+                $key = $connection->getIdentity();
+
+                try {
+                    $message = $connection->pullMessage();
+                    $this->dispatch($message->getOpcode(), [$this, $connection, $message]);
+                } catch (MessageLevelInterface $e) {
+                    // Error, but keep connection open
+                    $this->configuration->getLogger()->error("[{scope}] {message}", [
+                        'scope' => self::SCOPE,
+                        'server' => $this->identity,
+                        'connection' => $connection->getIdentity(),
+                        'exception' => $e,
+                        'message' => $e->getMessage(),
+                    ]);
+                    $this->dispatch('error', [$this, $connection, $e]);
+                } catch (ConnectionLevelInterface $e) {
+                    // Error, disconnect connection
+                    $this->runner->detach($key);
+                    unset($this->connections[$key]);
+                    $connection->disconnect();
+                    $this->configuration->getLogger()->error("[{scope}] {message}", [
+                        'scope' => self::SCOPE,
+                        'server' => $this->identity,
+                        'exception' => $e,
+                        'message' => $e->getMessage(),
+                    ]);
+                    $this->dispatch('error', [$this, $connection, $e]);
+                } catch (CloseException $e) {
+                    // Should close
+                    $connection->close($e->getCloseStatus(), $e->getMessage());
+                    $this->configuration->getLogger()->error("[{scope}] {message}", [
+                        'scope' => self::SCOPE,
+                        'server' => $this->identity,
+                        'connection' => $connection->getIdentity(),
+                        'exception' => $e,
+                        'message' => $e->getMessage(),
+                    ]);
+                    $this->dispatch('error', [$this, $connection, $e]);
+                }
+            });
         } catch (StreamException $e) {
             throw new ConnectionFailureException("Server failed to accept: {$e->getMessage()}");
         }
@@ -636,7 +652,7 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
     {
         foreach ($this->connections as $key => $connection) {
             if (!$connection->isConnected()) {
-                $this->streams()->detach($key);
+                $this->runner->detach($key);
                 unset($this->connections[$key]);
                 $this->configuration->getLogger()->info("[{scope}] Disconnected {connection}", [
                     'scope' => self::SCOPE,
@@ -740,12 +756,5 @@ class Server implements IdentityInterface, LoggerAwareInterface, Stringable
         $connection->setHandshakeResponse($response);
 
         return $request;
-    }
-
-    protected function streams(): StreamCollection
-    {
-        /** @var StreamCollection $streams */
-        $streams = $this->streams;
-        return $streams;
     }
 }

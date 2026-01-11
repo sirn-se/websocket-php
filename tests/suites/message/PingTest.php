@@ -23,11 +23,6 @@ use WebSocket\Message\{
  */
 class PingTest extends TestCase
 {
-    public function setUp(): void
-    {
-        error_reporting(-1);
-    }
-
     public function testPingMessage(): void
     {
         $message = new Ping('Some content');

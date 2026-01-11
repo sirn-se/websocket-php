@@ -23,11 +23,6 @@ use WebSocket\Message\{
  */
 class CloseTest extends TestCase
 {
-    public function setUp(): void
-    {
-        error_reporting(-1);
-    }
-
     public function testCloseMessage(): void
     {
         $message = new Close(1000, 'Some content');

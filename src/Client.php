@@ -39,7 +39,10 @@ use WebSocket\Exception\{
 use WebSocket\Http\DefaultHttpFactory;
 use WebSocket\Message\Message;
 use WebSocket\Middleware\MiddlewareInterface;
-use WebSocket\Runtime\IdentityInterface;
+use WebSocket\Runtime\{
+    IdentityInterface,
+    Runner,
+};
 use WebSocket\Trait\{
     ConfigurationTrait,
     ListenerTrait,
@@ -71,7 +74,7 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
     private Connection|null $connection = null;
     /** @var array<MiddlewareInterface> $middlewares */
     private array $middlewares = [];
-    private StreamCollection|null $streams = null;
+    private Runner $runner;
     private bool $running = false;
     private HttpFactory $httpFactory;
     /** @var non-empty-string $identity */
@@ -83,14 +86,19 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
     /**
      * @param UriInterface|string $uri A ws/wss-URI
      * @param Configuration|null $configuration
+     * @param StreamFactory|null $streamFactory
      */
-    public function __construct(UriInterface|string $uri, Configuration|null $configuration = null)
-    {
+    public function __construct(
+        UriInterface|string $uri,
+        Configuration|null $configuration = null,
+        StreamFactory|null $streamFactory = null,
+    ) {
         $this->socketUri = $this->parseUri($uri);
-        $this->setStreamFactory(new StreamFactory());
+        $this->streamFactory = $streamFactory ?? new StreamFactory();
         $this->httpFactory = new DefaultHttpFactory();
         $this->identity = "client/{$this->socketUri->getHost()}";
         $this->initConfiguration($configuration);
+        $this->runner = new Runner($this->streamFactory);
     }
 
     /**
@@ -114,9 +122,11 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
      * Set stream factory to use.
      * @param StreamFactory $streamFactory
      * @return self
+     * @depracated Remove in v4
      */
     public function setStreamFactory(StreamFactory $streamFactory): self
     {
+        trigger_error('Client.setStreamFactory is deprecated and will be removed in v4.', E_USER_DEPRECATED);
         $this->streamFactory = $streamFactory;
         return $this;
     }
@@ -316,39 +326,10 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
 
         // Run handler
         while ($this->running) {
-            /** @var StreamCollection */
-            $streams = $this->streams;
             try {
-                // Get streams with readable content
-                $readables = $streams->waitRead($timeout ?? $this->configuration->getTimeout());
-                foreach ($readables as $key => $readable) {
-                    try {
-                        // Read from connection
-                        $message = $connection->pullMessage();
-                        $this->dispatch($message->getOpcode(), [$this, $connection, $message]);
-                    } catch (MessageLevelInterface $e) {
-                        // Error, but keep connection open
-                        $this->configuration->getLogger()->error("[{scope}] {message}", [
-                            'scope' => self::SCOPE,
-                            'client' => $this->identity,
-                            'connection' => $connection->getIdentity(),
-                            'exception' => $e,
-                            'message' => $e->getMessage(),
-                        ]);
-                        $this->dispatch('error', [$this, $connection, $e]);
-                    } catch (ConnectionLevelInterface $e) {
-                        // Error, disconnect connection
-                        $this->disconnect();
-                        $this->configuration->getLogger()->error("[{scope}] {message}", [
-                            'scope' => self::SCOPE,
-                            'client' => $this->identity,
-                            'connection' => $connection->getIdentity(),
-                            'exception' => $e,
-                            'message' => $e->getMessage(),
-                        ]);
-                        $this->dispatch('error', [$this, $connection, $e]);
-                    }
-                }
+                // Run attached handlers on selected streams
+                $this->runner->handle($timeout ?? $this->configuration->getTimeout());
+
                 if (!$connection->isConnected()) {
                     $this->running = false;
                 }
@@ -475,7 +456,6 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
     public function connect(): void
     {
         $this->disconnect();
-        $this->streams = $this->streamFactory->createStreamCollection();
 
         $hostUri = (new Uri())
             ->withScheme(match ($this->socketUri->getScheme()) {
@@ -503,7 +483,7 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
             ]);
             throw new ClientException($error);
         }
-        $this->connection = new Connection(
+        $this->connection = $connection = new Connection(
             $stream,
             true,
             false,
@@ -511,17 +491,45 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
             $this->httpFactory,
             clone $this->configuration
         );
-        $this->streams->attach($stream, $this->connection->getIdentity());
+
+        $this->runner->attach($this->connection, function (Runner $runner, Connection $connection) {
+            try {
+                // Read from connection
+                $message = $connection->pullMessage();
+                $this->dispatch($message->getOpcode(), [$this, $connection, $message]);
+            } catch (MessageLevelInterface $e) {
+                // Error, but keep connection open
+                $this->configuration->getLogger()->error("[{scope}] {message}", [
+                    'scope' => self::SCOPE,
+                    'client' => $this->identity,
+                    'connection' => $connection->getIdentity(),
+                    'exception' => $e,
+                    'message' => $e->getMessage(),
+                ]);
+                $this->dispatch('error', [$this, $connection, $e]);
+            } catch (ConnectionLevelInterface $e) {
+                // Error, disconnect connection
+                $this->disconnect();
+                $this->configuration->getLogger()->error("[{scope}] {message}", [
+                    'scope' => self::SCOPE,
+                    'client' => $this->identity,
+                    'connection' => $connection->getIdentity(),
+                    'exception' => $e,
+                    'message' => $e->getMessage(),
+                ]);
+                $this->dispatch('error', [$this, $connection, $e]);
+            }
+        });
 
         foreach ($this->middlewares as $middleware) {
-            $this->connection->addMiddleware($middleware);
+            $connection->addMiddleware($middleware);
         }
 
         if (!$this->isConnected()) {
             $this->configuration->getLogger()->error("[{scope}] Invalid stream on {uri}", [
                 'scope' => self::SCOPE,
                 'client' => $this->identity,
-                'connection' => $this->connection->getIdentity(),
+                'connection' => $connection->getIdentity(),
                 'uri' => $hostUri,
             ]);
             throw new ClientException("Invalid stream on \"{$hostUri}\".");
@@ -529,13 +537,13 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
         try {
             if (!$this->configuration->isPersistent() || $stream->tell() == 0) {
                 /** @throws ReconnectException */
-                $response = $this->performHandshake($this->socketUri, $this->connection);
+                $response = $this->performHandshake($this->socketUri, $connection);
             }
         } catch (ReconnectException $e) {
             $this->configuration->getLogger()->info("[{scope}] {message}", [
                 'scope' => self::SCOPE,
                 'client' => $this->identity,
-                'connection' => $this->connection->getIdentity(),
+                'connection' => $connection->getIdentity(),
                 'exception' => $e,
                 'message' => $e->getMessage(),
             ]);
@@ -548,16 +556,16 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
         $this->configuration->getLogger()->info("[{scope}] Client connected to {uri}", [
             'scope' => self::SCOPE,
             'client' => $this->identity,
-            'connection' => $this->connection->getIdentity(),
+            'connection' => $connection->getIdentity(),
             'uri' => $this->socketUri,
         ]);
         $this->dispatch('handshake', [
             $this,
-            $this->connection,
-            $this->connection->getHandshakeRequest(),
-            $this->connection->getHandshakeResponse(),
+            $connection,
+            $connection->getHandshakeRequest(),
+            $connection->getHandshakeResponse(),
         ]);
-        $this->dispatch('connect', [$this, $this->connection, $this->connection?->getHandshakeResponse()]);
+        $this->dispatch('connect', [$this, $connection, $connection->getHandshakeResponse()]);
     }
 
     /**
@@ -565,6 +573,9 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
      */
     public function disconnect(): void
     {
+        if ($this->connection) {
+            $this->runner->detach($this->connection->getIdentity());
+        }
         if ($this->connection && $this->isConnected()) {
             $this->connection->disconnect();
             $this->configuration->getLogger()->info("[{scope}] Client disconnected", [

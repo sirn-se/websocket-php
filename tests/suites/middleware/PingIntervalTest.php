@@ -25,7 +25,6 @@ class PingIntervalTest extends TestCase
 
     public function setUp(): void
     {
-        error_reporting(-1);
         $this->setUpStack();
     }
 
@@ -70,8 +69,7 @@ class PingIntervalTest extends TestCase
         });
         $connection->tick();
 
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        unset($stream);
+        $connection->disconnect();
     }
 }

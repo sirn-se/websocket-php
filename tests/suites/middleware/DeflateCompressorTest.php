@@ -36,7 +36,6 @@ class DeflateCompressorTest extends TestCase
 
     public function setUp(): void
     {
-        error_reporting(-1);
         $this->setUpStack();
         $this->psrFactory = new Psr17Factory();
     }
@@ -138,9 +137,8 @@ class DeflateCompressorTest extends TestCase
         $this->assertNotNull($this->getConfiguration($connection)->inflator);
         $this->assertSame($inflator, $this->getConfiguration($connection)->inflator);
 
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        unset($connection);
+        $connection->disconnect();
     }
 
     public function testServerDefault(): void
@@ -234,9 +232,8 @@ class DeflateCompressorTest extends TestCase
         $this->assertNotNull($connection->getMeta('compressionExtension.configuration')->inflator);
         $this->assertSame($deflator, $connection->getMeta('compressionExtension.configuration')->deflator);
 
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        unset($connection);
+        $connection->disconnect();
     }
 
     // Client request compression, but Server declines - do not use compression
@@ -311,9 +308,8 @@ class DeflateCompressorTest extends TestCase
         $this->assertNull($connection->getMeta('compressionExtension.compressor'));
         $this->assertNull($connection->getMeta('compressionExtension.configuration'));
 
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        unset($connection);
+        $connection->disconnect();
     }
 
     public function testClientConfiguration(): void
@@ -413,9 +409,8 @@ class DeflateCompressorTest extends TestCase
         $this->assertNotNull($this->getConfiguration($connection)->inflator);
         $this->assertNotSame($inflator, $this->getConfiguration($connection)->inflator);
 
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        unset($connection);
+        $connection->disconnect();
     }
 
     public function testServerConfiguration(): void
@@ -514,9 +509,8 @@ class DeflateCompressorTest extends TestCase
         $this->assertNotNull($connection->getMeta('compressionExtension.configuration')->inflator);
         $this->assertNotSame($deflator, $connection->getMeta('compressionExtension.configuration')->deflator);
 
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        unset($connection);
+        $connection->disconnect();
     }
 
     public function testClientConfigurationByServer(): void
@@ -582,9 +576,8 @@ class DeflateCompressorTest extends TestCase
             'inflator' => null,
         ], $connection->getMeta('compressionExtension.configuration'));
 
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        unset($connection);
+        $connection->disconnect();
     }
 
     public function testServerConfigurationByServer(): void
@@ -683,9 +676,8 @@ class DeflateCompressorTest extends TestCase
         $this->assertNotNull($connection->getMeta('compressionExtension.configuration')->inflator);
         $this->assertNotSame($deflator, $connection->getMeta('compressionExtension.configuration')->deflator);
 
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        unset($connection);
+        $connection->disconnect();
     }
 
     public function testDeflateCompressorNoExtension(): void

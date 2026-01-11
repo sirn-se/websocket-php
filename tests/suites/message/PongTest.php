@@ -23,11 +23,6 @@ use WebSocket\Message\{
  */
 class PongTest extends TestCase
 {
-    public function setUp(): void
-    {
-        error_reporting(-1);
-    }
-
     public function testPongMessage(): void
     {
         $message = new Pong('Some content');

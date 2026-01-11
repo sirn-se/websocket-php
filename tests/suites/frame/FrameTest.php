@@ -19,11 +19,6 @@ use WebSocket\Frame\Frame;
  */
 class FrameTest extends TestCase
 {
-    public function setUp(): void
-    {
-        error_reporting(-1);
-    }
-
     public function testTextFrame(): void
     {
         $frame = new Frame('text', 'Text message', true);

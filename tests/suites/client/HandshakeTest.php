@@ -46,7 +46,6 @@ class HandshakeTest extends TestCase
 
     public function setUp(): void
     {
-        error_reporting(-1);
         $this->setUpStack();
     }
 
@@ -58,9 +57,8 @@ class HandshakeTest extends TestCase
     public function testHandshakeResponse(): void
     {
         // Creating client
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
 
         $this->assertFalse($client->isConnected());
         $this->assertEquals(4096, $client->getFrameSize());
@@ -74,17 +72,17 @@ class HandshakeTest extends TestCase
         $this->assertEquals(101, $response->getStatusCode());
         $this->assertEquals('Switching Protocols', $response->getReasonPhrase());
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        unset($client);
+        $client->disconnect();
     }
 
     public function testHandshakeResponseVariant(): void
     {
         // Creating client
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
 
         $this->assertFalse($client->isConnected());
         $this->assertEquals(4096, $client->getFrameSize());
@@ -119,16 +117,16 @@ class HandshakeTest extends TestCase
         $this->assertEquals(101, $response->getStatusCode());
         $this->assertEquals('Switching Protocols', $response->getReasonPhrase());
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        unset($client);
+        $client->disconnect();
     }
 
     public function testHandshakeConnectionFailure(): void
     {
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
 
         $this->expectWsClientConnect();
         $this->expectSocketStreamWrite();
@@ -137,20 +135,15 @@ class HandshakeTest extends TestCase
         });
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamGetMetadata();
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $this->expectException(ConnectionFailureException::class);
         $this->expectExceptionMessage('Connection error');
         $client->connect();
-
-        unset($client);
     }
 
     public function testHandshakeUpgradeStatusFailure(): void
     {
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
 
         $this->expectWsClientConnect();
         $this->expectSocketStreamWrite();
@@ -162,18 +155,13 @@ class HandshakeTest extends TestCase
         });
         $this->expectException(HandshakeException::class);
         $this->expectExceptionMessage('Invalid status code 200.');
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $client->connect();
-
-        unset($client);
     }
 
     public function testHandshakeUpgradeHeadersFailure(): void
     {
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
 
         $this->expectWsClientConnect();
         $this->expectSocketStreamWrite();
@@ -188,18 +176,13 @@ class HandshakeTest extends TestCase
         });
         $this->expectException(HandshakeException::class);
         $this->expectExceptionMessage('Connection to \'ws://localhost:8000/my/mock/path\' failed');
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $client->connect();
-
-        unset($client);
     }
 
     public function testHandshakeUpgradeKeyFailure(): void
     {
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
 
         $this->expectWsClientConnect();
         $this->expectSocketStreamWrite();
@@ -217,24 +200,20 @@ class HandshakeTest extends TestCase
         });
         $this->expectException(HandshakeException::class);
         $this->expectExceptionMessage('Server sent bad upgrade response');
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $client->connect();
-
-        unset($client);
     }
 
     public function testHandshakeReconnect(): void
     {
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
 
         $this->expectWsClientConnect();
         $this->expectSocketStreamWrite();
         $this->expectSocketStreamReadLine()->setReturn(function () {
             throw new ReconnectException(new Uri('ws://localhost:8000/my/new/path'));
         });
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
 
@@ -247,8 +226,9 @@ class HandshakeTest extends TestCase
         $this->assertEquals(101, $response->getStatusCode());
         $this->assertEquals('Switching Protocols', $response->getReasonPhrase());
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        unset($client);
+        $client->disconnect();
     }
 }

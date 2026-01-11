@@ -49,7 +49,6 @@ class ConnectionTest extends TestCase
 
     public function setUp(): void
     {
-        error_reporting(-1);
         $this->setUpStack();
         $this->psrFactory = new Psr17Factory();
     }
@@ -119,31 +118,6 @@ class ConnectionTest extends TestCase
 
         $this->expectSocketStreamGetContext();
         $this->assertInstanceOf(Context::class, $connection->getContext());
-
-        unset($connection);
-    }
-
-    public function testDestruct(): void
-    {
-        $temp = tmpfile();
-
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-        $this->expectContext();
-        $stream = new SocketStream($temp);
-
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
-        $this->expectSocketStreamSetTimeout();
-        $connection = new Connection($stream, false, false);
-
-        $this->expectSocketStreamIsConnected();
-        $this->assertTrue($connection->isConnected());
-
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
-
-        unset($connection);
     }
 
     public function testHttpMessages(): void
@@ -185,8 +159,6 @@ class ConnectionTest extends TestCase
 
         $this->expectSocketStreamClose();
         $this->assertSame($connection, $connection->disconnect());
-
-        unset($connection);
     }
 
     public function testWebSocketMessages(): void
@@ -221,8 +193,6 @@ class ConnectionTest extends TestCase
 
         $this->expectSocketStreamClose();
         $this->assertSame($connection, $connection->disconnect());
-
-        unset($connection);
     }
 
     public function testSendHttpError(): void
@@ -244,11 +214,7 @@ class ConnectionTest extends TestCase
         });
         $this->expectException(ConnectionClosedException::class);
         $this->expectExceptionMessage('Connection has unexpectedly closed');
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $connection->pushHttp($this->psrFactory->createRequest('GET', '/'));
-
-        unset($connection);
     }
 
     public function testPullHttpError(): void
@@ -270,11 +236,7 @@ class ConnectionTest extends TestCase
         });
         $this->expectException(ConnectionClosedException::class);
         $this->expectExceptionMessage('Connection has unexpectedly closed');
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $connection->pullHttp();
-
-        unset($connection);
     }
 
     public function testSendMessageError(): void
@@ -296,11 +258,7 @@ class ConnectionTest extends TestCase
         });
         $this->expectException(ConnectionClosedException::class);
         $this->expectExceptionMessage('Connection has unexpectedly closed');
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $connection->send(new Text('Connection error'));
-
-        unset($connection);
     }
 
     public function testPullMessageError(): void
@@ -322,10 +280,6 @@ class ConnectionTest extends TestCase
         });
         $this->expectException(ConnectionClosedException::class);
         $this->expectExceptionMessage('Connection has unexpectedly closed');
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $connection->pullMessage();
-
-        unset($connection);
     }
 }

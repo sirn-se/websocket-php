@@ -33,7 +33,6 @@ class FrameHandlerTest extends TestCase
 
     public function setUp(): void
     {
-        error_reporting(-1);
         $this->setUpStack();
     }
 

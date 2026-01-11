@@ -11,6 +11,8 @@
  * Configuration class for various settings (@sirn-se)
  * Identity interface and implementation (@sirn-se)
  * Using Nyholm PSR HTTP (intermediate solution) (@sirn-se)
+ * Runner class wraps stream-select handler (@sirn-se)
+ * StreamFactory as constructor option Client/Server (@sirn-se)
  * Preparations for v4 (@sirn-se)
 
 ## `v3.6`
