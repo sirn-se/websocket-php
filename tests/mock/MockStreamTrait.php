@@ -12,9 +12,10 @@ use Phrity\Net\Mock\Stack\{
     ExpectSocketClientTrait,
     ExpectSocketStreamTrait,
     ExpectSocketServerTrait,
+    ExpectStreamTrait,
     ExpectStreamCollectionTrait,
     ExpectStreamFactoryTrait,
-    StackItem
+    StackItem,
 };
 use Phrity\Net\Mock\StreamCollection;
 use Phrity\Net\Context;
@@ -28,6 +29,7 @@ trait MockStreamTrait
     use ExpectSocketClientTrait;
     use ExpectSocketServerTrait;
     use ExpectSocketStreamTrait;
+    use ExpectStreamTrait;
     use ExpectStreamCollectionTrait;
     use ExpectStreamFactoryTrait;
 

@@ -13,8 +13,10 @@ use Phrity\Net\Mock\StreamFactory;
 use PHPUnit\Framework\TestCase;
 use WebSocket\Exception\RunnerException;
 use WebSocket\Runtime\Runner;
-use WebSocket\Server;
-use WebSocket\Test\MockStreamTrait;
+use WebSocket\Test\{
+    MockStreamContainer,
+    MockStreamTrait,
+};
 
 /**
  * Test case for WebSocket\Runtime\Runner
@@ -36,13 +38,20 @@ class RunnerTest extends TestCase
     public function testHandling(): void
     {
         $this->expectStreamFactory();
+        $factory = new StreamFactory();
         $this->expectStreamFactoryCreateStreamCollection();
         $this->expectStreamCollection();
-        $runner = new Runner(new StreamFactory());
+        $runner = new Runner($factory);
 
-        $server = new Server();
+        $this->expectStreamFactoryCreateStream();
+        $this->expectStreamFactoryCreateStreamFromResource();
+        $this->expectStream();
+        $this->expectStreamGetMetadata();
+        $this->expectContext();
+        $streamContainer = new MockStreamContainer($factory);
+
         $this->expectStreamCollectionAttach();
-        $runner->attach($server, function () {
+        $runner->attach($streamContainer, function () {
             // ignore
         });
         $this->expectStreamCollectionWaitRead();
@@ -50,26 +59,31 @@ class RunnerTest extends TestCase
         $runner->handle(0);
 
         $this->expectStreamCollectionDetach();
-        $runner->detach($server->getIdentity());
-
-        $server->disconnect();
+        $runner->detach($streamContainer->getIdentity());
     }
 
     public function testIdentityConflict(): void
     {
         $this->expectStreamFactory();
+        $factory = new StreamFactory();
         $this->expectStreamFactoryCreateStreamCollection();
         $this->expectStreamCollection();
-        $runner = new Runner(new StreamFactory());
+        $runner = new Runner($factory);
 
-        $server = new Server();
+        $this->expectStreamFactoryCreateStream();
+        $this->expectStreamFactoryCreateStreamFromResource();
+        $this->expectStream();
+        $this->expectStreamGetMetadata();
+        $this->expectContext();
+        $streamContainer = new MockStreamContainer($factory);
+
         $this->expectStreamCollectionAttach();
-        $runner->attach($server, function () {
+        $runner->attach($streamContainer, function () {
             // ignore
         });
         $this->expectException(RunnerException::class);
-        $this->expectExceptionMessage('Stream container with identity server/80 already attached');
-        $runner->attach($server, function () {
+        $this->expectExceptionMessage('Stream container with identity mock-stream-container already attached');
+        $runner->attach($streamContainer, function () {
             // ignore
         });
     }
