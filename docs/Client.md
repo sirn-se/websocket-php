@@ -139,8 +139,16 @@ $client->close(1000, "Closing now");
 
 ## Configuration
 
-The Client takes one argument: [URI](http://tools.ietf.org/html/rfc3986) as a class implementing [UriInterface](https://www.php-fig.org/psr/psr-7/#35-psrhttpmessageuriinterface) or as string.
+The Client has one required argument: [URI](http://tools.ietf.org/html/rfc3986) as a class implementing [UriInterface](https://www.php-fig.org/psr/psr-7/#35-psrhttpmessageuriinterface) or as string.
 The client support `ws` (`tcp`) and `wss` (`ssl`) schemas, depending on SSL configuration.
+
+```php
+__construct(
+    Psr\Http\Message\UriInterface|string $uri,
+    WebSocket\Configuration|null $configuration = null,
+    Phrity\Net\StreamFactory|null $streamFactory = null,
+);
+```
 
 Other options are available using the Configuration class.
 

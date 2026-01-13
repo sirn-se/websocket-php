@@ -34,7 +34,6 @@ class CallbackTest extends TestCase
 
     public function setUp(): void
     {
-        error_reporting(-1);
         $this->setUpStack();
         $this->psrFactory = new Psr17Factory();
     }
@@ -76,10 +75,6 @@ class CallbackTest extends TestCase
         });
         $message = $connection->pullMessage();
         $this->assertEquals('Changed message', $message->getContent());
-
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
-        unset($stream);
     }
 
     public function testOutgoing(): void
@@ -106,10 +101,6 @@ class CallbackTest extends TestCase
 
         $this->expectSocketStreamWrite();
         $connection->send(new Text('Test message'));
-
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
-        unset($stream);
     }
 
     public function testHttpIncoming(): void
@@ -144,10 +135,6 @@ class CallbackTest extends TestCase
         /** @var RequestInterface $message */
         $message = $connection->pullHttp();
         $this->assertEquals('POST', $message->getMethod());
-
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
-        unset($stream);
     }
 
     public function testHttpOutgoing(): void
@@ -174,10 +161,6 @@ class CallbackTest extends TestCase
         /** @var ResponseInterface $message */
         $message = $connection->pushHttp($this->psrFactory->createResponse(200));
         $this->assertEquals(400, $message->getStatusCode());
-
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
-        unset($stream);
     }
 
     public function testTick(): void
@@ -198,9 +181,5 @@ class CallbackTest extends TestCase
             $stack->handleTick();
         }));
         $connection->tick();
-
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
-        unset($stream);
     }
 }

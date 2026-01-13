@@ -25,11 +25,6 @@ use WebSocket\Http\Response;
  */
 class ResponseTest extends TestCase
 {
-    public function setUp(): void
-    {
-        error_reporting(-1);
-    }
-
     public function testEmptyResponse(): void
     {
         $response = new Response();

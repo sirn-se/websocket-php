@@ -18,11 +18,6 @@ use WebSocket\Server;
  */
 class ConfigErrorTest extends TestCase
 {
-    public function setUp(): void
-    {
-        error_reporting(-1);
-    }
-
     public function testPortTooLow(): void
     {
         $this->expectException(InvalidArgumentException::class);

@@ -45,7 +45,6 @@ class ClientErrorTest extends TestCase
 
     public function setUp(): void
     {
-        error_reporting(-1);
         $this->setUpStack();
     }
 
@@ -56,9 +55,8 @@ class ClientErrorTest extends TestCase
 
     public function testFailedSocket(): void
     {
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
 
         $this->expectWsClientSetup();
         $this->expectSocketClientConnect()->setReturn(function () {
@@ -67,15 +65,12 @@ class ClientErrorTest extends TestCase
         $this->expectException(ClientException::class);
         $this->expectExceptionMessage('Could not open socket to "tcp://localhost:8000": Client could not connect');
         $client->connect();
-
-        unset($client);
     }
 
     public function testFailedConnection(): void
     {
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
 
         $this->expectWsClientSetup();
         $this->expectSocketClientConnect();
@@ -89,21 +84,15 @@ class ClientErrorTest extends TestCase
         $this->expectSocketStreamIsConnected()->setReturn(function () {
             return false;
         });
-        $this->expectSocketStreamIsConnected()->setReturn(function () {
-            return false;
-        });
         $this->expectException(ClientException::class);
         $this->expectExceptionMessage('Invalid stream on "tcp://localhost:8000".');
         $client->connect();
-
-        unset($client);
     }
 
     public function testReceiveBadOpcode(): void
     {
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
 
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake();
@@ -118,20 +107,15 @@ class ClientErrorTest extends TestCase
         $this->expectSocketStreamRead()->setReturn(function () {
             return 'Test message';
         });
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $this->expectException(BadOpcodeException::class);
         $this->expectExceptionMessage("Invalid opcode '15' provided");
         $message = $client->receive();
-
-        unset($client);
     }
 
     public function testBrokenWrite(): void
     {
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
 
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake();
@@ -147,18 +131,13 @@ class ClientErrorTest extends TestCase
         });
         $this->expectException(ConnectionClosedException::class);
         $this->expectExceptionMessage('Connection has unexpectedly closed');
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $client->text('Failing to write');
-
-        unset($client);
     }
 
     public function testReadTimeout(): void
     {
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
 
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake();
@@ -174,18 +153,13 @@ class ClientErrorTest extends TestCase
         });
         $this->expectException(ConnectionTimeoutException::class);
         $this->expectExceptionMessage('Connection operation timeout');
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $client->receive();
-
-        unset($client);
     }
 
     public function testEmptyRead(): void
     {
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
 
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake();
@@ -201,11 +175,6 @@ class ClientErrorTest extends TestCase
         });
         $this->expectException(ConnectionTimeoutException::class);
         $this->expectExceptionMessage('Connection operation timeout');
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $client->receive();
-
-        $this->expectSocketStreamClose();
-        unset($client);
     }
 }

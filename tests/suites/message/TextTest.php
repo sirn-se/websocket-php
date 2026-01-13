@@ -22,11 +22,6 @@ use WebSocket\Message\{
  */
 class TextTest extends TestCase
 {
-    public function setUp(): void
-    {
-        error_reporting(-1);
-    }
-
     public function testTextMessage(): void
     {
         $message = new Text('Some content');

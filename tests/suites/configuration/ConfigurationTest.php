@@ -25,11 +25,6 @@ use WebSocket\Configuration;
  */
 class ConfigurationTest extends TestCase
 {
-    public function setUp(): void
-    {
-        error_reporting(-1);
-    }
-
     public function testDefaults(): void
     {
         $configuration = new Configuration();

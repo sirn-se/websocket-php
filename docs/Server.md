@@ -136,8 +136,17 @@ $server->close(1000, "Closing now");
 
 ## Configuration
 
-The Server takes two arguments; port and ssl.
+The Server has two main arguments; port and ssl.
 By default, ssl is false. If port is not specified, it will use 80 for non-secure and 443 for secure server.
+
+```php
+__construct(
+    int $port = 80,
+    bool $ssl = false,
+    WebSocket\Configuration|null $configuration = null,
+    Phrity\Net\StreamFactory|null $streamFactory = null,
+);
+```
 
 Other options are available using the Configuration class.
 

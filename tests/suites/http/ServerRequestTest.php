@@ -23,11 +23,6 @@ use WebSocket\Http\ServerRequest;
  */
 class ServerRequestTest extends TestCase
 {
-    public function setUp(): void
-    {
-        error_reporting(-1);
-    }
-
     public function testEmptyRequest(): void
     {
         $request = new ServerRequest();

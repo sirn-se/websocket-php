@@ -9,6 +9,8 @@ namespace WebSocket;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
+error_reporting(-1);
+
 if (extension_loaded('xdebug')) {
     die("Tests can not be run with xdebug installed.\n");
 }

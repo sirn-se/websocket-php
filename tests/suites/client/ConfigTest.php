@@ -50,7 +50,6 @@ class ConfigTest extends TestCase
 
     public function setUp(): void
     {
-        error_reporting(-1);
         $this->setUpStack();
     }
 
@@ -61,32 +60,35 @@ class ConfigTest extends TestCase
 
     public function testUriStringExtended(): void
     {
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path?my_query=yes#my_fragment');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client(
+            'ws://localhost:8000/my/mock/path?my_query=yes#my_fragment',
+            streamFactory: new StreamFactory()
+        );
 
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake('localhost:8000', '/my/mock/path?my_query=yes');
         $client->connect();
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        unset($client);
+        $client->disconnect();
     }
 
     public function testUriStringWithoutPath(): void
     {
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000', streamFactory: new StreamFactory());
 
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake('localhost:8000', '/');
         $client->connect();
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        unset($client);
+        $client->disconnect();
     }
 
     public function testUriInstanceRelativePath(): void
@@ -94,17 +96,17 @@ class ConfigTest extends TestCase
         $uri = new Uri('ws://localhost:8000');
         $uri = $uri->withPath('my/mock/path');
 
-        $this->expectStreamFactory();
-        $client = new Client($uri);
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client($uri, streamFactory: new StreamFactory());
 
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake('localhost:8000', '/my/mock/path');
         $client->connect();
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        unset($client);
+        $client->disconnect();
     }
 
     public function testUriInstanceWsDefaultPort(): void
@@ -112,17 +114,17 @@ class ConfigTest extends TestCase
         $uri = new Uri('ws://localhost');
         $uri = $uri->withPath('my/mock/path');
 
-        $this->expectStreamFactory();
-        $client = new Client($uri);
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client($uri, streamFactory: new StreamFactory());
 
         $this->expectWsClientConnect(port: 80);
         $this->expectWsClientPerformHandshake('localhost', '/my/mock/path');
         $client->connect();
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        unset($client);
+        $client->disconnect();
     }
 
     public function testUriInstanceWssDefaultPort(): void
@@ -130,17 +132,17 @@ class ConfigTest extends TestCase
         $uri = new Uri('wss://localhost');
         $uri = $uri->withPath('my/mock/path');
 
-        $this->expectStreamFactory();
-        $client = new Client($uri);
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client($uri, streamFactory: new StreamFactory());
 
         $this->expectWsClientConnect(scheme: 'ssl', port: 443);
         $this->expectWsClientPerformHandshake('localhost', '/my/mock/path');
         $client->connect();
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        unset($client);
+        $client->disconnect();
     }
 
     /** @return array<mixed> */
@@ -166,9 +168,8 @@ class ConfigTest extends TestCase
     #[DataProvider('uriStringAuthorizationDataProvider')]
     public function testUriStringAuthorization(string $uriAuth, string $expectedCredentials): void
     {
-        $this->expectStreamFactory();
-        $client = new Client("wss://{$uriAuth}@localhost:8000/my/mock/path");
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client("wss://{$uriAuth}@localhost:8000/my/mock/path", streamFactory: new StreamFactory());
 
         $this->expectWsClientConnect(scheme: 'ssl');
         $this->expectWsClientPerformHandshake(
@@ -178,44 +179,41 @@ class ConfigTest extends TestCase
         );
         $client->connect();
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        unset($client);
+        $client->disconnect();
     }
 
     public function testUriInstanceImplementation(): void
     {
         $uri = new MockUri();
 
-        $this->expectStreamFactory();
-        $client = new Client($uri);
-        $client->setStreamFactory(new StreamFactory());
-
-        unset($client);
+        $this->expectWsClientCreate();
+        $client = new Client($uri, streamFactory: new StreamFactory());
     }
 
     public function testTimeoutOption(): void
     {
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
         $client->setTimeout(300);
 
         $this->expectWsClientConnect(timeout: 300);
         $this->expectWsClientPerformHandshake('localhost:8000', '/my/mock/path');
         $client->connect();
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        unset($client);
+        $client->disconnect();
     }
 
     public function testContextOption(): void
     {
         $errorHandler = new ErrorHandler();
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
 
         $errorHandler->withAll(function () use ($client) {
             $client->setContext(['ssl' => ['verify_peer' => false]]);
@@ -230,9 +228,10 @@ class ConfigTest extends TestCase
         $this->expectWsClientPerformHandshake('localhost:8000', '/my/mock/path');
         $client->connect();
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        unset($client);
+        $client->disconnect();
     }
 
     public function testContextClass(): void
@@ -243,9 +242,8 @@ class ConfigTest extends TestCase
         $this->expectContextSetOption();
         $context->setOptions(['ssl' => ['verify_peer' => false]]);
 
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
         $client->onHandshake(function (Client $client, Connection $connection) {
             $this->expectSocketStreamGetContext();
             $connectionContext = $connection->getContext();
@@ -263,16 +261,16 @@ class ConfigTest extends TestCase
 
         $this->assertSame($context, $client->getContext());
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        unset($client);
+        $client->disconnect();
     }
 
     public function testHeadersOption(): void
     {
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
         $client->addHeader('Generic-header', 'Generic content');
 
         $this->expectWsClientConnect();
@@ -283,32 +281,32 @@ class ConfigTest extends TestCase
         );
         $client->connect();
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        unset($client);
+        $client->disconnect();
     }
 
     public function testPersistentOption(): void
     {
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
         $client->setPersistent(true);
 
         $this->expectWsClientConnect(persistent: true);
         $this->expectWsClientPerformHandshake();
         $client->connect();
 
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        unset($client);
+        $client->disconnect();
     }
 
     public function testConfigUnconnectedClient(): void
     {
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
 
         $this->assertFalse($client->isConnected());
         $client->setLogger(new NullLogger());
@@ -320,9 +318,8 @@ class ConfigTest extends TestCase
 
     public function testConfigConnectedClient(): void
     {
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
 
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake();
@@ -335,25 +332,22 @@ class ConfigTest extends TestCase
             $this->assertEquals(300, $params[0]);
         });
         $client->setTimeout(300);
-
-        $this->expectSocketStreamIsConnected();
         $client->setFrameSize(64);
         $this->assertEquals(64, $client->getFrameSize());
 
+        $this->expectStreamCollectionDetach();
+        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        unset($client);
+        $client->disconnect();
     }
 
     public function testHttpFactories(): void
     {
         $httpFactory = new Psr17Factory();
-        $this->expectStreamFactory();
-        $client = new Client('ws://localhost:8000/my/mock/path');
-        $client->setStreamFactory(new StreamFactory());
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
 
         $this->assertSame($client, $client->setHttpFactory(HttpFactory::create($httpFactory)));
-
-        unset($client);
     }
 
     public function testConfiguration(): void
@@ -368,7 +362,8 @@ class ConfigTest extends TestCase
             frameSize: 64,
             persistent: true,
         );
-        $client = new Client('ws://localhost:8000/my/mock/path');
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
         $this->assertInstanceOf(Configuration::class, $client->getConfiguration());
         $this->assertSame($client, $client->setConfiguration($configuration));
     }

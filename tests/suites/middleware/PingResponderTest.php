@@ -26,7 +26,6 @@ class PingResponderTest extends TestCase
 
     public function setUp(): void
     {
-        error_reporting(-1);
         $this->setUpStack();
     }
 
@@ -68,7 +67,5 @@ class PingResponderTest extends TestCase
 
         $this->expectSocketStreamClose();
         $this->assertSame($connection, $connection->disconnect());
-
-        unset($stream);
     }
 }

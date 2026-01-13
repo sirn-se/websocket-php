@@ -22,11 +22,6 @@ use WebSocket\Message\{
  */
 class BinaryTest extends TestCase
 {
-    public function setUp(): void
-    {
-        error_reporting(-1);
-    }
-
     public function testBinaryMessage(): void
     {
         $bin = base64_encode('Some content');

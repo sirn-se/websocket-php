@@ -46,7 +46,6 @@ class HandshakeTest extends TestCase
 
     public function setUp(): void
     {
-        error_reporting(-1);
         $this->setUpStack();
     }
 
@@ -57,9 +56,8 @@ class HandshakeTest extends TestCase
 
     public function testHandshakeRequest(): void
     {
-        $this->expectStreamFactory();
-        $server = new Server(8000);
-        $server->setStreamFactory(new StreamFactory());
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
         $this->expectWsSelectConnections(['server/8000']);
@@ -69,17 +67,17 @@ class HandshakeTest extends TestCase
         $this->expectWsServerPerformHandshake();
         $server->start();
 
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-
-        unset($server);
+        $this->expectStreamCollectionDetach();
+        $this->expectSocketServerClose();
+        $this->expectStreamCollectionDetach();
+        $server->disconnect();
     }
 
     public function testHandshakeRequestVariant(): void
     {
-        $this->expectStreamFactory();
-        $server = new Server(8000);
-        $server->setStreamFactory(new StreamFactory());
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
         $this->expectWsSelectConnections(['server/8000']);
@@ -117,17 +115,17 @@ class HandshakeTest extends TestCase
         });
         $server->start();
 
-        $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-
-        unset($server);
+        $this->expectStreamCollectionDetach();
+        $this->expectSocketServerClose();
+        $this->expectStreamCollectionDetach();
+        $server->disconnect();
     }
 
     public function testHandshakeRequestFailure(): void
     {
-        $this->expectStreamFactory();
-        $server = new Server(8000);
-        $server->setStreamFactory(new StreamFactory());
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
         $this->expectWsSelectConnections(['server/8000']);
@@ -143,14 +141,15 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamClose();
         $server->start();
 
-        unset($server);
+        $this->expectSocketServerClose();
+        $this->expectStreamCollectionDetach();
+        $server->disconnect();
     }
 
     public function testHandshakeMethodFailure(): void
     {
-        $this->expectStreamFactory();
-        $server = new Server(8000);
-        $server->setStreamFactory(new StreamFactory());
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
         $this->expectWsSelectConnections(['server/8000']);
@@ -185,14 +184,15 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamClose();
         $server->start();
 
-        unset($server);
+        $this->expectSocketServerClose();
+        $this->expectStreamCollectionDetach();
+        $server->disconnect();
     }
 
     public function testHandshakeConnectionHeaderFailure(): void
     {
-        $this->expectStreamFactory();
-        $server = new Server(8000);
-        $server->setStreamFactory(new StreamFactory());
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
         $this->expectWsSelectConnections(['server/8000']);
@@ -227,14 +227,15 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamClose();
         $server->start();
 
-        unset($server);
+        $this->expectSocketServerClose();
+        $this->expectStreamCollectionDetach();
+        $server->disconnect();
     }
 
     public function testHandshakeUpgradeHeaderFailure(): void
     {
-        $this->expectStreamFactory();
-        $server = new Server(8000);
-        $server->setStreamFactory(new StreamFactory());
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
         $this->expectWsSelectConnections(['server/8000']);
@@ -269,14 +270,15 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamClose();
         $server->start();
 
-        unset($server);
+        $this->expectSocketServerClose();
+        $this->expectStreamCollectionDetach();
+        $server->disconnect();
     }
 
     public function testHandshakeVersionHeaderFailure(): void
     {
-        $this->expectStreamFactory();
-        $server = new Server(8000);
-        $server->setStreamFactory(new StreamFactory());
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
         $this->expectWsSelectConnections(['server/8000']);
@@ -311,14 +313,15 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamClose();
         $server->start();
 
-        unset($server);
+        $this->expectSocketServerClose();
+        $this->expectStreamCollectionDetach();
+        $server->disconnect();
     }
 
     public function testHandshakeWebSocketKeyHeaderFailure(): void
     {
-        $this->expectStreamFactory();
-        $server = new Server(8000);
-        $server->setStreamFactory(new StreamFactory());
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
         $this->expectWsSelectConnections(['server/8000']);
@@ -350,14 +353,15 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamClose();
         $server->start();
 
-        unset($server);
+        $this->expectSocketServerClose();
+        $this->expectStreamCollectionDetach();
+        $server->disconnect();
     }
 
     public function testHandshakeWebSocketKeyInvalidFailure(): void
     {
-        $this->expectStreamFactory();
-        $server = new Server(8000);
-        $server->setStreamFactory(new StreamFactory());
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
         $this->expectWsSelectConnections(['server/8000']);
@@ -392,14 +396,15 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamClose();
         $server->start();
 
-        unset($server);
+        $this->expectSocketServerClose();
+        $this->expectStreamCollectionDetach();
+        $server->disconnect();
     }
 
     public function testHandshakeResponseFailure(): void
     {
-        $this->expectStreamFactory();
-        $server = new Server(8000);
-        $server->setStreamFactory(new StreamFactory());
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
         $this->expectWsSelectConnections(['server/8000']);
@@ -436,6 +441,8 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamClose();
         $server->start();
 
-        unset($server);
+        $this->expectSocketServerClose();
+        $this->expectStreamCollectionDetach();
+        $server->disconnect();
     }
 }

@@ -34,7 +34,7 @@ class WebSocket\Client imlements WebSocket\Runtime\IdentityInterface, Psr\Log\Lo
     use WebSocket\Trait\SendMethodsTrait;
     use WebSocket\Trait\StringableTrait;
 
-    public method __construct(Psr\Http\Message\UriInterface|string $uri, WebSocket\Configuration|null $configuration = null);
+    public method __construct(Psr\Http\Message\UriInterface|string $uri, WebSocket\Configuration|null $configuration = null, Phrity\Net\StreamFactory|null $streamFactory = null);
     public method __toString(): string;
     public method addHeader(string $name, string $content): self;
     public method addMiddleware(WebSocket\Middleware\MiddlewareInterface $middleware): self;
@@ -85,14 +85,13 @@ class WebSocket\Configuration imlements Psr\Log\LoggerAwareInterface, Stringable
     public method setTimeout(int|float $timeout): void;
 }
 
-class WebSocket\Connection imlements WebSocket\Runtime\IdentityInterface, Psr\Log\LoggerAwareInterface, Stringable
+class WebSocket\Connection imlements WebSocket\Runtime\IdentityInterface, Psr\Log\LoggerAwareInterface, Phrity\Net\StreamContainerInterface, Stringable
 {
     use WebSocket\Trait\ConfigurationTrait;
     use WebSocket\Trait\SendMethodsTrait;
     use WebSocket\Trait\StringableTrait;
 
     public method __construct(Phrity\Net\SocketStream $stream, bool $pushMasked, bool $pullMaskedRequired, bool $ssl = false, Phrity\Http\HttpFactory|null $httpFactory = null, WebSocket\Configuration|null $configuration = null);
-    public method __destruct();
     public method __toString(): string;
     public method addMiddleware(WebSocket\Middleware\MiddlewareInterface $middleware): self;
     public method closeRead(): self;
@@ -106,6 +105,7 @@ class WebSocket\Connection imlements WebSocket\Runtime\IdentityInterface, Psr\Lo
     public method getMeta(string $key): mixed;
     public method getName(): string|null;
     public method getRemoteName(): string|null;
+    public method getStream(): Phrity\Net\SocketStream;
     public method getTimeout(): int|float;
     public method isConnected(): bool;
     public method isReadable(): bool;
@@ -169,6 +169,10 @@ class WebSocket\Exception\ReconnectException extends WebSocket\Exception\Excepti
 {
     public method __construct(Phrity\Net\Uri|null $uri = null);
     public method getUri(): Phrity\Net\Uri|null;
+}
+
+class WebSocket\Exception\RunnerException extends WebSocket\Exception\Exception
+{
 }
 
 class WebSocket\Exception\ServerException extends WebSocket\Exception\Exception
@@ -412,14 +416,23 @@ class WebSocket\Middleware\SubprotocolNegotiation imlements Psr\Log\LoggerAwareI
     public method setLogger(Psr\Log\LoggerInterface $logger): void;
 }
 
-class WebSocket\Server imlements WebSocket\Runtime\IdentityInterface, Psr\Log\LoggerAwareInterface, Stringable
+class WebSocket\Runtime\Runner
+{
+    public method __construct(Phrity\Net\StreamFactory $streamFactory);
+    public method attach(Phrity\Net\StreamContainerInterface $streamContainer, Closure $onSelect): void;
+    public method detach(string $identity): void;
+    public method handle(int|float $timeout): void;
+    public method select(int|float $timeout): Phrity\Net\StreamCollection;
+}
+
+class WebSocket\Server imlements WebSocket\Runtime\IdentityInterface, Psr\Log\LoggerAwareInterface, Phrity\Net\StreamContainerInterface, Stringable
 {
     use WebSocket\Trait\ConfigurationTrait;
     use WebSocket\Trait\ListenerTrait;
     use WebSocket\Trait\SendMethodsTrait;
     use WebSocket\Trait\StringableTrait;
 
-    public method __construct(int $port = 80, bool $ssl = false, WebSocket\Configuration|null $configuration = null);
+    public method __construct(int $port = 80, bool $ssl = false, WebSocket\Configuration|null $configuration = null, Phrity\Net\StreamFactory|null $streamFactory = null);
     public method __toString(): string;
     public method addMiddleware(WebSocket\Middleware\MiddlewareInterface $middleware): self;
     public method disconnect(): void;
@@ -431,6 +444,7 @@ class WebSocket\Server imlements WebSocket\Runtime\IdentityInterface, Psr\Log\Lo
     public method getPort(): int;
     public method getReadableConnections(): array;
     public method getScheme(): string;
+    public method getStream(): Phrity\Net\SocketServer;
     public method getTimeout(): int|float;
     public method getWritableConnections(): array;
     public method isRunning(): bool;
@@ -525,27 +539,5 @@ trait WebSocket\Trait\ListenerTrait
     public method onDisconnect(Closure $closure): self;
     public method onError(Closure $closure): self;
     public method onHandshake(Closure $closure): self;
-    public method onPing(Closure $closure): self;
-    public method onPong(Closure $closure): self;
-    public method onText(Closure $closure): self;
-    public method onTick(Closure $closure): self;
-}
-
-trait WebSocket\Trait\OpcodeTrait
-{
-}
-
-trait WebSocket\Trait\SendMethodsTrait
-{
-    public method binary(string $message): WebSocket\Message\Binary;
-    public method close(int $status = 1000, string $message = "ttfn"): WebSocket\Message\Close;
-    public method ping(string $message = ""): WebSocket\Message\Ping;
-    public method pong(string $message = ""): WebSocket\Message\Pong;
-    public method text(string $message): WebSocket\Message\Text;
-}
-
-trait WebSocket\Trait\StringableTrait
-{
-    public method __toString(): string;
 }
 ```

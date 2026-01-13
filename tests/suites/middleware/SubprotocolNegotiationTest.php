@@ -33,7 +33,6 @@ class SubprotocolNegotiationTest extends TestCase
 
     public function setUp(): void
     {
-        error_reporting(-1);
         $this->setUpStack();
         $this->psrFactory = new Psr17Factory();
     }
@@ -90,10 +89,6 @@ class SubprotocolNegotiationTest extends TestCase
         $response = $connection->pullHttp();
         $this->assertEquals(['sp-2'], $response->getHeader('Sec-WebSocket-Protocol'));
         $this->assertEquals('sp-2', $connection->getMeta('subprotocolNegotiation.selected'));
-
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
-        unset($connection);
     }
 
     public function testClientProtocolNoMatch(): void
@@ -140,10 +135,6 @@ class SubprotocolNegotiationTest extends TestCase
         $response = $connection->pullHttp();
         $this->assertEquals([], $response->getHeader('Sec-WebSocket-Protocol'));
         $this->assertNull($connection->getMeta('subprotocolNegotiation.selected'));
-
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
-        unset($connection);
     }
 
     public function testClientProtocolRequire(): void
@@ -188,8 +179,6 @@ class SubprotocolNegotiationTest extends TestCase
             return "\r\n";
         });
         $this->expectSocketStreamWrite();
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
         $this->expectException(HandshakeException::class);
         $this->expectExceptionMessage('Could not resolve subprotocol.');
         $connection->pullHttp();
@@ -248,10 +237,6 @@ class SubprotocolNegotiationTest extends TestCase
         $response = $connection->pushHttp($response);
         $this->assertEquals(['sp-2'], $response->getHeader('Sec-WebSocket-Protocol'));
         $this->assertEquals('sp-2', $connection->getMeta('subprotocolNegotiation.selected'));
-
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
-        unset($connection);
     }
 
     public function testServerProtocolNoMatch(): void
@@ -308,10 +293,6 @@ class SubprotocolNegotiationTest extends TestCase
         $response = $connection->pushHttp($response);
         $this->assertEquals([], $response->getHeader('Sec-WebSocket-Protocol'));
         $this->assertNull($connection->getMeta('subprotocolNegotiation.selected'));
-
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
-        unset($connection);
     }
 
     public function testServerProtocolRequire(): void
@@ -368,9 +349,5 @@ class SubprotocolNegotiationTest extends TestCase
         $response = $connection->pushHttp($response);
         $this->assertEquals([], $response->getHeader('Sec-WebSocket-Protocol'));
         $this->assertNull($connection->getMeta('subprotocolNegotiation.selected'));
-
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
-        unset($connection);
     }
 }

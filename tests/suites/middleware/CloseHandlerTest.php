@@ -26,7 +26,6 @@ class CloseHandlerTest extends TestCase
 
     public function setUp(): void
     {
-        error_reporting(-1);
         $this->setUpStack();
     }
 
@@ -67,8 +66,6 @@ class CloseHandlerTest extends TestCase
         $this->expectSocketStreamClose();
         $message = $connection->pullMessage();
         $this->assertInstanceOf(Close::class, $message);
-
-        unset($stream);
     }
 
     public function testRemoteClose(): void
@@ -97,7 +94,5 @@ class CloseHandlerTest extends TestCase
         $this->expectSocketStreamClose();
         $message = $connection->pullMessage();
         $this->assertInstanceOf(Close::class, $message);
-
-        unset($stream);
     }
 }
