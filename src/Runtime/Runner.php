@@ -49,9 +49,8 @@ class Runner
         $this->streamCollection = $this->streamFactory->createStreamCollection();
     }
 
-    public function attach(StreamContainerInterface $streamContainer, Closure $onSelect): void
+    public function attach(StreamContainerInterface $streamContainer, Closure $onSelect, string $identity): void
     {
-        $identity = $streamContainer->getIdentity();
         if (array_key_exists($identity, $this->containers)) {
             throw new RunnerException("Stream container with identity {$identity} already attached");
         }

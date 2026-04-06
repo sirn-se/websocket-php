@@ -53,7 +53,7 @@ class RunnerTest extends TestCase
         $this->expectStreamCollectionAttach();
         $runner->attach($streamContainer, function () {
             // ignore
-        });
+        }, $streamContainer->getIdentity());
         $this->expectStreamCollectionWaitRead();
         $this->expectStreamCollection();
         $runner->handle(0);
@@ -80,11 +80,11 @@ class RunnerTest extends TestCase
         $this->expectStreamCollectionAttach();
         $runner->attach($streamContainer, function () {
             // ignore
-        });
+        }, $streamContainer->getIdentity());
         $this->expectException(RunnerException::class);
         $this->expectExceptionMessage('Stream container with identity mock-stream-container already attached');
         $runner->attach($streamContainer, function () {
             // ignore
-        });
+        }, $streamContainer->getIdentity());
     }
 }

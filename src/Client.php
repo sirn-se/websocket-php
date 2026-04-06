@@ -519,7 +519,7 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
                 ]);
                 $this->dispatch('error', [$this, $connection, $e]);
             }
-        });
+        }, $this->connection->getIdentity());
 
         foreach ($this->middlewares as $middleware) {
             $connection->addMiddleware($middleware);

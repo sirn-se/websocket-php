@@ -529,7 +529,7 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
             );
             $this->runner->attach($this, function (Runner $runner, Server $server) {
                 $this->acceptSocket($server->getStream());
-            });
+            }, $this->getIdentity());
             $this->allowConnections = true;
             $this->configuration->getLogger()->info("[{scope}] Starting server on {uri}", [
                 'scope' => self::SCOPE,
@@ -617,7 +617,7 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
                     ]);
                     $this->dispatch('error', [$this, $connection, $e]);
                 }
-            });
+            }, $connection->getIdentity());
         } catch (StreamException $e) {
             throw new ConnectionFailureException("Server failed to accept: {$e->getMessage()}");
         }

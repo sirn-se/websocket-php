@@ -34,12 +34,7 @@ class Close extends Message
 
     public function getPayload(): string
     {
-        $statusBinstr = sprintf('%016b', $this->status);
-        $statusStr = '';
-        foreach (str_split($statusBinstr, 8) as $binstr) {
-            $statusStr .= chr((int)bindec($binstr));
-        }
-        return $statusStr . $this->content;
+        return pack("n", $this->status) . $this->content;
     }
 
     public function setPayload(string $payload = ''): void
