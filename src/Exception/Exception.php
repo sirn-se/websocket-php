@@ -7,10 +7,12 @@
 
 namespace WebSocket\Exception;
 
+use RuntimeException;
+
 /**
- * WebSocket\Exception\MessageLevelInterface interface.
- * Indicates issue reading/writing message.
+ * WebSocket\Exception\Exception abstract class.
+ * Core exception for repo
  */
-interface MessageLevelInterface extends ExceptionInterface
+abstract class Exception extends RuntimeException implements ExceptionInterface
 {
 }

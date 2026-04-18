@@ -9,7 +9,6 @@
 
 * [Configuration](Configuration.md) - Configuration for Client and Server
 * [Connection](Connection.md) - The connection between client and server
-* [Error handling](ErrorHandling.md) - Notes on exceptions and error handling
 * [Listener](Listener.md) - Listeners allow callbacks when messages are received
 * [Message](Message.md) - Represents a WebSocket message being sent or received
 * [Middleware](Middleware.md) - Middlewares allow implementations to act incoming and outgoing messages
@@ -24,5 +23,5 @@
 
 ## Migration
 
+* [v1 -> v2](Migrate_1_2.md) - How to migrate from v1 to v2
 * [v2 -> v3](Migrate_2_3.md) - How to migrate from v2 to v3
-* [v3 -> v4](Migrate_3_4.md) - How to migrate from v3 to v4

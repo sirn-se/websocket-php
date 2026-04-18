@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
@@ -13,16 +13,14 @@ use Phrity\Net\Uri;
  * WebSocket\Exception\ReconnectException class.
  * Reconnect requested.
  */
-class ReconnectException extends AbstractException implements ControlInterface
+class ReconnectException extends Exception
 {
-    protected static string $defaultMessage = 'Reconnect connection';
-
     private Uri|null $uri;
 
-    public function __construct(Uri|null $uri = null, string|null $message = null)
+    public function __construct(Uri|null $uri = null)
     {
         $this->uri = $uri;
-        parent::__construct($message);
+        parent::__construct("Reconnect requested" . ($uri ? ": {$uri}" : ''));
     }
 
     public function getUri(): Uri|null

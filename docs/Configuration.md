@@ -3,7 +3,6 @@
 # Websocket: Configuration
 
 The Configuration class is used to configure Client, Server and various worker classes.
-It is delegated throughout class hierarchy unless explicitly set.
 
 ## Using Configuration instance
 
@@ -36,6 +35,7 @@ Get and set Configuration;
 ```php
 $configuration = $client->getConfiguration();
 $client->setConfiguration($configuration);
+
 $configuration = $server->getConfiguration();
 $server->setConfiguration($configuration);
 ```
@@ -50,7 +50,7 @@ type: Psr\Log\LoggerInterface
 default: Psr\Log\NullLogger
 ```
 
-Attach any [PSR-4 compatible](https://www.php-fig.org/psr/psr-3/) logger.
+Attach any [PSR-3 compatible](https://www.php-fig.org/psr/psr-3/) logger.
 
 ```php
 // Configuration instance
@@ -105,7 +105,7 @@ default: 60
 Timeout for various operations can be specified in seconds.
 This affects how long Client and Server will wait for connection, read and write operations, and listener scope.
 Default is `60` seconds. Minimum is `0` seconds. Accepts int or float value.
-Avoid setting very low values as it will cause a read loop to use all
+Avoid setting very low values as it will cause a read loop that uses lots of the
 available processing power even when there's nothing to read.
 
 ```php
@@ -128,7 +128,7 @@ type: int<1, max>
 default: 4096
 ```
 
-Defines the maximum payload per frame size in bytes.
+Defines the maximum frame payload size in bytes.
 Default is `4096` bytes. Minimum is `1` byte.
 Do not change unless you have a strong reason to do so.
 

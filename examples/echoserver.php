@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
@@ -63,29 +63,31 @@ $options = array_merge([
 
 // Initiate server.
 try {
-    $server = new Server($options['port'], isset($options['ssl']));
+    // Configuration
+    $configuration = new Configuration();
+    if (class_exists(ConsoleLogger::class)) {
+        $configuration->setLogger(new ConsoleLogger(format: '{level} | {message}', cliOptions: true));
+        echo "# Using logger\n";
+    }
+    if (isset($options['timeout'])) {
+        $configuration->setTimeout($options['timeout']);
+        echo "# Set timeout: {$options['timeout']}\n";
+    }
+    if (isset($options['framesize'])) {
+        $configuration->setFrameSize($options['framesize']);
+        echo "# Set frame size: {$options['framesize']}\n";
+    }
+    if (isset($options['connections'])) {
+        $configuration->setMaxConnections($options['connections']);
+        echo "# Set max connections: {$options['connections']}\n";
+    }
+
+    $server = new Server($options['port'], isset($options['ssl']), $configuration);
     $server
         ->addMiddleware(new CloseHandler())
         ->addMiddleware(new PingResponder())
         ;
 
-    // If debug mode and logger is available
-    if (class_exists(ConsoleLogger::class)) {
-        $server->setLogger(new ConsoleLogger(format: '{level} | {message}', cliOptions: true));
-        echo "# Using logger\n";
-    }
-    if (isset($options['timeout'])) {
-        $server->setTimeout($options['timeout']);
-        echo "# Set timeout: {$options['timeout']}\n";
-    }
-    if (isset($options['framesize'])) {
-        $server->setFrameSize($options['framesize']);
-        echo "# Set frame size: {$options['framesize']}\n";
-    }
-    if (isset($options['connections'])) {
-        $server->getConfiguration()->setMaxConnections($options['connections']);
-        echo "# Set max connections: {$options['connections']}\n";
-    }
     if (isset($options['deflate'])) {
         $server->addMiddleware(new CompressionExtension(new DeflateCompressor()));
         echo "# Using per-message: deflate compression\n";

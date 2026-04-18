@@ -2,22 +2,27 @@
 
 # Websocket: Changelog
 
-## `v4.0`
+## `v3.7`
 
  > PHP version `^8.1`
 
-### `4.0.0`
+### `3.7.0`
 
- * Shared stream observer, sharable across multiple cients and servers (@sirn-se)
  * Configuration class for various settings (@sirn-se)
- * MessageEncodingException when compression fails (@sirn-se)
- * General improvement of exceptions (@sirn-se)
- * Many class local configuration setters removed (@sirn-se)
- * Remove deprecated code (@sirn-se)
+ * Identity interface and implementation (@sirn-se)
+ * Using Nyholm PSR HTTP (intermediate solution) (@sirn-se)
+ * Runner class wraps stream-select handler (@sirn-se)
+ * StreamFactory as constructor option Client/Server (@sirn-se)
+ * Preparations for v4 (@sirn-se)
 
 ## `v3.6`
 
  > PHP version `^8.1`
+
+### `3.6.2`
+
+ * Deflate compression fuzzy header parsing fix (@sirn-se)
+ * More documentation (@sirn-se)
 
 ### `3.6.1`
 

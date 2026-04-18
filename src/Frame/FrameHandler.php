@@ -1,13 +1,17 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
 namespace WebSocket\Frame;
 
 use Phrity\Net\SocketStream;
+use Psr\Log\{
+    LoggerAwareInterface,
+    LoggerInterface,
+};
 use RuntimeException;
 use Stringable;
 use WebSocket\Configuration;
@@ -22,11 +26,13 @@ use WebSocket\Trait\{
  * WebSocket\Frame\FrameHandler class.
  * Reads and writes Frames on stream.
  */
-class FrameHandler implements Stringable
+class FrameHandler implements LoggerAwareInterface, Stringable
 {
     use ConfigurationTrait;
     use OpcodeTrait;
     use StringableTrait;
+
+    private const SCOPE = 'frame-handler';
 
     private SocketStream $stream;
     private bool $pushMasked;
@@ -36,12 +42,22 @@ class FrameHandler implements Stringable
         SocketStream $stream,
         bool $pushMasked,
         bool $pullMaskedRequired,
-        Configuration|null $configuration = null
+        Configuration|null $configuration = null,
     ) {
         $this->stream = $stream;
         $this->pushMasked = $pushMasked;
         $this->pullMaskedRequired = $pullMaskedRequired;
         $this->initConfiguration($configuration);
+    }
+
+    /**
+     * Set logger.
+     * @param LoggerInterface $logger Logger implementation
+     * @deprecated Will be removed in future version, set on Configuration instead
+     */
+    public function setLogger(LoggerInterface $logger): void
+    {
+        $this->configuration->setLogger($logger);
     }
 
     /**
@@ -100,14 +116,17 @@ class FrameHandler implements Stringable
         }
 
         $frame = new Frame($opcode, $payload, $final, $rsv1, $rsv2, $rsv3);
-        $this->configuration->getLogger()->debug('[frame-handler] Pulled {opcode} frame', [
+        $this->configuration->getLogger()->debug("[{scope}] Pulled '{opcode}' frame", [
+            'scope' => self::SCOPE,
             'opcode' => $frame->getOpcode(),
             'final' => $frame->isFinal(),
             'content-length' => $frame->getPayloadLength(),
         ]);
-
         if ($this->pullMaskedRequired && !$masked) {
-            $this->configuration->getLogger()->debug('[frame-handler] Masking required, but frame was unmasked');
+            $this->configuration->getLogger()->error("[{scope}] Masking required, but frame was unmasked", [
+                'scope' => self::SCOPE,
+                'opcode' => $frame->getOpcode(),
+            ]);
             throw new CloseException(1002, 'Masking required');
         }
 
@@ -162,7 +181,8 @@ class FrameHandler implements Stringable
         // Write to stream.
         $written = $this->write($data);
 
-        $this->configuration->getLogger()->debug('[frame-handler] Pushed {opcode} frame', [
+        $this->configuration->getLogger()->debug("[{scope}] Pushed '{opcode}' frame", [
+            'scope' => self::SCOPE,
             'opcode' => $frame->getOpcode(),
             'final' => $frame->isFinal(),
             'content-length' => $frame->getPayloadLength(),

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
@@ -10,7 +10,7 @@ namespace WebSocket\Message;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Stringable;
-use WebSocket\Exception\MessageEncodingException;
+use WebSocket\Exception\ConnectionFailureException;
 use WebSocket\Frame\Frame;
 use WebSocket\Trait\StringableTrait;
 
@@ -78,11 +78,11 @@ abstract class Message implements Stringable
         return false;
     }
 
-    /** @throws MessageEncodingException */
+    /** @throws ConnectionFailureException */
     public function setCompress(bool $compress): void
     {
         if ($compress) {
-            throw new MessageEncodingException('Must not compress control message.');
+            throw new ConnectionFailureException('Must not compress control message.');
         }
     }
 

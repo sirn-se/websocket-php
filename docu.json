@@ -26,10 +26,6 @@
                 "source": "docs/Connection.md"
             },
             {
-                "name": "Error handling",
-                "source": "docs/ErrorHandling.md"
-            },
-            {
                 "name": "Listener",
                 "source": "docs/Listener.md"
             },
@@ -74,7 +70,7 @@
                         "source": "docs/Middleware/Creating.md"
                     }
                 ]
-            },
+            }
         ],
         "name": "Developer resources",
         "content": [
@@ -98,12 +94,12 @@
         "name": "Migration",
         "content": [
             {
-                "name": "Migration v2 -> v3",
-                "source": "docs/Migrate_2_3.md"
+                "name": "Migration v1 -> v2",
+                "source": "docs/Migrate_1_2.md"
             },
             {
-                "name": "Migration v3 -> v4",
-                "source": "docs/Migrate_3_4.md"
+                "name": "Migration v2 -> v3",
+                "source": "docs/Migrate_2_3.md"
             }
         ]
     },

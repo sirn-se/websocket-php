@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
@@ -11,16 +11,15 @@ namespace WebSocket\Exception;
  * WebSocket\Exception\CloseException class.
  * Connection should close
  */
-class CloseException extends AbstractException implements ControlInterface
+class CloseException extends Exception
 {
-    protected static string $defaultMessage = 'Closing connection';
-
     protected int|null $status;
+    protected string $content;
 
-    public function __construct(int|null $status = null, string|null $message = null)
+    public function __construct(int|null $status = null, string $content = '')
     {
         $this->status = $status;
-        parent::__construct($message);
+        parent::__construct($content);
     }
 
     public function getCloseStatus(): int

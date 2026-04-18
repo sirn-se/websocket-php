@@ -136,8 +136,17 @@ $server->close(1000, "Closing now");
 
 ## Configuration
 
-The Server takes two arguments; port and ssl.
+The Server has two main arguments; port and ssl.
 By default, ssl is false. If port is not specified, it will use 80 for non-secure and 443 for secure server.
+
+```php
+__construct(
+    int $port = 80,
+    bool $ssl = false,
+    WebSocket\Configuration|null $configuration = null,
+    Phrity\Net\StreamFactory|null $streamFactory = null,
+);
+```
 
 Other options are available using the Configuration class.
 
@@ -151,8 +160,8 @@ Read more on [Configuration](Configuration.md).
 
 ### HTTP factories
 
-By default the Server uses a minimal [PSR-7 HTTP message](https://www.php-fig.org/psr/psr-7/) implementation.
-Other (more complete) implementations can be used by setting [PSR-17 HTTP factories](https://www.php-fig.org/psr/psr-17/) on the Server.
+By default the Server wraps a [PSR-7 HTTP message](https://www.php-fig.org/psr/psr-7/) implementation.
+Other implementations can be used by setting [PSR-17 HTTP factories](https://www.php-fig.org/psr/psr-17/) on the Server.
 
 Set a configured HttpFactory class on the Client.
 ```php

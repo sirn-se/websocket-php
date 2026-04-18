@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
@@ -11,7 +11,10 @@ namespace WebSocket\Exception;
  * WebSocket\Exception\BadUriException class.
  * Thrown when invalid URI is provided.
  */
-class BadUriException extends AbstractHandlerException
+class BadUriException extends Exception
 {
-    protected static string $defaultMessage = 'Bad URI';
+    public function __construct(string $message = 'Bad URI')
+    {
+        parent::__construct($message);
+    }
 }
