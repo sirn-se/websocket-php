@@ -52,7 +52,11 @@ class Runner
     public function attach(StreamContainerInterface $streamContainer, Closure $onSelect, string $identity): void
     {
         if (array_key_exists($identity, $this->containers)) {
-            throw new RunnerException("Stream container with identity {$identity} already attached");
+            // On repeated identity, check if actually readable (detach if not)
+            if ($this->containers[$identity]->stream->isReadable()) {
+                throw new RunnerException("Stream container with identity {$identity} already attached");
+            }
+            $this->detach($identity);
         }
         $stream = $streamContainer->getStream();
         $this->streamCollection->attach($stream, $identity);
