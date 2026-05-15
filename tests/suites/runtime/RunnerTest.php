@@ -62,6 +62,36 @@ class RunnerTest extends TestCase
         $runner->detach($streamContainer->getIdentity());
     }
 
+    public function testIdentityConflictResolvable(): void
+    {
+        $this->expectStreamFactory();
+        $factory = new StreamFactory();
+        $this->expectStreamFactoryCreateStreamCollection();
+        $this->expectStreamCollection();
+        $runner = new Runner($factory);
+
+        $this->expectStreamFactoryCreateStream();
+        $this->expectStreamFactoryCreateStreamFromResource();
+        $this->expectStream();
+        $this->expectStreamGetMetadata();
+        $this->expectContext();
+        $streamContainer = new MockStreamContainer($factory);
+
+        $this->expectStreamCollectionAttach();
+        $runner->attach($streamContainer, function () {
+            // ignore
+        }, $streamContainer->getIdentity());
+
+        $this->expectStreamIsReadable()->setReturn(function () {
+            return false;
+        });
+        $this->expectStreamCollectionDetach();
+        $this->expectStreamCollectionAttach();
+        $runner->attach($streamContainer, function () {
+            // ignore
+        }, $streamContainer->getIdentity());
+    }
+
     public function testIdentityConflict(): void
     {
         $this->expectStreamFactory();
@@ -81,6 +111,10 @@ class RunnerTest extends TestCase
         $runner->attach($streamContainer, function () {
             // ignore
         }, $streamContainer->getIdentity());
+
+        $this->expectStreamIsReadable()->setReturn(function () {
+            return true;
+        });
         $this->expectException(RunnerException::class);
         $this->expectExceptionMessage('Stream container with identity mock-stream-container already attached');
         $runner->attach($streamContainer, function () {
