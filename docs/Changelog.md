@@ -6,6 +6,15 @@
 
  > PHP version `^8.1`
 
+### `3.7.2`
+
+ * Detach connection in failed handshake (@sirn-se)
+
+### `3.7.1`
+
+ * Fix spelling in class definitions (@carvefx)
+ * Detach connection if not usable (@sirn-se)
+
 ### `3.7.0`
 
  * Configuration class for various settings (@sirn-se)

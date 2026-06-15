@@ -138,6 +138,7 @@ class HandshakeTest extends TestCase
         });
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamGetMetadata();
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
         $server->start();
 
@@ -181,6 +182,7 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals("HTTP/1.1 405 Method Not Allowed\r\n\r\n", $params[0]);
         });
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
         $server->start();
 
@@ -224,6 +226,7 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals("HTTP/1.1 426 Upgrade Required\r\n\r\n", $params[0]);
         });
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
         $server->start();
 
@@ -267,6 +270,7 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals("HTTP/1.1 426 Upgrade Required\r\n\r\n", $params[0]);
         });
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
         $server->start();
 
@@ -310,6 +314,7 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals("HTTP/1.1 426 Upgrade Required\r\nSec-WebSocket-Version: 13\r\n\r\n", $params[0]);
         });
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
         $server->start();
 
@@ -350,6 +355,7 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals("HTTP/1.1 426 Upgrade Required\r\n\r\n", $params[0]);
         });
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
         $server->start();
 
@@ -393,6 +399,7 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals("HTTP/1.1 426 Upgrade Required\r\n\r\n", $params[0]);
         });
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
         $server->start();
 
@@ -438,6 +445,7 @@ class HandshakeTest extends TestCase
         });
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamGetMetadata();
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
         $server->start();
 

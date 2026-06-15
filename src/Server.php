@@ -642,6 +642,7 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
             ]);
             $this->dispatch('connect', [$this, $connection, $request]);
         } catch (ExceptionInterface | StreamException $e) {
+            $this->runner->detach($connection->getIdentity());
             $connection->disconnect();
             throw new ConnectionFailureException("Server failed to accept: {$e->getMessage()}");
         }
