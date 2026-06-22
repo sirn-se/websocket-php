@@ -99,7 +99,7 @@ class FrameHandler implements LoggerAwareInterface, Stringable
 
         // Get masking key.
         if ($masked) {
-            $maskingKey = $this->stream->read(4);
+            $maskingKey = $this->read(4);
         }
 
         // Get the actual payload, if any (might not be for e.g. close frames).
