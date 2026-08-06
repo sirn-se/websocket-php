@@ -605,6 +605,7 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
                         'message' => $e->getMessage(),
                     ]);
                     $this->dispatch('error', [$this, $connection, $e]);
+                    $this->dispatch('disconnect', [$this, $connection]);
                 } catch (CloseException $e) {
                     // Should close
                     $connection->close($e->getCloseStatus(), $e->getMessage());

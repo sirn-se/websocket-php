@@ -569,6 +569,41 @@ class ServerTest extends TestCase
         $server->disconnect();
     }
 
+    public function testRunConnectionClosedExceptionDispatchesDisconnect(): void
+    {
+        $this->expectWsServerCreate();
+        $server = new Server(8000, streamFactory: new StreamFactory());
+
+        $disconnected = [];
+        $server->onDisconnect(function ($server, $connection) use (&$disconnected) {
+            $disconnected[] = $connection->getIdentity();
+        });
+
+        $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
+        $this->expectWsSelectConnections(['server/8000']);
+        $this->expectWsServerAccept();
+        $this->expectWsServerPerformHandshake();
+        $this->expectSocketStreamIsConnected();
+        $this->expectWsSelectConnections(['*/connection/8000/12345']);
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () use ($server) {
+            $server->stop();
+            throw new ConnectionClosedException();
+        });
+        $this->expectStreamCollectionDetach();
+        $this->expectSocketStreamClose();
+        $server->start();
+
+        // Should be removed and dispatched as disconnected
+        $this->assertEquals(0, $server->getConnectionCount());
+        $this->assertEquals(['*/connection/8000/12345'], $disconnected);
+
+        $this->expectSocketServerClose();
+        $this->expectStreamCollectionDetach();
+        $server->disconnect();
+    }
+
     public function testRunServerException(): void
     {
         $this->expectWsServerCreate();
