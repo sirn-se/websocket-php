@@ -43,10 +43,11 @@ class Runner
     /** @var array<string, Container> $containers */
     private array $containers = [];
 
-    public function __construct(StreamFactory $streamFactory)
+    /* @todo: Require StreamCollection in v4 */
+    public function __construct(StreamFactory $streamFactory, StreamCollection|null $streamCollection = null)
     {
         $this->streamFactory = $streamFactory;
-        $this->streamCollection = $this->streamFactory->createStreamCollection();
+        $this->streamCollection = $streamCollection ?? $this->streamFactory->createStreamCollection();
     }
 
     public function attach(StreamContainerInterface $streamContainer, Closure $onSelect, string $identity): void

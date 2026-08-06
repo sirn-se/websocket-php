@@ -94,6 +94,7 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
      * @param bool $ssl If SSL should be used
      * @param Configuration|null $configuration
      * @param StreamFactory|null $streamFactory
+     * @param Runner|null $runner
      * @throws InvalidArgumentException If invalid port provided
      */
     public function __construct(
@@ -101,6 +102,7 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
         bool $ssl = false,
         Configuration|null $configuration = null,
         StreamFactory|null $streamFactory = null,
+        Runner|null $runner = null,
     ) {
         if ($port < 0 || $port > 65535) {
             throw new InvalidArgumentException("Invalid port '{$port}' provided");
@@ -111,7 +113,7 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
         $this->streamFactory = $streamFactory ?? new StreamFactory();
         $this->identity = "server/{$port}";
         $this->initConfiguration($configuration);
-        $this->runner = new Runner($this->streamFactory);
+        $this->runner = $runner ?? new Runner($this->streamFactory);
     }
 
     /**
@@ -457,7 +459,7 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
 
     /**
      * Orderly shutdown of server.
-     * @param int $closeStatus Default is 1001 "Going away"
+     * @param int<0, 4999> $closeStatus Default is 1001 "Going away"
      */
     public function shutdown(int $closeStatus = 1001): void
     {

@@ -14,19 +14,29 @@ namespace WebSocket\Message;
 class Close extends Message
 {
     protected string $opcode = 'close';
+    /** @var int<0, 4999>|null $status */
     protected int|null $status = null;
 
+    /**
+     * @param int<0, 4999>|null $status
+     */
     public function __construct(int|null $status = null, string $content = '')
     {
         $this->status = $status;
         parent::__construct($content);
     }
 
+    /**
+     * @return int<0, 4999>|null
+     */
     public function getCloseStatus(): int|null
     {
         return $this->status;
     }
 
+    /**
+     * @param int<0, 4999>|null $status
+     */
     public function setCloseStatus(int|null $status): void
     {
         $this->status = $status;

@@ -63,7 +63,7 @@ trait SendMethodsTrait
 
     /**
      * Tell the socket to close.
-     * @param integer $status  http://tools.ietf.org/html/rfc6455#section-7.4
+     * @param int<0, 4999> $status  http://tools.ietf.org/html/rfc6455#section-7.4
      * @param string  $message A closing message, max 125 bytes.
      * @return Close instance
      */

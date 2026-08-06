@@ -64,7 +64,7 @@ class Configuration implements LoggerAwareInterface, Stringable
 
     public function __toString(): string
     {
-        return $this->stringable('');
+        return $this->stringable();
     }
 
 
