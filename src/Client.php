@@ -87,18 +87,20 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
      * @param UriInterface|string $uri A ws/wss-URI
      * @param Configuration|null $configuration
      * @param StreamFactory|null $streamFactory
+     * @param Runner|null $runner
      */
     public function __construct(
         UriInterface|string $uri,
         Configuration|null $configuration = null,
         StreamFactory|null $streamFactory = null,
+        Runner|null $runner = null,
     ) {
         $this->socketUri = $this->parseUri($uri);
         $this->streamFactory = $streamFactory ?? new StreamFactory();
         $this->httpFactory = new DefaultHttpFactory();
         $this->identity = "client/{$this->socketUri->getHost()}";
         $this->initConfiguration($configuration);
-        $this->runner = new Runner($this->streamFactory);
+        $this->runner = $runner ?? new Runner($this->streamFactory);
     }
 
     /**

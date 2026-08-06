@@ -11,7 +11,7 @@ namespace WebSocket\Exception;
  * WebSocket\Exception\BadUriException class.
  * Thrown when invalid URI is provided.
  */
-class BadUriException extends Exception
+class BadUriException extends Exception implements HandlerLevelInterface
 {
     public function __construct(string $message = 'Bad URI')
     {

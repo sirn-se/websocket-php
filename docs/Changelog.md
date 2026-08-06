@@ -2,6 +2,18 @@
 
 # Websocket: Changelog
 
+## `v3.8`
+
+ > PHP version `^8.1`
+
+### `3.8.0`
+
+ * Dispach onDisconnect on remote connection close (@srebb, @sirn-se)
+ * Exceptions: ControlInterface on CloseException, ReconnectException (@sirn-se)
+ * Exceptions: HandlerLevelInterface on BadUriException, ClientException, RunnerException, ServerException (@sirn-se)
+ * Close status as int<0, 4999>|null (@sirn-se)
+ * Preparations for v4 (@sirn-se)
+
 ## `v3.7`
 
  > PHP version `^8.1`
