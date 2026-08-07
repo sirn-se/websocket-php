@@ -19,7 +19,6 @@ use WebSocket\Frame\{
 };
 use WebSocket\Trait\{
     ConfigurationTrait,
-    OpcodeTrait,
     StringableTrait,
 };
 
@@ -30,7 +29,6 @@ use WebSocket\Trait\{
 class MessageHandler implements LoggerAwareInterface, Stringable
 {
     use ConfigurationTrait;
-    use OpcodeTrait;
     use StringableTrait;
 
     private const DEFAULT_SIZE = 4096;
