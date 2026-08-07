@@ -328,9 +328,9 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
     public function addMiddleware(MiddlewareInterface $middleware): self
     {
         $this->middlewares[] = $middleware;
-        foreach ($this->getConnections() as $connection) {
+        $this->connections->walk(function (Connection $connection) use ($middleware) {
             $connection->addMiddleware($middleware);
-        }
+        });
         return $this;
     }
 

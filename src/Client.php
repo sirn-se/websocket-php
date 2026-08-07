@@ -94,11 +94,12 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
         UriInterface|string $uri,
         Configuration|null $configuration = null,
         StreamFactory|null $streamFactory = null,
+        HttpFactory|null $httpFactory = null,
         Runner|null $runner = null,
     ) {
         $this->socketUri = $this->parseUri($uri);
         $this->streamFactory = $streamFactory ?? new StreamFactory();
-        $this->httpFactory = new DefaultHttpFactory();
+        $this->httpFactory = $httpFactory ?? new DefaultHttpFactory();
         $this->identity = "client/{$this->socketUri->getHost()}";
         $this->initConfiguration($configuration);
         $this->runner = $runner ?? new Runner($this->streamFactory);
