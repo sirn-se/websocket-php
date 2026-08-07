@@ -145,6 +145,33 @@ $frameSize = $server->getFrameSize();
 $server->setFrameSize($frameSize);
 ```
 
+### Opcode registry
+
+```
+type: WebSocket\Message\OpcodeRegistry
+default: Phrity\Net\OpcodeRegistry // Default mapping
+```
+
+By default, opcodes are mapped to built-in classes (text, binary, close, ping, pong).
+With the OpcodeRegistry, the library can be configured to replace or add additional opcode imlementations.
+
+```php
+// Configuration instance
+$configuration = new WebSocket\Configuration(opcodeRegistry: $opcodeRegistry);
+$configuration->setOpcodeRegistry($opcodeRegistry);
+$opcodeRegistry = $configuration->getOpcodeRegistry();
+```
+
+The `register(int $opcode, string $classname)` method will replace or add mapping.
+- `$opcode` must be integer in range 1-15
+- `$classname` must be class-string for class that extend `WebSocket\Message\Message`
+
+```php
+$opcodeRegistry = $configuration->getOpcodeRegistry();
+$opcodeRegistry->register(1, 'MyTextMessage'); // Will replace Text for opcode=1
+$opcodeRegistry->register(3, 'MyCustomMessage'); // Will add support for opcode=3
+```
+
 ### Persistent connection (Client only)
 
 ```

@@ -89,8 +89,12 @@ class Connection implements IdentityInterface, LoggerAwareInterface, StreamConta
         Configuration|null $configuration = null,
     ) {
         $this->stream = $stream;
+        $this->initConfiguration($configuration);
         $this->httpHandler = new HttpHandler($this->stream, $ssl, $httpFactory);
-        $this->messageHandler = new MessageHandler(new FrameHandler($this->stream, $pushMasked, $pullMaskedRequired));
+        $this->messageHandler = new MessageHandler(
+            new FrameHandler($this->stream, $pushMasked, $pullMaskedRequired),
+            $this->configuration
+        );
         $this->middlewareHandler = new MiddlewareHandler($this->messageHandler, $this->httpHandler);
         $this->localName = $this->stream->getLocalName() ?? '<unknown>';
         $this->remoteName = $this->stream->getRemoteName() ?? '<unknown>';
@@ -99,7 +103,6 @@ class Connection implements IdentityInterface, LoggerAwareInterface, StreamConta
             $this->getIdentityPart($this->localName),
             $this->getIdentityPart($this->remoteName),
         );
-        $this->initConfiguration($configuration);
         $this->stream->setTimeout($this->configuration->getTimeout());
     }
 

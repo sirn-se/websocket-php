@@ -53,7 +53,7 @@ class FrameHandlerTest extends TestCase
         $this->assertInstanceOf(FrameHandler::class, $handler);
         $this->assertInstanceOf(Stringable::class, $handler);
 
-        $frame = new Frame('text', 'Text message', true);
+        $frame = new Frame(1, 'Text message', true);
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(14, strlen($params[0]));
             $this->assertEquals(base64_decode('gQxUZXh0IG1lc3NhZ2U='), $params[0]);
@@ -89,7 +89,7 @@ class FrameHandlerTest extends TestCase
         });
         $frame = $handler->pull();
         $this->assertEquals('Text message', $frame->getPayload());
-        $this->assertEquals('text', $frame->getOpcode());
+        $this->assertEquals(1, $frame->getOpcode());
 
         fclose($temp);
     }
@@ -105,7 +105,7 @@ class FrameHandlerTest extends TestCase
         $handler = new FrameHandler($stream, true, false);
         $this->assertInstanceOf(FrameHandler::class, $handler);
 
-        $frame = new Frame('text', 'Text message', true);
+        $frame = new Frame(1, 'Text message', true);
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals(18, strlen($params[0]));
         });
@@ -143,7 +143,7 @@ class FrameHandlerTest extends TestCase
         });
         $frame = $handler->pull();
         $this->assertEquals('Text message', $frame->getPayload());
-        $this->assertEquals('text', $frame->getOpcode());
+        $this->assertEquals(1, $frame->getOpcode());
 
         fclose($temp);
     }
@@ -161,7 +161,7 @@ class FrameHandlerTest extends TestCase
         $handler = new FrameHandler($stream, false, false);
         $this->assertInstanceOf(FrameHandler::class, $handler);
 
-        $frame = new Frame('text', $payload, true);
+        $frame = new Frame(1, $payload, true);
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) use ($payload) {
             $this->assertEquals(132, strlen($params[0]));
             $this->assertEquals(base64_decode('gX4='), substr($params[0], 0, 2));
@@ -204,7 +204,7 @@ class FrameHandlerTest extends TestCase
         $frame = $handler->pull();
         $this->assertEquals($payload, $frame->getPayload());
         $this->assertEquals(128, $frame->getPayloadLength());
-        $this->assertEquals('text', $frame->getOpcode());
+        $this->assertEquals(1, $frame->getOpcode());
 
         fclose($temp);
     }
@@ -222,7 +222,7 @@ class FrameHandlerTest extends TestCase
         $handler = new FrameHandler($stream, false, false);
         $this->assertInstanceOf(FrameHandler::class, $handler);
 
-        $frame = new Frame('text', $payload, true);
+        $frame = new Frame(1, $payload, true);
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) use ($payload) {
             $this->assertEquals(65546, strlen($params[0]));
             $this->assertEquals(base64_decode('gX8='), substr($params[0], 0, 2));
@@ -265,7 +265,7 @@ class FrameHandlerTest extends TestCase
         $frame = $handler->pull();
         $this->assertEquals($payload, $frame->getPayload());
         $this->assertEquals(65536, $frame->getPayloadLength());
-        $this->assertEquals('text', $frame->getOpcode());
+        $this->assertEquals(1, $frame->getOpcode());
 
         fclose($temp);
     }
@@ -281,7 +281,7 @@ class FrameHandlerTest extends TestCase
         $handler = new FrameHandler($stream, false, false);
         $this->assertInstanceOf(FrameHandler::class, $handler);
 
-        $frame = new Frame('text', 'Failed message', true);
+        $frame = new Frame(1, 'Failed message', true);
         $this->expectSocketStreamWrite()->setReturn(function () {
             return 0;
         });

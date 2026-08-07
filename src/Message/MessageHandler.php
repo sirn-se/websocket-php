@@ -13,13 +13,13 @@ use Psr\Log\{
 };
 use Stringable;
 use WebSocket\Configuration;
-use WebSocket\Exception\BadOpcodeException;
 use WebSocket\Frame\{
     Frame,
     FrameHandler,
 };
 use WebSocket\Trait\{
     ConfigurationTrait,
+    OpcodeTrait,
     StringableTrait,
 };
 
@@ -30,6 +30,7 @@ use WebSocket\Trait\{
 class MessageHandler implements LoggerAwareInterface, Stringable
 {
     use ConfigurationTrait;
+    use OpcodeTrait;
     use StringableTrait;
 
     private const DEFAULT_SIZE = 4096;
@@ -65,7 +66,7 @@ class MessageHandler implements LoggerAwareInterface, Stringable
      */
     public function push(Message $message, int $size = self::DEFAULT_SIZE): Message
     {
-        $frames = $message->getFrames($size);
+        $frames = $message->getFrames($size, $this->configuration->getOpcodeRegistry());
         foreach ($frames as $frame) {
             $this->frameHandler->push($frame);
         }
@@ -100,19 +101,13 @@ class MessageHandler implements LoggerAwareInterface, Stringable
 
     /**
      * @param non-empty-array<Frame> $frames
-     * @throws BadOpcodeException
      */
     private function createMessage(array $frames): Message
     {
-        $opcode = $frames[0]->getOpcode() ?? null;
-        $message = match ($opcode) {
-            'text' => new Text(),
-            'binary' => new Binary(),
-            'ping' => new Ping(),
-            'pong' => new Pong(),
-            'close' => new Close(),
-            default => throw new BadOpcodeException("Invalid opcode '{$opcode}' provided"),
-        };
+        /** @var int<1, 15> $opcode */
+        $opcode = $frames[0]->getOpcode();
+        $message = $this->configuration->getOpcodeRegistry()->createMessage($opcode);
+
         $message->setPayload(array_reduce($frames, function (string $carry, Frame $item) {
             return $carry . $item->getPayload();
         }, ''));
