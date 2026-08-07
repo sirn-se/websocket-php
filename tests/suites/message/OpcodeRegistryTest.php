@@ -10,20 +10,9 @@ declare(strict_types=1);
 namespace WebSocket\Test\Message;
 
 use DomainException;
-use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
-use Phrity\Net\Mock\SocketStream;
-use Phrity\Net\Mock\Stack\{
-    ExpectContextTrait,
-    ExpectSocketStreamTrait,
-};
 use RangeException;
-use Stringable;
 use WebSocket\Exception\BadOpcodeException;
-use WebSocket\Frame\{
-    Frame,
-    FrameHandler
-};
 use WebSocket\Message\{
     Message,
     Binary,
@@ -32,8 +21,8 @@ use WebSocket\Message\{
     Ping,
     Pong,
     Text,
-    MessageHandler
 };
+use WebSocket\Test\MockOpcodeRegistry;
 
 /**
  * Test case for WebSocket\Message\OpcodeRegistry.
@@ -104,5 +93,25 @@ class OpcodeRegistryTest extends TestCase
         $this->expectExceptionMessage('Opcode must be integer in range 1-15, 16 provided');
         // @phpstan-ignore argument.type
         $opcodeRegistry->createMessage(16);
+    }
+
+    public function testCreateMessageUnexistingClass(): void
+    {
+        $opcodeRegistry = new MockOpcodeRegistry();
+        $opcodeRegistry->mockBind(1, 'UnexistingClass');
+        $this->expectException(BadOpcodeException::class);
+        $this->expectExceptionMessage('Implementation class "UnexistingClass" for opcode 1 not found');
+        $opcodeRegistry->createMessage(1);
+    }
+
+    public function testCreateMessageInvalidClass(): void
+    {
+        $opcodeRegistry = new MockOpcodeRegistry();
+        $opcodeRegistry->mockBind(2, $opcodeRegistry::class);
+        $this->expectException(BadOpcodeException::class);
+        $this->expectExceptionMessage(
+            'Implementation class WebSocket\Test\MockOpcodeRegistry must extend WebSocket\Message\Message'
+        );
+        $opcodeRegistry->createMessage(2);
     }
 }

@@ -19,7 +19,7 @@ use WebSocket\Exception\BadOpcodeException;
 class OpcodeRegistry
 {
     /** @var array<int<1, 15>, class-string> $map */
-    private array $map = [
+    protected array $map = [
         1 => Text::class,
         2 => Binary::class,
         8 => Close::class,
@@ -65,7 +65,15 @@ class OpcodeRegistry
                 $opcode
             ));
         }
-        return new $classname();
+        $class = new $classname();
+        if (!$class instanceof Message) {
+            throw new BadOpcodeException(sprintf(
+                'Implementation class %s must extend %s',
+                $class::class,
+                Message::class,
+            ));
+        }
+        return $class;
     }
 
     /**
