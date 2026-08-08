@@ -798,7 +798,6 @@ class ClientTest extends TestCase
         $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
-        $this->expectSocketStreamIsConnected();
         $client->disconnect();
 
         $client->disconnect();
@@ -1002,7 +1001,6 @@ class ClientTest extends TestCase
         $this->expectSocketStreamIsConnected();
         $client->start();
 
-        $this->expectSocketStreamIsConnected();
         $client->disconnect();
     }
 
@@ -1031,7 +1029,6 @@ class ClientTest extends TestCase
         $this->expectSocketStreamClose();
         $client->start();
 
-        $this->expectSocketStreamIsConnected();
         $client->disconnect();
     }
 
@@ -1086,9 +1083,9 @@ class ClientTest extends TestCase
         $this->expectSocketStreamClose();
         $this->expectSocketStreamIsConnected();
         $this->expectStreamCollectionDetach();
+        $this->expectSocketStreamIsConnected();
         $client->start();
 
-        $this->expectSocketStreamIsConnected();
         $client->disconnect();
     }
 
@@ -1134,7 +1131,6 @@ class ClientTest extends TestCase
         $this->expectSocketStreamIsConnected();
         $client->start();
 
-        $this->expectSocketStreamIsConnected();
         $client->disconnect();
     }
 
