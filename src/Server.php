@@ -61,7 +61,7 @@ use WebSocket\Trait\{
 class Server implements IdentityInterface, LoggerAwareInterface, StreamContainerInterface, Stringable
 {
     use ConfigurationTrait;
-    /** @use ListenerTrait<Server> */
+    /** @use ListenerTrait<Server, Message> */
     use ListenerTrait;
     use SendMethodsTrait;
     use StringableTrait;
@@ -587,6 +587,7 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
                 try {
                     $message = $connection->pullMessage();
                     $this->dispatch($message->getOpcode(), [$this, $connection, $message]);
+                    $this->dispatch('message', [$this, $connection, $message]);
                 } catch (MessageLevelInterface $e) {
                     // Error, but keep connection open
                     $this->configuration->getLogger()->error("[{scope}] {message}", [

@@ -8,6 +8,8 @@
 
 ### `3.8.0`
 
+ * Configurable opcode/class mapping using OpcodeRegistry (@sirn-se)
+ * onMessage() listener, triggered on all messages (@sirn-se)
  * Connections container class (@sirn-se)
  * Dispach onDisconnect on remote connection close (@srebb, @sirn-se)
  * Exceptions: ControlInterface on CloseException, ReconnectException (@sirn-se)

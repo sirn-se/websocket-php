@@ -12,7 +12,11 @@ use Psr\Http\Message\{
     RequestInterface,
     ResponseInterface,
 };
-use WebSocket\Connection;
+use WebSocket\{
+    Client,
+    Connection,
+    Server,
+};
 use WebSocket\Exception\ExceptionInterface;
 use WebSocket\Message\{
     Binary,
@@ -26,7 +30,8 @@ use WebSocket\Message\{
 /**
  * WebSocket\Trait\ListenerTrait trait.
  * Provides listener functions.
- * @template T
+ * @template T of Client|Server
+ * @template M of Message
  */
 trait ListenerTrait
 {
@@ -94,6 +99,13 @@ trait ListenerTrait
         return $this;
     }
 
+    /** @param Closure<M>(T, Connection, M): void $closure */
+    public function onMessage(Closure $closure): self
+    {
+        $this->listeners['message'] = $closure;
+        return $this;
+    }
+
     /** @param Closure(T, Connection|null, ExceptionInterface): void $closure */
     public function onError(Closure $closure): self
     {
@@ -112,7 +124,7 @@ trait ListenerTrait
      * @param array{
      *   0: T,
      *   1?: Connection|null,
-     *   2?: Message|Text|Binary|Close|Ping|Pong|RequestInterface|ResponseInterface|ExceptionInterface|null,
+     *   2?: M|RequestInterface|ResponseInterface|ExceptionInterface|null,
      *   3?: ResponseInterface|null
      * } $args
      */

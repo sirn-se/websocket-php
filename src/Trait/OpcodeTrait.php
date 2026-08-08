@@ -10,6 +10,8 @@ namespace WebSocket\Trait;
 /**
  * WebSocket\Trait\OpcodeTrait trait.
  * Opcode number/name list.
+ * @deprecated Class will be removed in v4
+ * @phpstan-ignore trait.unused
  */
 trait OpcodeTrait
 {

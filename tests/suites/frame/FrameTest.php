@@ -21,7 +21,7 @@ class FrameTest extends TestCase
 {
     public function testTextFrame(): void
     {
-        $frame = new Frame('text', 'Text message', true);
+        $frame = new Frame(1, 'Text message', true);
         $this->assertInstanceOf(Frame::class, $frame);
         $this->assertInstanceOf(Stringable::class, $frame);
         $this->assertTrue($frame->isFinal());
@@ -29,22 +29,22 @@ class FrameTest extends TestCase
         $this->assertFalse($frame->getRsv2());
         $this->assertFalse($frame->getRsv3());
         $this->assertFalse($frame->isContinuation());
-        $this->assertEquals('text', $frame->getOpcode());
+        $this->assertEquals(1, $frame->getOpcode());
         $this->assertEquals('Text message', $frame->getPayload());
         $this->assertEquals(12, $frame->getPayloadLength());
-        $this->assertEquals('WebSocket\Frame\Frame(text)', "{$frame}");
+        $this->assertEquals('WebSocket\Frame\Frame(1)', "{$frame}");
     }
 
     public function testContinuationFrame(): void
     {
-        $frame = new Frame('continuation', '0123456789', false);
+        $frame = new Frame(0, '0123456789', false);
         $this->assertInstanceOf(Frame::class, $frame);
         $this->assertInstanceOf(Stringable::class, $frame);
         $this->assertFalse($frame->isFinal());
         $this->assertTrue($frame->isContinuation());
-        $this->assertEquals('continuation', $frame->getOpcode());
+        $this->assertEquals(0, $frame->getOpcode());
         $this->assertEquals('0123456789', $frame->getPayload());
         $this->assertEquals(10, $frame->getPayloadLength());
-        $this->assertEquals('WebSocket\Frame\Frame(continuation)', "{$frame}");
+        $this->assertEquals('WebSocket\Frame\Frame(0)', "{$frame}");
     }
 }

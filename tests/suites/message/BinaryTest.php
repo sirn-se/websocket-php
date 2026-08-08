@@ -14,7 +14,7 @@ use Stringable;
 use WebSocket\Frame\Frame;
 use WebSocket\Message\{
     Binary,
-    Message
+    Message,
 };
 
 /**

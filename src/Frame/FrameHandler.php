@@ -18,7 +18,6 @@ use WebSocket\Configuration;
 use WebSocket\Exception\CloseException;
 use WebSocket\Trait\{
     ConfigurationTrait,
-    OpcodeTrait,
     StringableTrait
 };
 
@@ -29,7 +28,6 @@ use WebSocket\Trait\{
 class FrameHandler implements LoggerAwareInterface, Stringable
 {
     use ConfigurationTrait;
-    use OpcodeTrait;
     use StringableTrait;
 
     private const SCOPE = 'frame-handler';
@@ -75,9 +73,7 @@ class FrameHandler implements LoggerAwareInterface, Stringable
         $rsv3 = (bool)($byte1 & 0b00010000);
 
         // Parse opcode
-        $opcodeInt = $byte1 & 0b00001111;
-        $opcodeInts = array_flip(self::$opcodes);
-        $opcode = array_key_exists($opcodeInt, $opcodeInts) ? $opcodeInts[$opcodeInt] : strval($opcodeInt);
+        $opcode = $byte1 & 0b00001111;
 
         // Masking bit
         $masked = (bool)($byte2 & 0b10000000);
@@ -144,7 +140,7 @@ class FrameHandler implements LoggerAwareInterface, Stringable
         $byte1 |= $frame->getRsv1() ? 0b01000000 : 0b00000000; // RSV1 bit.
         $byte1 |= $frame->getRsv2() ? 0b00100000 : 0b00000000; // RSV2 bit.
         $byte1 |= $frame->getRsv3() ? 0b00010000 : 0b00000000; // RSV3 bit.
-        $byte1 |= self::$opcodes[$frame->getOpcode()]; // Set opcode.
+        $byte1 |= $frame->getOpcode(); // Set opcode.
         $data .= pack('C', $byte1);
 
         $byte2 = $this->pushMasked ? 0b10000000 : 0b00000000; // Masking bit marker.

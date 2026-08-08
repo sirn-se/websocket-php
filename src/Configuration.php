@@ -15,6 +15,7 @@ use Psr\Log\{
     NullLogger,
 };
 use Stringable;
+use WebSocket\Message\OpcodeRegistry;
 use WebSocket\Trait\StringableTrait;
 
 /**
@@ -34,6 +35,7 @@ class Configuration implements LoggerAwareInterface, Stringable
     private bool $persistent;
     /** @var int<1, max>|null $maxConnections */
     private int|null $maxConnections;
+    private OpcodeRegistry $opcodeRegistry;
 
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
@@ -45,6 +47,7 @@ class Configuration implements LoggerAwareInterface, Stringable
      * @param int<1, max> $frameSize
      * @param bool $persistent
      * @param int<1, max>|null $maxConnections
+     * @param OpcodeRegistry $opcodeRegistry
      */
     public function __construct(
         LoggerInterface|null $logger = null,
@@ -53,6 +56,7 @@ class Configuration implements LoggerAwareInterface, Stringable
         int|null $frameSize = null,
         bool|null $persistent = null,
         int|null $maxConnections = null,
+        OpcodeRegistry|null $opcodeRegistry = null,
     ) {
         $this->setLogger($logger ?? new NullLogger());
         $this->setContext($context ?? new Context());
@@ -60,6 +64,7 @@ class Configuration implements LoggerAwareInterface, Stringable
         $this->setFrameSize($frameSize ?? 4096);
         $this->setPersistent($persistent ?? false);
         $this->setMaxConnections($maxConnections);
+        $this->setOpcodeRegistry($opcodeRegistry ?? new OpcodeRegistry());
     }
 
     public function __toString(): string
@@ -149,6 +154,24 @@ class Configuration implements LoggerAwareInterface, Stringable
             throw new InvalidArgumentException("Invalid frameSize '{$frameSize}' provided");
         }
         $this->frameSize = $frameSize;
+    }
+
+    /* ---------- OpcodeRegistry methods --------------------------------------------------------------------------- */
+
+    /**
+     * @return OpcodeRegistry
+     */
+    public function getOpcodeRegistry(): OpcodeRegistry
+    {
+        return $this->opcodeRegistry;
+    }
+
+    /**
+     * @param OpcodeRegistry $opcodeRegistry
+     */
+    public function setOpcodeRegistry(OpcodeRegistry $opcodeRegistry): void
+    {
+        $this->opcodeRegistry = $opcodeRegistry;
     }
 
 

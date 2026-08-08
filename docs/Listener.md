@@ -33,6 +33,10 @@ $client_or_server
     ->onClose(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection $connection, WebSocket\Message\Close $message) {
         // Act on incoming message
     })
+    // Listen to all messages
+    ->onCMessage(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection $connection, WebSocket\Message\Message $message) {
+        // Act on incoming message
+    })
     ;
 ```
 
@@ -96,6 +100,6 @@ While running, it will attempt to handle various errors.
 
 * MessageLevelInterface (BadOpcodeException, ConnectionTimeoutException) can not read/send a message, but connection is still open
 * ConnectionLevelInterface (ConnectionClosedException, ConnectionFailureException, HandshakeException) will close connection
-* BadUriException, ClientException, ServerException are not resolvable and exit the application
+* HandlerLevelInterface (BadUriException, ClientException, RunnerException, ServerException) are not resolvable and exit the application
 * CloseException will initiate close procedure
 * ReconnectException will close and reconnect, optionally with new URI.

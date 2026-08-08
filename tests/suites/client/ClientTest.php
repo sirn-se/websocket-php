@@ -43,10 +43,14 @@ use WebSocket\Exception\{
     CloseException,
     ReconnectException,
 };
-use WebSocket\Test\MockStreamTrait;
+use WebSocket\Test\{
+    CustomMessage,
+    MockStreamTrait,
+};
 use WebSocket\Message\{
     Binary,
     Close,
+    Message,
     Ping,
     Pong,
     Text
@@ -830,6 +834,11 @@ class ClientTest extends TestCase
                 $errors[0]->getMessage()
             );
         });
+        $client->onMessage(function ($client, $connection, $message) {
+            $this->assertInstanceOf(Client::class, $client);
+            $this->assertInstanceOf(Connection::class, $connection);
+            $this->assertInstanceOf(Message::class, $message);
+        });
         $client->onText(function ($client, $connection, $message) {
             $this->assertInstanceOf(Client::class, $client);
             $this->assertInstanceOf(Connection::class, $connection);
@@ -1197,6 +1206,140 @@ class ClientTest extends TestCase
             );
         });
 
+        $client->disconnect();
+    }
+
+    public function testExtendTextImplementation(): void
+    {
+        CustomMessage::$customOpcode = 'text';
+
+        // Creating client
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
+        $client->getConfiguration()->getOpcodeRegistry()->register(1, CustomMessage::class);
+
+        $this->expectWsClientConnect();
+        $this->expectWsClientPerformHandshake();
+        $client->connect();
+
+        // Sending message
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(23, strlen($params[0]));
+        });
+        $message = $client->send(new CustomMessage('Sending a message'));
+        $this->assertInstanceof(CustomMessage::class, $message);
+        $this->assertEquals('text', $message->getOpcode());
+
+        // Receiving message
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('gZM=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('IW+Vrg==');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(19, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('cwr2y0gZ/MBGT/SOTArm3UAI8A==');
+        });
+        $message = $client->receive();
+        $this->assertInstanceof(CustomMessage::class, $message);
+        $this->assertEquals('text', $message->getOpcode());
+
+        $client->onMessage(function ($client, $connection, $message) {
+            $this->assertInstanceOf(Client::class, $client);
+            $this->assertInstanceOf(Connection::class, $connection);
+            $this->assertInstanceOf(CustomMessage::class, $message);
+            $this->assertEquals('text', $message->getOpcode());
+            $client->stop();
+        });
+
+        $this->expectSocketStreamIsConnected();
+        $this->expectWsSelectConnections(['*/connection/12345/8000']);
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('gQA=');
+        });
+        $this->expectSocketStreamIsConnected();
+        $client->start();
+
+        $this->expectStreamCollectionDetach();
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
+        $client->disconnect();
+    }
+
+    public function testExtendCustomImplementation(): void
+    {
+        CustomMessage::$customOpcode = 'custom-3';
+
+        // Creating client
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
+        $client->getConfiguration()->getOpcodeRegistry()->register(3, CustomMessage::class);
+
+        $this->expectWsClientConnect();
+        $this->expectWsClientPerformHandshake();
+        $client->connect();
+
+        // Sending message
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(23, strlen($params[0]));
+        });
+        $message = $client->send(new CustomMessage('Sending a message'));
+        $this->assertInstanceof(CustomMessage::class, $message);
+        $this->assertEquals('custom-3', $message->getOpcode());
+
+        // Receiving message
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('g5M=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('IW+Vrg==');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(19, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('cwr2y0gZ/MBGT/SOTArm3UAI8A==');
+        });
+        $message = $client->receive();
+        $this->assertInstanceof(CustomMessage::class, $message);
+        $this->assertEquals('custom-3', $message->getOpcode());
+
+        $client->onMessage(function ($client, $connection, $message) {
+            $this->assertInstanceOf(Client::class, $client);
+            $this->assertInstanceOf(Connection::class, $connection);
+            $this->assertInstanceOf(CustomMessage::class, $message);
+            $this->assertEquals('custom-3', $message->getOpcode());
+            $client->stop();
+        });
+
+        $this->expectSocketStreamIsConnected();
+        $this->expectWsSelectConnections(['*/connection/12345/8000']);
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('gwA=');
+        });
+        $this->expectSocketStreamIsConnected();
+        $client->start();
+
+        $this->expectStreamCollectionDetach();
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
         $client->disconnect();
     }
 }

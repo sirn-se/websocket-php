@@ -89,10 +89,12 @@ abstract class Message implements Stringable
     /**
      * Split messages into frames
      * @param int<1, max> $frameSize
+     * @param OpcodeRegistry|null $opcodeRegistry
      * @return array<Frame>
      */
-    public function getFrames(int $frameSize = 4096): array
+    public function getFrames(int $frameSize = 4096, OpcodeRegistry|null $opcodeRegistry = null): array
     {
+        $opcodeRegistry = $opcodeRegistry ?? new OpcodeRegistry();
         $frames = [];
         $split = str_split($this->getPayload(), $frameSize);
         if (empty($split)) {
@@ -100,7 +102,7 @@ abstract class Message implements Stringable
         }
         foreach ($split as $i => $payload) {
             $frames[] = new Frame(
-                $i === 0 ? $this->opcode : 'continuation',
+                $i === 0 ? $opcodeRegistry->getOpcode(static::class) : 0,
                 $payload,
                 $i === array_key_last($split)
             );

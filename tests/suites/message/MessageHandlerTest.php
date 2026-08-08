@@ -294,7 +294,7 @@ class MessageHandlerTest extends TestCase
             return base64_decode('gwA=');
         });
         $this->expectException(BadOpcodeException::class);
-        $this->expectExceptionMessage("Invalid opcode '3' provided");
+        $this->expectExceptionMessage("Implementation class null for opcode 3 not found");
         $message = $handler->pull();
 
         fclose($temp);
