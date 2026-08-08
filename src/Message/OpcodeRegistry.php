@@ -10,6 +10,7 @@ namespace WebSocket\Message;
 use DomainException;
 use InvalidArgumentException;
 use RangeException;
+use ReflectionClass;
 use WebSocket\Exception\BadOpcodeException;
 
 /**
@@ -65,15 +66,15 @@ class OpcodeRegistry
                 $opcode
             ));
         }
-        $class = new $classname();
-        if (!$class instanceof Message) {
+        $reflector = new ReflectionClass($classname);
+        if (!$reflector->isSubclassOf(Message::class)) {
             throw new BadOpcodeException(sprintf(
                 'Implementation class %s must extend %s',
-                $class::class,
+                $classname,
                 Message::class,
             ));
         }
-        return $class;
+        return $reflector->newInstanceWithoutConstructor();
     }
 
     /**
@@ -95,11 +96,11 @@ class OpcodeRegistry
                 json_encode($classname)
             ));
         }
-        $class = new $classname();
-        if (!$class instanceof Message) {
+        $reflector = new ReflectionClass($classname);
+        if (!$reflector->isSubclassOf(Message::class)) {
             throw new DomainException(sprintf(
                 'Implementation class %s must extend %s',
-                $class::class,
+                $classname,
                 Message::class,
             ));
         }

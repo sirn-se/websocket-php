@@ -167,9 +167,24 @@ The `register(int $opcode, string $classname)` method will replace or add mappin
 - `$classname` must be class-string for class that extend `WebSocket\Message\Message`
 
 ```php
+class MyTextMessage extends WebSocket\Message\Text
+{}
+class MyCustomMessage extends WebSocket\Message\Message
+{
+    protected string $opcode = 'custom';
+}
 $opcodeRegistry = $configuration->getOpcodeRegistry();
 $opcodeRegistry->register(1, 'MyTextMessage'); // Will replace Text for opcode=1
 $opcodeRegistry->register(3, 'MyCustomMessage'); // Will add support for opcode=3
+
+// Send messages
+$clientOrServer->send(new MyTextMessage());
+$clientOrServer->send(new MyCustomMessage());
+
+// Will listen to all message types
+$clientOrServer->onMessage(function ($clientOrServer, $connection, $message) {
+    //
+});
 ```
 
 ### Persistent connection (Client only)

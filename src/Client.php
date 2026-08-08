@@ -40,6 +40,7 @@ use WebSocket\Http\DefaultHttpFactory;
 use WebSocket\Message\Message;
 use WebSocket\Middleware\MiddlewareInterface;
 use WebSocket\Runtime\{
+    Connections,
     IdentityInterface,
     Runner,
 };
@@ -57,7 +58,7 @@ use WebSocket\Trait\{
 class Client implements IdentityInterface, LoggerAwareInterface, Stringable
 {
     use ConfigurationTrait;
-    /** @use ListenerTrait<Client> */
+    /** @use ListenerTrait<Client, Message> */
     use ListenerTrait;
     use SendMethodsTrait;
     use StringableTrait;
@@ -71,7 +72,7 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
     // Internal resources
     private StreamFactory $streamFactory;
     private Uri $socketUri;
-    private Connection|null $connection = null;
+    private Connections $connections;
     /** @var array<MiddlewareInterface> $middlewares */
     private array $middlewares = [];
     private Runner $runner;
@@ -93,14 +94,17 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
         UriInterface|string $uri,
         Configuration|null $configuration = null,
         StreamFactory|null $streamFactory = null,
+        HttpFactory|null $httpFactory = null,
         Runner|null $runner = null,
     ) {
         $this->socketUri = $this->parseUri($uri);
         $this->streamFactory = $streamFactory ?? new StreamFactory();
-        $this->httpFactory = new DefaultHttpFactory();
+        $this->httpFactory = $httpFactory ?? new DefaultHttpFactory();
         $this->identity = "client/{$this->socketUri->getHost()}";
         $this->initConfiguration($configuration);
         $this->runner = $runner ?? new Runner($this->streamFactory);
+
+        $this->connections = new Connections(true, false, $this->httpFactory, $this->configuration);
     }
 
     /**
@@ -109,7 +113,7 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
      */
     public function __toString(): string
     {
-        return $this->stringable('%s', $this->connection ? $this->socketUri->__toString() : 'closed');
+        return $this->stringable('%s', $this->connections->isEmpty() ? 'closed' : $this->socketUri->__toString());
     }
 
 
@@ -152,9 +156,9 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
     public function setLogger(LoggerInterface $logger): void
     {
         $this->configuration->setLogger($logger);
-        if ($this->connection) {
-            $this->connection->setLogger($logger);
-        }
+        $this->connections->walk(function (Connection $connection) use ($logger) {
+            $connection->setLogger($logger);
+        });
     }
 
     /**
@@ -167,9 +171,9 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
     public function setTimeout(int|float $timeout): self
     {
         $this->configuration->setTimeout($timeout);
-        if ($this->connection) {
-            $this->connection->setTimeout($timeout);
-        }
+        $this->connections->walk(function (Connection $connection) use ($timeout) {
+            $connection->setTimeout($timeout);
+        });
         return $this;
     }
 
@@ -193,9 +197,9 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
     public function setFrameSize(int $frameSize): self
     {
         $this->configuration->setFrameSize($frameSize);
-        if ($this->connection) {
-            $this->connection->setFrameSize($frameSize);
-        }
+        $this->connections->walk(function (Connection $connection) use ($frameSize) {
+            $connection->setFrameSize($frameSize);
+        });
         return $this;
     }
 
@@ -269,9 +273,9 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
     public function addMiddleware(MiddlewareInterface $middleware): self
     {
         $this->middlewares[] = $middleware;
-        if ($this->connection) {
-            $this->connection->addMiddleware($middleware);
-        }
+        $this->connections->walk(function (Connection $connection) use ($middleware) {
+            $connection->addMiddleware($middleware);
+        });
         return $this;
     }
 
@@ -429,7 +433,8 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
      */
     public function isConnected(): bool
     {
-        return $this->connection && $this->connection->isConnected();
+        $connection = $this->connections->first();
+        return $connection && $connection->isConnected();
     }
 
     /**
@@ -438,7 +443,8 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
      */
     public function isReadable(): bool
     {
-        return $this->connection && $this->connection->isReadable();
+        $connection = $this->connections->first();
+        return $connection && $connection->isReadable();
     }
 
     /**
@@ -447,9 +453,9 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
      */
     public function isWritable(): bool
     {
-        return $this->connection && $this->connection->isWritable();
+        $connection = $this->connections->first();
+        return $connection && $connection->isWritable();
     }
-
 
     /**
      * Connect to server and perform upgrade.
@@ -458,6 +464,7 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
     public function connect(): void
     {
         $this->disconnect();
+        $this->connections->reset();
 
         $hostUri = (new Uri())
             ->withScheme(match ($this->socketUri->getScheme()) {
@@ -485,20 +492,15 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
             ]);
             throw new ClientException($error);
         }
-        $this->connection = $connection = new Connection(
-            $stream,
-            true,
-            false,
-            $hostUri->getScheme() === 'ssl',
-            $this->httpFactory,
-            clone $this->configuration
-        );
+        $connection = $this->connections->create($stream, $hostUri->getScheme() === 'ssl');
+        $this->connections->attach($connection);
 
-        $this->runner->attach($this->connection, function (Runner $runner, Connection $connection) {
+        $this->runner->attach($connection, function (Runner $runner, Connection $connection) {
             try {
                 // Read from connection
                 $message = $connection->pullMessage();
                 $this->dispatch($message->getOpcode(), [$this, $connection, $message]);
+                $this->dispatch('message', [$this, $connection, $message]);
             } catch (MessageLevelInterface $e) {
                 // Error, but keep connection open
                 $this->configuration->getLogger()->error("[{scope}] {message}", [
@@ -521,7 +523,7 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
                 ]);
                 $this->dispatch('error', [$this, $connection, $e]);
             }
-        }, $this->connection->getIdentity());
+        }, $connection->getIdentity());
 
         foreach ($this->middlewares as $middleware) {
             $connection->addMiddleware($middleware);
@@ -575,18 +577,21 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
      */
     public function disconnect(): void
     {
-        if ($this->connection) {
-            $this->runner->detach($this->connection->getIdentity());
+        $connection = $this->connections->first();
+        if ($connection === null) {
+            return;
         }
-        if ($this->connection && $this->isConnected()) {
-            $this->connection->disconnect();
-            $this->configuration->getLogger()->info("[{scope}] Client disconnected", [
-                'scope' => self::SCOPE,
-                'client' => $this->identity,
-                'connection' => $this->connection->getIdentity(),
-            ]);
-            $this->dispatch('disconnect', [$this, $this->connection]);
+        $this->runner->detach($connection->getIdentity());
+        $this->connections->detach($connection->getIdentity());
+        if ($connection->isConnected()) {
+            $connection->disconnect();
         }
+        $this->configuration->getLogger()->info("[{scope}] Client disconnected", [
+            'scope' => self::SCOPE,
+            'client' => $this->identity,
+            'connection' => $connection->getIdentity(),
+        ]);
+        $this->dispatch('disconnect', [$this, $connection]);
     }
 
 
@@ -598,7 +603,8 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
      */
     public function getName(): string|null
     {
-        return $this->isConnected() ? $this->connection?->getName() : null;
+        $connection = $this->connections->first();
+        return $connection && $this->isConnected() ? $connection->getName() : null;
     }
 
     /**
@@ -607,7 +613,8 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
      */
     public function getRemoteName(): string|null
     {
-        return $this->isConnected() ? $this->connection?->getRemoteName() : null;
+        $connection = $this->connections->first();
+        return $connection && $this->isConnected() ? $connection->getRemoteName() : null;
     }
 
     /**
@@ -619,7 +626,8 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
     public function getMeta(string $key): mixed
     {
         trigger_error('Client.getMeta is deprecated and will be removed in v4.', E_USER_DEPRECATED);
-        return $this->isConnected() ? $this->connection?->getMeta($key) : null;
+        $connection = $this->connections->first();
+        return $connection && $this->isConnected() ? $connection->getMeta($key) : null;
     }
 
     /**
@@ -628,7 +636,8 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
      */
     public function getHandshakeResponse(): ResponseInterface|null
     {
-        return $this->connection ? $this->connection->getHandshakeResponse() : null;
+        $connection = $this->connections->first();
+        return $connection ? $connection->getHandshakeResponse() : null;
     }
 
 
@@ -759,8 +768,8 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
         if (!$this->isConnected()) {
             $this->connect();
         }
-        /** @var Connection */
-        $connection = $this->connection;
+        /** @var Connection $connection */
+        $connection = $this->connections->first();
         return $connection;
     }
 }

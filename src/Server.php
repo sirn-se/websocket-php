@@ -43,6 +43,7 @@ use WebSocket\Http\DefaultHttpFactory;
 use WebSocket\Message\Message;
 use WebSocket\Middleware\MiddlewareInterface;
 use WebSocket\Runtime\{
+    Connections,
     IdentityInterface,
     Runner,
 };
@@ -60,7 +61,7 @@ use WebSocket\Trait\{
 class Server implements IdentityInterface, LoggerAwareInterface, StreamContainerInterface, Stringable
 {
     use ConfigurationTrait;
-    /** @use ListenerTrait<Server> */
+    /** @use ListenerTrait<Server, Message> */
     use ListenerTrait;
     use SendMethodsTrait;
     use StringableTrait;
@@ -77,8 +78,7 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
     private Runner $runner;
 
     private bool $running = false;
-    /** @var array<Connection> $connections */
-    private array $connections = [];
+    private Connections $connections;
     /** @var array<MiddlewareInterface> $middlewares */
     private array $middlewares = [];
     private bool $allowConnections = false;
@@ -94,6 +94,7 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
      * @param bool $ssl If SSL should be used
      * @param Configuration|null $configuration
      * @param StreamFactory|null $streamFactory
+     * @param HttpFactory|null $httpFactory
      * @param Runner|null $runner
      * @throws InvalidArgumentException If invalid port provided
      */
@@ -102,6 +103,7 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
         bool $ssl = false,
         Configuration|null $configuration = null,
         StreamFactory|null $streamFactory = null,
+        HttpFactory|null $httpFactory = null,
         Runner|null $runner = null,
     ) {
         if ($port < 0 || $port > 65535) {
@@ -109,11 +111,12 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
         }
         $this->port = $port;
         $this->scheme = $ssl ? 'ssl' : 'tcp';
-        $this->httpFactory = new DefaultHttpFactory();
         $this->streamFactory = $streamFactory ?? new StreamFactory();
+        $this->httpFactory = $httpFactory ?? new DefaultHttpFactory();
         $this->identity = "server/{$port}";
         $this->initConfiguration($configuration);
         $this->runner = $runner ?? new Runner($this->streamFactory);
+        $this->connections = new Connections(false, true, $this->httpFactory, $this->configuration);
     }
 
     /**
@@ -165,9 +168,9 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
     public function setLogger(LoggerInterface $logger): void
     {
         $this->configuration->setLogger($logger);
-        foreach ($this->connections as $connection) {
+        $this->connections->walk(function (Connection $connection) use ($logger) {
             $connection->setLogger($logger);
-        }
+        });
     }
 
     /**
@@ -180,9 +183,9 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
     public function setTimeout(int|float $timeout): self
     {
         $this->configuration->setTimeout($timeout);
-        foreach ($this->connections as $connection) {
+        $this->connections->walk(function (Connection $connection) use ($timeout) {
             $connection->setTimeout($timeout);
-        }
+        });
         return $this;
     }
 
@@ -206,9 +209,9 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
     public function setFrameSize(int $frameSize): self
     {
         $this->configuration->setFrameSize($frameSize);
-        foreach ($this->connections as $connection) {
+        $this->connections->walk(function (Connection $connection) use ($frameSize) {
             $connection->setFrameSize($frameSize);
-        }
+        });
         return $this;
     }
 
@@ -251,7 +254,7 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
 
     /**
      * Number of currently connected clients.
-     * @return int Connection count
+     * @return int<0, max> Connection count
      */
     public function getConnectionCount(): int
     {
@@ -260,11 +263,11 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
 
     /**
      * Get currently connected clients.
-     * @return array<Connection> Connections
+     * @return array<non-empty-string, Connection> Connections
      */
     public function getConnections(): array
     {
-        return $this->connections;
+        return $this->connections->toArray();
     }
 
     /**
@@ -273,9 +276,9 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
      */
     public function getReadableConnections(): array
     {
-        return array_filter($this->connections, function (Connection $connection) {
+        return $this->connections->filter(function (Connection $connection) {
             return $connection->isReadable();
-        });
+        })->toArray();
     }
 
     /**
@@ -284,9 +287,9 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
      */
     public function getWritableConnections(): array
     {
-        return array_filter($this->connections, function (Connection $connection) {
+        return $this->connections->filter(function (Connection $connection) {
             return $connection->isWritable();
-        });
+        })->toArray();
     }
 
     /**
@@ -325,9 +328,9 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
     public function addMiddleware(MiddlewareInterface $middleware): self
     {
         $this->middlewares[] = $middleware;
-        foreach ($this->connections as $connection) {
+        $this->connections->walk(function (Connection $connection) use ($middleware) {
             $connection->addMiddleware($middleware);
-        }
+        });
         return $this;
     }
 
@@ -355,7 +358,7 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
      */
     public function send(Message $message): Message
     {
-        foreach ($this->connections as $connection) {
+        foreach ($this->getConnections() as $connection) {
             if ($connection->isWritable()) {
                 $connection->send($message);
             }
@@ -405,7 +408,7 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
                 // Run attached handlers on selected streams
                 $this->runner->handle($timeout ?? $this->configuration->getTimeout());
 
-                foreach ($this->connections as $connection) {
+                foreach ($this->getConnections() as $connection) {
                     $connection->tick();
                 }
                 $this->dispatch('tick', [$this]);
@@ -495,12 +498,10 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
     public function disconnect(): void
     {
         $this->running = false;
-        foreach ($this->connections as $connection) {
-            $connection->disconnect();
-            $this->runner->detach($connection->getIdentity());
-            $this->dispatch('disconnect', [$this, $connection]);
+        foreach ($this->getConnections() as $connection) {
+            $this->disconnectConnection($connection);
         }
-        $this->connections = [];
+        $this->connections->reset();
         if ($this->server) {
             $this->server->close();
             $this->runner->detach($this->identity);
@@ -519,6 +520,13 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
 
 
     /* ---------- Internal helper methods -------------------------------------------------------------------------- */
+
+    protected function disconnectConnection(Connection $connection): void
+    {
+        $connection->disconnect();
+        $this->runner->detach($connection->getIdentity());
+        $this->dispatch('disconnect', [$this, $connection]);
+    }
 
     // Create socket server
     protected function createSocketServer(): SocketServer
@@ -571,20 +579,15 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
         try {
             /** @var SocketStream $stream */
             $stream = $socket->accept();
-            $connection = new Connection(
-                $stream,
-                false,
-                true,
-                $this->isSsl(),
-                $this->httpFactory,
-                clone $this->configuration
-            );
+            $connection = $this->connections->create($stream, $this->isSsl());
+
             $this->runner->attach($connection, function (Runner $runner, Connection $connection) {
                 $key = $connection->getIdentity();
 
                 try {
                     $message = $connection->pullMessage();
                     $this->dispatch($message->getOpcode(), [$this, $connection, $message]);
+                    $this->dispatch('message', [$this, $connection, $message]);
                 } catch (MessageLevelInterface $e) {
                     // Error, but keep connection open
                     $this->configuration->getLogger()->error("[{scope}] {message}", [
@@ -598,8 +601,8 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
                 } catch (ConnectionLevelInterface $e) {
                     // Error, disconnect connection
                     $this->runner->detach($key);
-                    unset($this->connections[$key]);
-                    $connection->disconnect();
+                    $this->connections->detach($key);
+                    $this->disconnectConnection($connection);
                     $this->configuration->getLogger()->error("[{scope}] {message}", [
                         'scope' => self::SCOPE,
                         'server' => $this->identity,
@@ -607,7 +610,6 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
                         'message' => $e->getMessage(),
                     ]);
                     $this->dispatch('error', [$this, $connection, $e]);
-                    $this->dispatch('disconnect', [$this, $connection]);
                 } catch (CloseException $e) {
                     // Should close
                     $connection->close($e->getCloseStatus(), $e->getMessage());
@@ -630,7 +632,7 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
             }
             /** @throws StreamException */
             $request = $this->performHandshake($connection);
-            $this->connections[$connection->getIdentity()] = $connection;
+            $this->connections->attach($connection);
             $this->configuration->getLogger()->info("[{scope}] Accepted connection from {connection}", [
                 'scope' => self::SCOPE,
                 'server' => $this->identity,
@@ -654,10 +656,10 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
     // Detach connections no longer available
     protected function detachUnconnected(): void
     {
-        foreach ($this->connections as $key => $connection) {
+        foreach ($this->getConnections() as $key => $connection) {
             if (!$connection->isConnected()) {
                 $this->runner->detach($key);
-                unset($this->connections[$key]);
+                $this->connections->detach($key);
                 $this->configuration->getLogger()->info("[{scope}] Disconnected {connection}", [
                     'scope' => self::SCOPE,
                     'server' => $this->identity,
