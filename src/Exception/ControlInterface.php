@@ -9,7 +9,7 @@ namespace WebSocket\Exception;
 
 /**
  * WebSocket\Exception\ControlInterface interface.
- * Indicates that handler should perform some actio0n.
+ * Indicates that handler should perform some action.
  */
 interface ControlInterface extends ExceptionInterface
 {

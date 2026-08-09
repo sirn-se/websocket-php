@@ -600,7 +600,6 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
                     $this->dispatch('error', [$this, $connection, $e]);
                 } catch (ConnectionLevelInterface $e) {
                     // Error, disconnect connection
-                    $this->runner->detach($key);
                     $this->connections->detach($key);
                     $this->disconnectConnection($connection);
                     $this->configuration->getLogger()->error("[{scope}] {message}", [

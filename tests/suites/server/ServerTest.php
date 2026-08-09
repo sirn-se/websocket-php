@@ -561,8 +561,8 @@ class ServerTest extends TestCase
             $server->stop();
             throw new ConnectionClosedException();
         });
-        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
+        $this->expectStreamCollectionDetach();
         $server->start();
 
         // Should be closed
@@ -598,8 +598,8 @@ class ServerTest extends TestCase
             $server->stop();
             throw new ConnectionClosedException();
         });
-        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
+        $this->expectStreamCollectionDetach();
         $server->start();
 
         // Should be removed and dispatched as disconnected
