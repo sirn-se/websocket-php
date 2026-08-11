@@ -11,7 +11,7 @@
  * Configurable opcode/class mapping using OpcodeRegistry (@sirn-se)
  * onMessage() listener, triggered on all messages (@sirn-se)
  * Connections container class (@sirn-se)
- * Dispach onDisconnect on remote connection close (@srebb, @sirn-se)
+ * Dispatch onDisconnect on remote connection close (@srebb, @sirn-se)
  * Exceptions: ControlInterface on CloseException, ReconnectException (@sirn-se)
  * Exceptions: HandlerLevelInterface on BadUriException, ClientException, RunnerException, ServerException (@sirn-se)
  * Close status as int<0, 4999>|null (@sirn-se)
