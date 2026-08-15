@@ -15,6 +15,7 @@ $configuration = new WebSocket\Configuration(
     int $frameSize,
     bool $persistent,
     int $maxConnections,
+    OpcodeRegistry $opcodeRegistry,
 );
 ```
 
@@ -174,8 +175,8 @@ class MyCustomMessage extends WebSocket\Message\Message
     protected string $opcode = 'custom';
 }
 $opcodeRegistry = $configuration->getOpcodeRegistry();
-$opcodeRegistry->register(1, 'MyTextMessage'); // Will replace Text for opcode=1
-$opcodeRegistry->register(3, 'MyCustomMessage'); // Will add support for opcode=3
+$opcodeRegistry->register(1, MyTextMessage::class); // Will replace Text for opcode=1
+$opcodeRegistry->register(3, MyCustomMessage::class); // Will add support for opcode=3
 
 // Send messages
 $clientOrServer->send(new MyTextMessage());

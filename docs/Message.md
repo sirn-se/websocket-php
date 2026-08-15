@@ -63,6 +63,20 @@ echo $message->getCloseStatus();
 echo $message->setCloseStatus(1000);
 ```
 
+## Custom message implementations
+
+By using the OpcodeRegistry, it is possible to register other Message implementations than tge default of this repo.
+This includes opcodes *not* required by websocket standard.
+
+```php
+$opcodeRegistry = $configuration->getOpcodeRegistry();
+$opcodeRegistry->register(1, MyTextMessage::class); // Will replace Text for opcode=1
+$opcodeRegistry->register(3, MyCustomMessage::class); // Will add support for opcode=3
+```
+
+Read more on [Configuration](Configuration.md#opcode-registry).
+
+
 ## How Message instance is used
 
 ```php

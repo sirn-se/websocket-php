@@ -10,7 +10,7 @@ The Connection instances are typically exposed in [Listeners](Listener.md) callb
 
 ## Sending messages
 
-To send a message on connection, call the send() method with a Message instance.
+To send a message on connection, call the `send()` method with a Message instance.
 Any of the five message types can be sent this way.
 
 ```php
@@ -62,7 +62,7 @@ $connection->getRemoteName();
 
 // Get and set associated meta data on connection
 $connection->setMeta('myMetaData', $anything);
-$connection->getMeta('myMetaData');
+$anything = $connection->getMeta('myMetaData');
 
 // Trigger a tick event on connection
 $connection->tick();
@@ -85,10 +85,6 @@ Configuration is normally inherited from Client or Sever, but can also be explic
 $configuration = $connection->getConfiguration();
 $connection->setConfiguration($configuration);
 ```
-
-- Logger
-- Timeout
-
 Read more on [Configuration](Configuration.md).
 
 ## Context

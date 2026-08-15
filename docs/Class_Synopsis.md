@@ -1,10 +1,3 @@
-[Documentation](Index.md) / Class Synopsis
-
-# Class Synopsis
-
-Public API of included classes.
-
-```php
 abstract class WebSocket\Exception\Exception extends RuntimeException implements WebSocket\Exception\ExceptionInterface
 {
 }
@@ -15,7 +8,7 @@ abstract class WebSocket\Message\Message implements Stringable
 
     public method __construct(string $content = "");
     public method getContent(): string;
-    public method getFrames(int $frameSize = 4096): array;
+    public method getFrames(int $frameSize = 4096, WebSocket\Message\OpcodeRegistry|null $opcodeRegistry = null): array;
     public method getLength(): int;
     public method getOpcode(): string;
     public method getPayload(): string;
@@ -34,7 +27,7 @@ class WebSocket\Client implements WebSocket\Runtime\IdentityInterface, Psr\Log\L
     use WebSocket\Trait\SendMethodsTrait;
     use WebSocket\Trait\StringableTrait;
 
-    public method __construct(Psr\Http\Message\UriInterface|string $uri, WebSocket\Configuration|null $configuration = null, Phrity\Net\StreamFactory|null $streamFactory = null);
+    public method __construct(Psr\Http\Message\UriInterface|string $uri, WebSocket\Configuration|null $configuration = null, Phrity\Net\StreamFactory|null $streamFactory = null, Phrity\Http\HttpFactory|null $httpFactory = null, WebSocket\Runtime\Runner|null $runner = null);
     public method __toString(): string;
     public method addHeader(string $name, string $content): self;
     public method addMiddleware(WebSocket\Middleware\MiddlewareInterface $middleware): self;
@@ -69,18 +62,20 @@ class WebSocket\Configuration implements Psr\Log\LoggerAwareInterface, Stringabl
 {
     use WebSocket\Trait\StringableTrait;
 
-    public method __construct(Psr\Log\LoggerInterface|null $logger = null, Phrity\Net\Context|null $context = null, int|float|null $timeout = null, int|null $frameSize = null, bool|null $persistent = null, int|null $maxConnections = null);
+    public method __construct(Psr\Log\LoggerInterface|null $logger = null, Phrity\Net\Context|null $context = null, int|float|null $timeout = null, int|null $frameSize = null, bool|null $persistent = null, int|null $maxConnections = null, WebSocket\Message\OpcodeRegistry|null $opcodeRegistry = null);
     public method __toString(): string;
     public method getContext(): Phrity\Net\Context;
     public method getFrameSize(): int;
     public method getLogger(): Psr\Log\LoggerInterface;
     public method getMaxConnections(): int|null;
+    public method getOpcodeRegistry(): WebSocket\Message\OpcodeRegistry;
     public method getTimeout(): int|float;
     public method isPersistent(): bool;
     public method setContext(Phrity\Net\Context $context): void;
     public method setFrameSize(int $frameSize): void;
     public method setLogger(Psr\Log\LoggerInterface $logger): void;
     public method setMaxConnections(int|null $maxConnections): void;
+    public method setOpcodeRegistry(WebSocket\Message\OpcodeRegistry $opcodeRegistry): void;
     public method setPersistent(bool $persistent): void;
     public method setTimeout(int|float $timeout): void;
 }
@@ -129,16 +124,16 @@ class WebSocket\Exception\BadOpcodeException extends WebSocket\Exception\Excepti
     public method __construct(string $message = "Bad Opcode");
 }
 
-class WebSocket\Exception\BadUriException extends WebSocket\Exception\Exception
+class WebSocket\Exception\BadUriException extends WebSocket\Exception\Exception implements WebSocket\Exception\HandlerLevelInterface
 {
     public method __construct(string $message = "Bad URI");
 }
 
-class WebSocket\Exception\ClientException extends WebSocket\Exception\Exception
+class WebSocket\Exception\ClientException extends WebSocket\Exception\Exception implements WebSocket\Exception\HandlerLevelInterface
 {
 }
 
-class WebSocket\Exception\CloseException extends WebSocket\Exception\Exception
+class WebSocket\Exception\CloseException extends WebSocket\Exception\Exception implements WebSocket\Exception\ControlInterface
 {
     public method __construct(int|null $status = null, string $content = "");
     public method getCloseStatus(): int;
@@ -165,17 +160,17 @@ class WebSocket\Exception\HandshakeException extends WebSocket\Exception\Excepti
     public method getResponse(): Psr\Http\Message\ResponseInterface;
 }
 
-class WebSocket\Exception\ReconnectException extends WebSocket\Exception\Exception
+class WebSocket\Exception\ReconnectException extends WebSocket\Exception\Exception implements WebSocket\Exception\ControlInterface
 {
     public method __construct(Phrity\Net\Uri|null $uri = null);
     public method getUri(): Phrity\Net\Uri|null;
 }
 
-class WebSocket\Exception\RunnerException extends WebSocket\Exception\Exception
+class WebSocket\Exception\RunnerException extends WebSocket\Exception\Exception implements WebSocket\Exception\HandlerLevelInterface
 {
 }
 
-class WebSocket\Exception\ServerException extends WebSocket\Exception\Exception
+class WebSocket\Exception\ServerException extends WebSocket\Exception\Exception implements WebSocket\Exception\HandlerLevelInterface
 {
 }
 
@@ -183,9 +178,9 @@ class WebSocket\Frame\Frame implements Stringable
 {
     use WebSocket\Trait\StringableTrait;
 
-    public method __construct(string $opcode, string $payload, bool $final, bool $rsv1 = false, bool $rsv2 = false, bool $rsv3 = false);
+    public method __construct(int $opcode, string $payload, bool $final, bool $rsv1 = false, bool $rsv2 = false, bool $rsv3 = false);
     public method __toString(): string;
-    public method getOpcode(): string;
+    public method getOpcode(): int;
     public method getPayload(): string;
     public method getPayloadLength(): int;
     public method getRsv1(): bool;
@@ -199,7 +194,6 @@ class WebSocket\Frame\Frame implements Stringable
 class WebSocket\Frame\FrameHandler implements Psr\Log\LoggerAwareInterface, Stringable
 {
     use WebSocket\Trait\ConfigurationTrait;
-    use WebSocket\Trait\OpcodeTrait;
     use WebSocket\Trait\StringableTrait;
 
     public method __construct(Phrity\Net\SocketStream $stream, bool $pushMasked, bool $pullMaskedRequired, WebSocket\Configuration|null $configuration = null);
@@ -266,6 +260,13 @@ class WebSocket\Message\MessageHandler implements Psr\Log\LoggerAwareInterface, 
     public method pull(): WebSocket\Message\Message;
     public method push(WebSocket\Message\Message $message, int $size = WebSocket\Message\MessageHandler::DEFAULT_SIZE): WebSocket\Message\Message;
     public method setLogger(Psr\Log\LoggerInterface $logger): void;
+}
+
+class WebSocket\Message\OpcodeRegistry
+{
+    public method createMessage(int $opcode): WebSocket\Message\Message;
+    public method getOpcode(string $classname): int;
+    public method register(int $opcode, string $classname): void;
 }
 
 class WebSocket\Message\Ping extends WebSocket\Message\Message
@@ -416,10 +417,28 @@ class WebSocket\Middleware\SubprotocolNegotiation implements Psr\Log\LoggerAware
     public method setLogger(Psr\Log\LoggerInterface $logger): void;
 }
 
+class WebSocket\Runtime\Connections implements Countable, IteratorAggregate
+{
+    public method __construct(bool $pushMasked, bool $pullMaskedRequired, Phrity\Http\HttpFactory $httpFactory, WebSocket\Configuration $configuration);
+    public method attach(WebSocket\Connection $connection): string;
+    public method count(): int;
+    public method create(Phrity\Net\SocketStream $stream, bool $ssl): WebSocket\Connection;
+    public method detach(string $identity): void;
+    public method filter(Closure $callback): self;
+    public method first(): WebSocket\Connection|null;
+    public method get(string $identity): WebSocket\Connection|null;
+    public method getIterator(): Generator;
+    public method has(string $identity): bool;
+    public method isEmpty(): bool;
+    public method reset(): void;
+    public method toArray(): array;
+    public method walk(Closure $callback): void;
+}
+
 class WebSocket\Runtime\Runner
 {
-    public method __construct(Phrity\Net\StreamFactory $streamFactory);
-    public method attach(Phrity\Net\StreamContainerInterface $streamContainer, Closure $onSelect): void;
+    public method __construct(Phrity\Net\StreamFactory $streamFactory, Phrity\Net\StreamCollection|null $streamCollection = null);
+    public method attach(Phrity\Net\StreamContainerInterface $streamContainer, Closure $onSelect, string $identity): void;
     public method detach(string $identity): void;
     public method handle(int|float $timeout): void;
     public method select(int|float $timeout): Phrity\Net\StreamCollection;
@@ -432,7 +451,7 @@ class WebSocket\Server implements WebSocket\Runtime\IdentityInterface, Psr\Log\L
     use WebSocket\Trait\SendMethodsTrait;
     use WebSocket\Trait\StringableTrait;
 
-    public method __construct(int $port = 80, bool $ssl = false, WebSocket\Configuration|null $configuration = null, Phrity\Net\StreamFactory|null $streamFactory = null);
+    public method __construct(int $port = 80, bool $ssl = false, WebSocket\Configuration|null $configuration = null, Phrity\Net\StreamFactory|null $streamFactory = null, Phrity\Http\HttpFactory|null $httpFactory = null, WebSocket\Runtime\Runner|null $runner = null);
     public method __toString(): string;
     public method addMiddleware(WebSocket\Middleware\MiddlewareInterface $middleware): self;
     public method disconnect(): void;
@@ -471,9 +490,17 @@ inteface WebSocket\Exception\ConnectionLevelInterface implements WebSocket\Excep
 {
 }
 
+inteface WebSocket\Exception\ControlInterface implements WebSocket\Exception\ExceptionInterface
+{
+}
+
 inteface WebSocket\Exception\ExceptionInterface implements Throwable
 {
     public method getMessage(): string;
+}
+
+inteface WebSocket\Exception\HandlerLevelInterface implements WebSocket\Exception\ExceptionInterface
+{
 }
 
 inteface WebSocket\Exception\MessageLevelInterface implements WebSocket\Exception\ExceptionInterface
@@ -539,5 +566,27 @@ trait WebSocket\Trait\ListenerTrait
     public method onDisconnect(Closure $closure): self;
     public method onError(Closure $closure): self;
     public method onHandshake(Closure $closure): self;
+    public method onMessage(Closure $closure): self;
+    public method onPing(Closure $closure): self;
+    public method onPong(Closure $closure): self;
+    public method onText(Closure $closure): self;
+    public method onTick(Closure $closure): self;
 }
-```
+
+trait WebSocket\Trait\OpcodeTrait
+{
+}
+
+trait WebSocket\Trait\SendMethodsTrait
+{
+    public method binary(string $message): WebSocket\Message\Binary;
+    public method close(int $status = 1000, string $message = "ttfn"): WebSocket\Message\Close;
+    public method ping(string $message = ""): WebSocket\Message\Ping;
+    public method pong(string $message = ""): WebSocket\Message\Pong;
+    public method text(string $message): WebSocket\Message\Text;
+}
+
+trait WebSocket\Trait\StringableTrait
+{
+    public method __toString(): string;
+}

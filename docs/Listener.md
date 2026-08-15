@@ -14,27 +14,27 @@ All message listeners receive Client or Server, [Connection](Connection.md) and 
 ```php
 $client_or_server
     // Listen to incoming Text messages
-    ->onText(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection $connection, WebSocket\Message\Text $message) {
+    ->onText(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection $connection, WebSocket\Message\Message $message) {
         // Act on incoming message
     })
     // Listen to incoming Binary messages
-    ->onBinary(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection $connection, WebSocket\Message\Binary $message) {
+    ->onBinary(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection $connection, WebSocket\Message\Message $message) {
         // Act on incoming message
     })
     // Listen to incoming Ping messages
-    ->onPing(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection $connection, WebSocket\Message\Ping $message) {
+    ->onPing(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection $connection, WebSocket\Message\Message $message) {
         // Act on incoming message
     })
     // Listen to incoming Pong messages
-    ->onPong(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection $connection, WebSocket\Message\Pong $message) {
+    ->onPong(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection $connection, WebSocket\Message\Message $message) {
         // Act on incoming message
     })
     // Listen to incoming Close messages
-    ->onClose(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection $connection, WebSocket\Message\Close $message) {
+    ->onClose(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection $connection, WebSocket\Message\Message $message) {
         // Act on incoming message
     })
     // Listen to all messages
-    ->onCMessage(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection $connection, WebSocket\Message\Message $message) {
+    ->onMessage(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection $connection, WebSocket\Message\Message $message) {
         // Act on incoming message
     })
     ;

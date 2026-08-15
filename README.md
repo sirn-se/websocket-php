@@ -17,9 +17,10 @@ and is maintained by Sören Jensen, who has been maintaining the original since 
 * `ws` (TCP) and `wss` (SSL) support
 * Listener callbacks on incoming messages and other events
 * Close and Ping/Pong handling (standard middlewares)
-* Deflate compression (middleware)
+* Deflate compression (optional middleware)
 * Additional optional middlewares and ability to create own middlewares
 * Support message fragmentation and payload masking
+* Support custom opcode messages
 
 ## Documentation
 
@@ -45,7 +46,23 @@ composer require phrity/websocket
 ## Client
 
 The [client](docs/Client.md) can read and write on a WebSocket stream.
-It internally supports Upgrade handshake and implicit close and ping/pong operations.
+
+Set up a WebSocket Client for continuous subscription
+```php
+$client = new WebSocket\Client("wss://echo.websocket.org/");
+$client
+    // Add standard middlewares
+    ->addMiddleware(new WebSocket\Middleware\CloseHandler())
+    ->addMiddleware(new WebSocket\Middleware\PingResponder())
+    // Listen to incoming Text messages
+    ->onText(function (WebSocket\Client $client, WebSocket\Connection $connection, WebSocket\Message\Message $message) {
+        // Act on incoming message
+        echo "Got message: {$message->getContent()} \n";
+        // Possibly respond to server
+        $client->text("I got your your message");
+    })
+    ->start();
+```
 
 Set up a WebSocket Client for request/response strategy.
 ```php
@@ -67,28 +84,9 @@ echo "Got message: {$message->getContent()} \n";
 $client->close();
 ```
 
-Set up a WebSocket Client for continuous subscription
-```php
-$client = new WebSocket\Client("wss://echo.websocket.org/");
-$client
-    // Add standard middlewares
-    ->addMiddleware(new WebSocket\Middleware\CloseHandler())
-    ->addMiddleware(new WebSocket\Middleware\PingResponder())
-    // Listen to incoming Text messages
-    ->onText(function (WebSocket\Client $client, WebSocket\Connection $connection, WebSocket\Message\Message $message) {
-        // Act on incoming message
-        echo "Got message: {$message->getContent()} \n";
-        // Possibly respond to server
-        $client->text("I got your your message");
-    })
-    ->start();
-```
-
-
 ## Server
 
 The [server](docs/Server.md) is a multi connection, listening server.
-It internally supports Upgrade handshake and implicit close and ping/pong operations.
 
 Set up a WebSocket Server for continuous listening
 ```php
