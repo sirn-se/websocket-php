@@ -1,3 +1,10 @@
+[Documentation](Index.md) / Class Synopsis
+
+# Class Synopsis
+
+Public API of included classes.
+
+```php
 abstract class WebSocket\Exception\Exception extends RuntimeException implements WebSocket\Exception\ExceptionInterface
 {
 }
@@ -590,3 +597,4 @@ trait WebSocket\Trait\StringableTrait
 {
     public method __toString(): string;
 }
+```
