@@ -6,6 +6,12 @@
 
  > PHP version `^8.1`
 
+### `3.8.1`
+
+ * Remove redundant detach (@srebb)
+ * Fix typos (@srebb)
+ * Updated documentation (@sirn-se)
+
 ### `3.8.0`
 
  * Configurable opcode/class mapping using OpcodeRegistry (@sirn-se)
