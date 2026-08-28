@@ -13,14 +13,16 @@ use Phrity\Net\Uri;
  * WebSocket\Exception\ReconnectException class.
  * Reconnect requested.
  */
-class ReconnectException extends Exception implements ControlInterface
+class ReconnectException extends AbstractException implements ControlInterface
 {
+    protected static string $defaultMessage = 'Reconnect requested: {uri}';
+
     private Uri|null $uri;
 
-    public function __construct(Uri|null $uri = null)
+    public function __construct(Uri|null $uri = null, string|null $message = null)
     {
         $this->uri = $uri;
-        parent::__construct("Reconnect requested" . ($uri ? ": {$uri}" : ''));
+        parent::__construct($message, context: ['uri' => $uri]);
     }
 
     public function getUri(): Uri|null

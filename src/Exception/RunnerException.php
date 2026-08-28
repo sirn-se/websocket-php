@@ -9,8 +9,8 @@ namespace WebSocket\Exception;
 
 /**
  * WebSocket\Exception\RunnerException class.
- * Fatal exception during server start
+ * Fatal exception during runner operation
  */
-class RunnerException extends Exception implements HandlerLevelInterface
+class RunnerException extends AbstractException implements HandlerLevelInterface
 {
 }

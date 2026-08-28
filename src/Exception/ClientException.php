@@ -11,6 +11,6 @@ namespace WebSocket\Exception;
  * WebSocket\Exception\ClientException class.
  * Fatal exception during server start
  */
-class ClientException extends Exception implements HandlerLevelInterface
+class ClientException extends AbstractException implements HandlerLevelInterface
 {
 }

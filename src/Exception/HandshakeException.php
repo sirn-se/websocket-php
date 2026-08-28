@@ -13,14 +13,18 @@ use Psr\Http\Message\ResponseInterface;
  * WebSocket\Exception\HandshakeException class.
  * Exception during handshake
  */
-class HandshakeException extends Exception implements ConnectionLevelInterface
+class HandshakeException extends AbstractException implements ConnectionLevelInterface
 {
+    protected static string $defaultMessage = 'Handshake failed';
+
     private ResponseInterface $response;
 
-    public function __construct(string $message, ResponseInterface $response)
-    {
-        parent::__construct($message);
+    public function __construct(
+        string $message,
+        ResponseInterface $response,
+    ) {
         $this->response = $response;
+        parent::__construct($message);
     }
 
     public function getResponse(): ResponseInterface
