@@ -2,9 +2,14 @@
 
 # Websocket: Changelog
 
-## `NEXT`
+## `v4.0`
+
+ > PHP version `^8.2`
+
+### `4.0.0`
 
  * Improved exception structure (@sirn-se)
+
 
 ## `v3.8`
 

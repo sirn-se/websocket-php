@@ -24,17 +24,17 @@ abstract class AbstractException extends Exception implements ExceptionInterface
     /** @var array<string, mixed> $defaultContext */
     protected static array $defaultContext = [];
 
-    /** @var array<string, mixed> $context */
+    /** @var array<mixed> $context */
     protected array $context;
 
     /**
-     * @param array<string, mixed> $context
+     * @param mixed $context
      */
     public function __construct(
         string|null $message = null,
         int $code = 0,
         Throwable|null $previous = null,
-        array $context = [],
+        mixed ...$context,
     ) {
         $this->context = array_merge(static::$defaultContext, $context);
         $message = $this->interpolate($message ?? static::$defaultMessage, $this->context);

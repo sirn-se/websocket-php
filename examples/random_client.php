@@ -149,7 +149,7 @@ while (true) {
                     break;
                 case 6:
                     echo "< Throw CloseException\n";
-                    throw new CloseException('Closing with exception', context: ['status' => 1008]);
+                    throw new CloseException('Closing with exception', status: 1008);
                 case 7:
                     echo "< Throw ReconnectException\n";
                     throw new ReconnectException();

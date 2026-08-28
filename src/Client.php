@@ -470,7 +470,7 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
             ->withScheme(match ($this->socketUri->getScheme()) {
                 'ws', 'http' => 'tcp',
                 'wss', 'https' => 'ssl',
-                default => throw new ClientException('Invalid scheme on {uri}', context: ['uri' => $this->socketUri])
+                default => throw new ClientException('Invalid scheme on {uri}', uri: $this->socketUri)
             })
             ->withHost($this->socketUri->getHost(Uri::IDN_ENCODE))
             ->withPort($this->socketUri->getPort(Uri::REQUIRE_PORT));
@@ -489,7 +489,7 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
                 'exception' => $e,
                 'message' => $e->getMessage(),
             ]);
-            throw new ClientException('Could not connect to {uri}', context: ['uri' => $hostUri]);
+            throw new ClientException('Could not connect to {uri}', uri: $hostUri);
         }
         $connection = $this->connections->create($stream, $hostUri->getScheme() === 'ssl');
         $this->connections->attach($connection);
@@ -535,7 +535,7 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
                 'connection' => $connection->getIdentity(),
                 'uri' => $hostUri,
             ]);
-            throw new ClientException('Invalid stream on {uri}', context: ['uri' => $hostUri]);
+            throw new ClientException('Invalid stream on {uri}', uri: $hostUri);
         }
         try {
             if (!$this->configuration->isPersistent() || $stream->tell() == 0) {
@@ -676,19 +676,19 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
             /** @var ResponseInterface */
             $response = $connection->pullHttp();
             if ($response->getStatusCode() != 101) {
-                throw new HandshakeException('Invalid status code {statusCode}', context: [
-                    'uri' => $uri,
-                    'response' => $response,
-                    'statusCode' => $response->getStatusCode(),
-                ]);
+                throw new HandshakeException(
+                    'Invalid status code {statusCode}',
+                    response: $response,
+                    statusCode: $response->getStatusCode(),
+                );
             }
 
             if (empty($response->getHeaderLine('Sec-WebSocket-Accept'))) {
-                throw new HandshakeException('Connection to {uri} failed: Invalid upgrade response', context: [
-                    'uri' => $uri,
-                    'response' => $response,
-                    'statusCode' => $response->getStatusCode(),
-                ]);
+                throw new HandshakeException(
+                    'Connection to {uri} failed: Invalid upgrade response',
+                    uri: $uri,
+                    response: $response,
+                );
             }
 
             $responseKey = trim($response->getHeaderLine('Sec-WebSocket-Accept'));
@@ -697,11 +697,10 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
             );
 
             if ($responseKey !== $expectedKey) {
-                throw new HandshakeException('Server sent bad upgrade response', context: [
-                    'uri' => $uri,
-                    'response' => $response,
-                    'statusCode' => $response->getStatusCode(),
-                ]);
+                throw new HandshakeException(
+                    'Server sent bad upgrade response',
+                    response: $response,
+                );
             }
         } catch (HandshakeException $e) {
             $this->configuration->getLogger()->error("[{scope}] {message}", [
