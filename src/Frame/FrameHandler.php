@@ -123,7 +123,7 @@ class FrameHandler implements LoggerAwareInterface, Stringable
                 'scope' => self::SCOPE,
                 'opcode' => $frame->getOpcode(),
             ]);
-            throw new CloseException(1002, 'Masking required');
+            throw new CloseException('Masking required', status: 1002);
         }
 
         return $frame;

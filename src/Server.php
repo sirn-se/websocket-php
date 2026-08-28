@@ -683,42 +683,53 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
         try {
             if ($request->getMethod() != 'GET') {
                 throw new HandshakeException(
-                    "Handshake request with invalid method: '{$request->getMethod()}'",
-                    $response->withStatus(405)
+                    'Handshake request with invalid method: {method}',
+                    response: $response->withStatus(405),
+                    method: $request->getMethod(),
                 );
             }
             $connectionHeader = trim($request->getHeaderLine('Connection'));
             if (!str_contains(strtolower($connectionHeader), 'upgrade')) {
                 throw new HandshakeException(
-                    "Handshake request with invalid Connection header: '{$connectionHeader}'",
-                    $response->withStatus(426)
+                    'Handshake request with invalid {headerName} header: {headerValue}',
+                    response: $response->withStatus(426),
+                    headerName: 'Connection',
+                    headerValue: $connectionHeader,
                 );
             }
             $upgradeHeader = trim($request->getHeaderLine('Upgrade'));
             if (strtolower($upgradeHeader) != 'websocket') {
                 throw new HandshakeException(
-                    "Handshake request with invalid Upgrade header: '{$upgradeHeader}'",
-                    $response->withStatus(426)
+                    'Handshake request with invalid {headerName} header: {headerValue}',
+                    response: $response->withStatus(426),
+                    headerName: 'Upgrade',
+                    headerValue: $upgradeHeader,
                 );
             }
             $versionHeader = trim($request->getHeaderLine('Sec-WebSocket-Version'));
             if ($versionHeader != '13') {
                 throw new HandshakeException(
-                    "Handshake request with invalid Sec-WebSocket-Version header: '{$versionHeader}'",
-                    $response->withStatus(426)->withHeader('Sec-WebSocket-Version', '13')
+                    'Handshake request with invalid {headerName} header: {headerValue}',
+                    response: $response->withStatus(426)->withHeader('Sec-WebSocket-Version', '13'),
+                    headerName: 'Sec-WebSocket-Version',
+                    headerValue: $versionHeader,
                 );
             }
             $keyHeader = trim($request->getHeaderLine('Sec-WebSocket-Key'));
             if (empty($keyHeader)) {
                 throw new HandshakeException(
-                    "Handshake request with invalid Sec-WebSocket-Key header: '{$keyHeader}'",
-                    $response->withStatus(426)
+                    'Handshake request with invalid {headerName} header: {headerValue}',
+                    response: $response->withStatus(426),
+                    headerName: 'Sec-WebSocket-Key',
+                    headerValue: $keyHeader,
                 );
             }
             if (strlen(base64_decode($keyHeader)) != 16) {
                 throw new HandshakeException(
-                    "Handshake request with invalid Sec-WebSocket-Key header: '{$keyHeader}'",
-                    $response->withStatus(426)
+                    'Handshake request with invalid {headerName} header: {headerValue}',
+                    response: $response->withStatus(426),
+                    headerName: 'Sec-WebSocket-Key',
+                    headerValue: $keyHeader,
                 );
             }
 
@@ -743,7 +754,11 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
         /** @var ResponseInterface */
         $response = $connection->pushHttp($response);
         if ($response->getStatusCode() != 101) {
-            $exception = new HandshakeException("Invalid status code {$response->getStatusCode()}", $response);
+            $exception = new HandshakeException(
+                'Invalid status code {statusCode}',
+                response: $response,
+                statusCode: $response->getStatusCode(),
+            );
         }
 
         if ($exception) {

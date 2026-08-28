@@ -26,6 +26,10 @@
                 "source": "docs/Connection.md"
             },
             {
+                "name": "Error handling",
+                "source": "docs/ErrorHandling.md"
+            },
+            {
                 "name": "Listener",
                 "source": "docs/Listener.md"
             },
@@ -100,6 +104,10 @@
             {
                 "name": "Migration v2 -> v3",
                 "source": "docs/Migrate_2_3.md"
+            },
+            {
+                "name": "Migration v3 -> v4",
+                "source": "docs/Migrate_3_4.md"
             }
         ]
     },

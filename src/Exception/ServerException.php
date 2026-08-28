@@ -11,6 +11,7 @@ namespace WebSocket\Exception;
  * WebSocket\Exception\ServerException class.
  * Fatal exception during server start
  */
-class ServerException extends Exception implements HandlerLevelInterface
+class ServerException extends AbstractException implements HandlerLevelInterface
 {
+    protected static string $defaultMessage = 'Server exception';
 }

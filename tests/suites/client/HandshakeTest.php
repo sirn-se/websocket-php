@@ -154,7 +154,7 @@ class HandshakeTest extends TestCase
             return "\r\n";
         });
         $this->expectException(HandshakeException::class);
-        $this->expectExceptionMessage('Invalid status code 200.');
+        $this->expectExceptionMessage('Invalid status code 200');
         $client->connect();
     }
 
@@ -175,7 +175,7 @@ class HandshakeTest extends TestCase
             return "\r\n";
         });
         $this->expectException(HandshakeException::class);
-        $this->expectExceptionMessage('Connection to \'ws://localhost:8000/my/mock/path\' failed');
+        $this->expectExceptionMessage('Connection to ws://localhost:8000/my/mock/path failed');
         $client->connect();
     }
 
@@ -211,7 +211,7 @@ class HandshakeTest extends TestCase
         $this->expectWsClientConnect();
         $this->expectSocketStreamWrite();
         $this->expectSocketStreamReadLine()->setReturn(function () {
-            throw new ReconnectException(new Uri('ws://localhost:8000/my/new/path'));
+            throw new ReconnectException(uri: new Uri('ws://localhost:8000/my/new/path'));
         });
         $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();

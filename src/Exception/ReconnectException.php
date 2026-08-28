@@ -8,23 +8,21 @@
 namespace WebSocket\Exception;
 
 use Phrity\Net\Uri;
+use Psr\Http\Message\UriInterface;
 
 /**
  * WebSocket\Exception\ReconnectException class.
  * Reconnect requested.
  */
-class ReconnectException extends Exception implements ControlInterface
+class ReconnectException extends AbstractException implements ControlInterface
 {
-    private Uri|null $uri;
-
-    public function __construct(Uri|null $uri = null)
-    {
-        $this->uri = $uri;
-        parent::__construct("Reconnect requested" . ($uri ? ": {$uri}" : ''));
-    }
+    protected static string $defaultMessage = 'Reconnect requested: {uri}';
+    /** @var array{uri: UriInterface|null} $defaultContext */
+    protected static array $defaultContext = ['uri' => null];
 
     public function getUri(): Uri|null
     {
-        return $this->uri;
+        $uri = $this->getContext('uri');
+        return $uri === null ? null : new Uri($uri);
     }
 }

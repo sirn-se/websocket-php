@@ -11,7 +11,7 @@ namespace WebSocket\Test\Message;
 
 use PHPUnit\Framework\TestCase;
 use Stringable;
-use WebSocket\Exception\ConnectionFailureException;
+use WebSocket\Exception\MessageEncodingException;
 use WebSocket\Frame\Frame;
 use WebSocket\Message\{
     Close,
@@ -62,7 +62,7 @@ class CloseTest extends TestCase
     {
         $message = new Close(1000, 'Some content');
         $this->assertFalse($message->isCompressed());
-        $this->expectException(ConnectionFailureException::class);
+        $this->expectException(MessageEncodingException::class);
         $this->expectExceptionMessage('Must not compress control message.');
         $message->setCompress(true);
     }

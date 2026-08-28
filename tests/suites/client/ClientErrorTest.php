@@ -63,7 +63,7 @@ class ClientErrorTest extends TestCase
             throw new StreamException(StreamException::CLIENT_CONNECT_ERR, ['uri' => 'tcp://localhost:8000']);
         });
         $this->expectException(ClientException::class);
-        $this->expectExceptionMessage('Could not open socket to "tcp://localhost:8000": Client could not connect');
+        $this->expectExceptionMessage('Could not connect to tcp://localhost:8000');
         $client->connect();
     }
 
@@ -85,7 +85,7 @@ class ClientErrorTest extends TestCase
             return false;
         });
         $this->expectException(ClientException::class);
-        $this->expectExceptionMessage('Invalid stream on "tcp://localhost:8000".');
+        $this->expectExceptionMessage('Invalid stream on tcp://localhost:8000');
         $client->connect();
     }
 

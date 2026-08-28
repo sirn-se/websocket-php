@@ -2,6 +2,16 @@
 
 # Websocket: Changelog
 
+## `v4.0`
+
+ > PHP version `^8.2`
+
+### `4.0.0`
+
+ * Improved exception structure (@sirn-se)
+ * MessageEncodingException on message compression failure (@sirn-se)
+
+
 ## `v3.8`
 
  > PHP version `^8.1`
@@ -17,11 +27,12 @@
  * Configurable opcode/class mapping using OpcodeRegistry (@sirn-se)
  * onMessage() listener, triggered on all messages (@sirn-se)
  * Connections container class (@sirn-se)
- * Dispatch onDisconnect on remote connection close (@srebb, @sirn-se)
+ * Dispach onDisconnect on remote connection close (@srebb, @sirn-se)
  * Exceptions: ControlInterface on CloseException, ReconnectException (@sirn-se)
  * Exceptions: HandlerLevelInterface on BadUriException, ClientException, RunnerException, ServerException (@sirn-se)
  * Close status as int<0, 4999>|null (@sirn-se)
  * Preparations for v4 (@sirn-se)
+
 
 ## `v3.7`
 

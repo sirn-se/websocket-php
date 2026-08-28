@@ -220,7 +220,7 @@ $server
         $user = myUserVerification($cn); // Verify user using yout own code
         if (!$user) {
             $logger->warning("[{$conn->getRemoteName()}] Client authentication failed, unknown CN: {$cn}");
-            throw new CloseException(1008, Client Auth failed');  // CLOSE_POLICY_VIOLATION
+            throw new CloseException('Client Auth failed', status: 1008);  // CLOSE_POLICY_VIOLATION
         }
         $logger->info("[{$conn->getRemoteName()}] Client authenticated as '{$user}'");
         $connection->setMeta('user', $user); // Store for later use

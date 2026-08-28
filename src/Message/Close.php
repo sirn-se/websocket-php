@@ -14,30 +14,30 @@ namespace WebSocket\Message;
 class Close extends Message
 {
     protected string $opcode = 'close';
-    /** @var int<0, 4999>|null $status */
-    protected int|null $status = null;
+    /** @var int<0, 4999> $status */
+    protected int $status = 1000;
 
     /**
-     * @param int<0, 4999>|null $status
+     * @param int<0, 4999> $status
      */
-    public function __construct(int|null $status = null, string $content = '')
+    public function __construct(int $status = 1000, string $content = '')
     {
         $this->status = $status;
         parent::__construct($content);
     }
 
     /**
-     * @return int<0, 4999>|null
+     * @return int<0, 4999>
      */
-    public function getCloseStatus(): int|null
+    public function getCloseStatus(): int
     {
         return $this->status;
     }
 
     /**
-     * @param int<0, 4999>|null $status
+     * @param int<0, 4999> $status
      */
-    public function setCloseStatus(int|null $status): void
+    public function setCloseStatus(int $status): void
     {
         $this->status = $status;
     }
@@ -49,7 +49,6 @@ class Close extends Message
 
     public function setPayload(string $payload = ''): void
     {
-        $this->status = 0;
         $this->content = '';
         if (strlen($payload) > 0) {
             $this->status = current(unpack('n', $payload) ?: []);
