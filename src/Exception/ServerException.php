@@ -13,4 +13,5 @@ namespace WebSocket\Exception;
  */
 class ServerException extends AbstractException implements HandlerLevelInterface
 {
+    protected static string $defaultMessage = 'Server exception';
 }

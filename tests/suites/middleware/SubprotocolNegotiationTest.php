@@ -180,7 +180,7 @@ class SubprotocolNegotiationTest extends TestCase
         });
         $this->expectSocketStreamWrite();
         $this->expectException(HandshakeException::class);
-        $this->expectExceptionMessage('Could not resolve subprotocol.');
+        $this->expectExceptionMessage('Could not resolve subprotocol');
         $connection->pullHttp();
     }
 

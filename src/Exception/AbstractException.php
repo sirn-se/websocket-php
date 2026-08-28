@@ -7,6 +7,7 @@
 
 namespace WebSocket\Exception;
 
+use Exception;
 use Phrity\Util\Interpolator\InterpolatorTrait;
 use Throwable;
 
@@ -20,6 +21,11 @@ abstract class AbstractException extends Exception implements ExceptionInterface
     use InterpolatorTrait;
 
     protected static string $defaultMessage = 'Unspecified error';
+    /** @var array<string, mixed> $defaultContext */
+    protected static array $defaultContext = [];
+
+    /** @var array<string, mixed> $context */
+    protected array $context;
 
     /**
      * @param array<string, mixed> $context
@@ -30,7 +36,13 @@ abstract class AbstractException extends Exception implements ExceptionInterface
         Throwable|null $previous = null,
         array $context = [],
     ) {
-        $message = $this->interpolate($message ?? static::$defaultMessage, $context);
+        $this->context = array_merge(static::$defaultContext, $context);
+        $message = $this->interpolate($message ?? static::$defaultMessage, $this->context);
         parent::__construct($message, $code, $previous);
+    }
+
+    public function getContext(string $key): mixed
+    {
+        return $this->context[$key] ?? null;
     }
 }

@@ -1104,7 +1104,7 @@ class ClientTest extends TestCase
         $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
         $client->addMiddleware(new CloseHandler());
         $client->onText(function ($client, $connection, $message) {
-            throw new ReconnectException(new Uri('ws://localhost:8000/my/mock/path'));
+            throw new ReconnectException(context: ['uri' => new Uri('ws://localhost:8000/my/mock/path')]);
         });
         $client->onBinary(function ($client, $connection, $message) {
             $client->disconnect();

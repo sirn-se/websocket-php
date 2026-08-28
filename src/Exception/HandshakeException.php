@@ -16,19 +16,25 @@ use Psr\Http\Message\ResponseInterface;
 class HandshakeException extends AbstractException implements ConnectionLevelInterface
 {
     protected static string $defaultMessage = 'Handshake failed';
-
-    private ResponseInterface $response;
-
-    public function __construct(
-        string $message,
-        ResponseInterface $response,
-    ) {
-        $this->response = $response;
-        parent::__construct($message);
-    }
+    /**
+     * @var array{
+     *   header: string|null,
+     *   method: string|null,
+     *   response: ResponseInterface|null,
+     *   statusCode: int<100, 599>|null,
+     *   value: scalar|null,
+     * } $defaultContext
+     */
+    protected static array $defaultContext = [
+        'header' => null,
+        'method' => null,
+        'response' => null,
+        'statusCode' => null,
+        'value' => null,
+    ];
 
     public function getResponse(): ResponseInterface
     {
-        return $this->response;
+        return $this->getContext('response');
     }
 }

@@ -13,4 +13,5 @@ namespace WebSocket\Exception;
  */
 class RunnerException extends AbstractException implements HandlerLevelInterface
 {
+    protected static string $defaultMessage = 'Runner exception';
 }

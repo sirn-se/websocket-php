@@ -682,44 +682,49 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
         // Verify handshake request
         try {
             if ($request->getMethod() != 'GET') {
-                throw new HandshakeException(
-                    "Handshake request with invalid method: '{$request->getMethod()}'",
-                    $response->withStatus(405)
-                );
+                throw new HandshakeException('Handshake request with invalid method: {method}', context: [
+                    'response' => $response->withStatus(405),
+                    'method' => $request->getMethod(),
+                ]);
             }
             $connectionHeader = trim($request->getHeaderLine('Connection'));
             if (!str_contains(strtolower($connectionHeader), 'upgrade')) {
-                throw new HandshakeException(
-                    "Handshake request with invalid Connection header: '{$connectionHeader}'",
-                    $response->withStatus(426)
-                );
+                throw new HandshakeException('Handshake request with invalid {header} header: {value}', context: [
+                    'response' => $response->withStatus(426),
+                    'header' => 'Connection',
+                    'value' => $connectionHeader,
+                ]);
             }
             $upgradeHeader = trim($request->getHeaderLine('Upgrade'));
             if (strtolower($upgradeHeader) != 'websocket') {
-                throw new HandshakeException(
-                    "Handshake request with invalid Upgrade header: '{$upgradeHeader}'",
-                    $response->withStatus(426)
-                );
+                throw new HandshakeException('Handshake request with invalid {header} header: {value}', context: [
+                    'response' => $response->withStatus(426),
+                    'header' => 'Upgrade',
+                    'value' => $upgradeHeader,
+                ]);
             }
             $versionHeader = trim($request->getHeaderLine('Sec-WebSocket-Version'));
             if ($versionHeader != '13') {
-                throw new HandshakeException(
-                    "Handshake request with invalid Sec-WebSocket-Version header: '{$versionHeader}'",
-                    $response->withStatus(426)->withHeader('Sec-WebSocket-Version', '13')
-                );
+                throw new HandshakeException('Handshake request with invalid {header} header: {value}', context: [
+                    'response' => $response->withStatus(426)->withHeader('Sec-WebSocket-Version', '13'),
+                    'header' => 'Sec-WebSocket-Version',
+                    'value' => $versionHeader,
+                ]);
             }
             $keyHeader = trim($request->getHeaderLine('Sec-WebSocket-Key'));
             if (empty($keyHeader)) {
-                throw new HandshakeException(
-                    "Handshake request with invalid Sec-WebSocket-Key header: '{$keyHeader}'",
-                    $response->withStatus(426)
-                );
+                throw new HandshakeException('Handshake request with invalid {header} header: {value}', context: [
+                    'response' => $response->withStatus(426),
+                    'header' => 'Sec-WebSocket-Key',
+                    'value' => $keyHeader,
+                ]);
             }
             if (strlen(base64_decode($keyHeader)) != 16) {
-                throw new HandshakeException(
-                    "Handshake request with invalid Sec-WebSocket-Key header: '{$keyHeader}'",
-                    $response->withStatus(426)
-                );
+                throw new HandshakeException('Handshake request with invalid {header} header: {value}', context: [
+                    'response' => $response->withStatus(426),
+                    'header' => 'Sec-WebSocket-Key',
+                    'value' => $keyHeader,
+                ]);
             }
 
             $responseKey = base64_encode(pack('H*', sha1($keyHeader . Constant::GUID)));
@@ -743,7 +748,10 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
         /** @var ResponseInterface */
         $response = $connection->pushHttp($response);
         if ($response->getStatusCode() != 101) {
-            $exception = new HandshakeException("Invalid status code {$response->getStatusCode()}", $response);
+            $exception = new HandshakeException('Invalid status code {statusCode}', context: [
+                'response' => $response,
+                'statusCode' => $response->getStatusCode(),
+            ]);
         }
 
         if ($exception) {

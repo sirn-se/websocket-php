@@ -85,11 +85,13 @@ class FollowRedirect implements LoggerAwareInterface, ProcessHttpIncomingInterfa
             ];
             if ($this->attempts > $this->limit) {
                 $this->configuration->getLogger()->warning("[{scope}] Too many redirect attempts, giving up", $context);
-                throw new HandshakeException("Too many redirect attempts, giving up", $message);
+                throw new HandshakeException('Too many redirect attempts, giving up', context: [
+                    'response' => $message,
+                ]);
             }
             $this->attempts++;
             $this->configuration->getLogger()->info("[{scope}] Redirect {status} to {location}", $context);
-            throw new ReconnectException(new Uri($locationHeader));
+            throw new ReconnectException(context: ['uri' => new Uri($locationHeader)]);
         }
         return $message;
     }
