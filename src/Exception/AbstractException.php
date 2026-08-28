@@ -41,7 +41,7 @@ abstract class AbstractException extends Exception implements ExceptionInterface
         parent::__construct($message, $code, $previous);
     }
 
-    public function getContext(string $key): mixed
+    protected function getContext(string $key): mixed
     {
         return $this->context[$key] ?? null;
     }

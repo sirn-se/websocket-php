@@ -9,11 +9,18 @@
 ### `4.0.0`
 
  * Improved exception structure (@sirn-se)
+ * MessageEncodingException on message compression failure (@sirn-se)
 
 
 ## `v3.8`
 
  > PHP version `^8.1`
+
+### `3.8.1`
+
+ * Remove redundant detach (@srebb)
+ * Fix typos (@srebb)
+ * Updated documentation (@sirn-se)
 
 ### `3.8.0`
 

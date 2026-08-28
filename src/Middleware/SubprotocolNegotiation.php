@@ -143,7 +143,7 @@ class SubprotocolNegotiation implements
             } elseif ($this->require) {
                 // No matching subprotocol, close and fail
                 $connection->close();
-                throw new HandshakeException('Could not resolve subprotocol');
+                throw new HandshakeException('Could not resolve subprotocol', response: $message);
             }
         }
         return $message;

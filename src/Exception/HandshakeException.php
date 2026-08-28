@@ -18,19 +18,19 @@ class HandshakeException extends AbstractException implements ConnectionLevelInt
     protected static string $defaultMessage = 'Handshake failed';
     /**
      * @var array{
-     *   header: string|null,
+     *   headerName: string|null,
+     *   headerValue: scalar|null,
      *   method: string|null,
      *   response: ResponseInterface|null,
      *   statusCode: int<100, 599>|null,
-     *   value: scalar|null,
      * } $defaultContext
      */
     protected static array $defaultContext = [
-        'header' => null,
+        'headerName' => null,
+        'headerValue' => null,
         'method' => null,
         'response' => null,
         'statusCode' => null,
-        'value' => null,
     ];
 
     public function getResponse(): ResponseInterface
