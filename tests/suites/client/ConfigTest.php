@@ -209,31 +209,6 @@ class ConfigTest extends TestCase
         $client->disconnect();
     }
 
-    public function testContextOption(): void
-    {
-        $errorHandler = new ErrorHandler();
-        $this->expectWsClientCreate();
-        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
-
-        $errorHandler->withAll(function () use ($client) {
-            $client->setContext(['ssl' => ['verify_peer' => false]]);
-        }, function (array $errors) {
-            $this->assertEquals(
-                'Calling Client.setContext with array is deprecated, use Context class.',
-                $errors[0]->getMessage()
-            );
-        });
-
-        $this->expectWsClientConnect(context: ['ssl' => ['verify_peer' => false]]);
-        $this->expectWsClientPerformHandshake('localhost:8000', '/my/mock/path');
-        $client->connect();
-
-        $this->expectStreamCollectionDetach();
-        $this->expectSocketStreamIsConnected();
-        $this->expectSocketStreamClose();
-        $client->disconnect();
-    }
-
     public function testContextClass(): void
     {
         $this->expectContext();
@@ -328,9 +303,6 @@ class ConfigTest extends TestCase
         $client->setLogger(new NullLogger());
         $client->addMiddleware(new CloseHandler());
 
-        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
-            $this->assertEquals(300, $params[0]);
-        });
         $client->setTimeout(300);
         $client->setFrameSize(64);
         $this->assertEquals(64, $client->getFrameSize());

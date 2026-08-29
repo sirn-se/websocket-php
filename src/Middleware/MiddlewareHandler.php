@@ -9,10 +9,6 @@ namespace WebSocket\Middleware;
 
 use Closure;
 use Psr\Http\Message\MessageInterface;
-use Psr\Log\{
-    LoggerInterface,
-    LoggerAwareInterface,
-};
 use Stringable;
 use WebSocket\{
     Configuration,
@@ -32,7 +28,7 @@ use WebSocket\Trait\{
  * WebSocket\Middleware\MiddlewareHandler class.
  * Middleware handling.
  */
-class MiddlewareHandler implements LoggerAwareInterface, Stringable
+class MiddlewareHandler implements Stringable
 {
     use ConfigurationTrait;
     use StringableTrait;
@@ -40,8 +36,6 @@ class MiddlewareHandler implements LoggerAwareInterface, Stringable
     private const SCOPE = 'middleware-handler';
 
     // Processor collections
-    /** @var array<MiddlewareInterface> */
-    private array $middlewares = [];
     /** @var array<ProcessIncomingInterface> */
     private array $incoming = [];
     /** @var array<ProcessOutgoingInterface> */
@@ -70,21 +64,6 @@ class MiddlewareHandler implements LoggerAwareInterface, Stringable
         $this->messageHandler = $messageHandler;
         $this->httpHandler = $httpHandler;
         $this->initConfiguration($configuration);
-    }
-
-    /**
-     * Set logger on MiddlewareHandler and all LoggerAware middlewares.
-     * @param LoggerInterface $logger
-     * @deprecated Will be removed in future version, set on Configuration instead
-     */
-    public function setLogger(LoggerInterface $logger): void
-    {
-        $this->configuration->setLogger($logger);
-        foreach ($this->middlewares as $middleware) {
-            if ($middleware instanceof LoggerAwareInterface) {
-                $middleware->setLogger($logger);
-            }
-        }
     }
 
     /**
@@ -118,10 +97,6 @@ class MiddlewareHandler implements LoggerAwareInterface, Stringable
             $this->configuration->getLogger()->info("[{scope}] Added tick: {middleware}", $context);
             $this->tick[] = $middleware;
         }
-        if ($middleware instanceof LoggerAwareInterface) {
-            $middleware->setLogger($this->configuration->getLogger());
-        }
-        $this->middlewares[] = $middleware;
         return $this;
     }
 

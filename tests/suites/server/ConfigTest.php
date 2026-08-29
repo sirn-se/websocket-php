@@ -105,9 +105,6 @@ class ConfigTest extends TestCase
         $server->start();
 
         $server->setLogger(new NullLogger());
-        $this->expectSocketStreamSetTimeout()->addAssert(function ($method, $params) {
-            $this->assertEquals(300, $params[0]);
-        });
         $this->assertSame($server, $server->setTimeout(300));
         $this->assertSame($server, $server->setFrameSize(64));
         $this->assertSame($server, $server->setMaxConnections(null));
@@ -129,39 +126,6 @@ class ConfigTest extends TestCase
 
         $this->expectSocketStreamClose();
         $this->expectStreamCollectionDetach();
-        $this->expectSocketServerClose();
-        $this->expectStreamCollectionDetach();
-        $server->disconnect();
-    }
-
-    public function testContextOption(): void
-    {
-        $errorHandler = new ErrorHandler();
-        $this->expectWsServerCreate();
-        $server = new Server(8000, streamFactory: new StreamFactory());
-
-        $errorHandler->withAll(function () use ($server) {
-            $server->setContext(['ssl' => ['verify_peer' => false]]);
-        }, function (array $errors) {
-            $this->assertEquals(
-                'Calling Server.setContext with array is deprecated, use Context class.',
-                $errors[0]->getMessage()
-            );
-        });
-
-        $this->expectWsServerSetup();
-        $this->expectStreamCollectionWaitRead()->addAssert(function ($method, $params) {
-            $this->assertEquals(60, $params[0]);
-        });
-        $this->expectStreamCollection()->addAssert(function ($method, $params) use ($server) {
-            $this->assertTrue($server->isRunning());
-            $this->assertEquals(0, $server->getConnectionCount());
-            $server->stop();
-        });
-        $server->start();
-        $this->assertEquals('WebSocket\Server(tcp://0.0.0.0:8000)', "{$server}");
-        $this->assertFalse($server->isRunning());
-
         $this->expectSocketServerClose();
         $this->expectStreamCollectionDetach();
         $server->disconnect();

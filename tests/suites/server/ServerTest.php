@@ -93,19 +93,7 @@ class ServerTest extends TestCase
             $this->assertInstanceOf(Connection::class, $connection);
             $this->assertInstanceOf(ServerRequestInterface::class, $request);
             $this->assertInstanceOf(ResponseInterface::class, $response);
-        });
-        $handler->withAll(function () use ($server) {
-            $server->onConnect(function ($server, $connection, $request) {
-                $this->assertInstanceOf(Server::class, $server);
-                $this->assertInstanceOf(Connection::class, $connection);
-                $this->assertInstanceOf(ServerRequestInterface::class, $request);
-                $server->stop();
-            });
-        }, function (array $errors) {
-            $this->assertEquals(
-                'onConnect() is deprecated and will be removed in v4. Use onHandshake() instead.',
-                $errors[0]->getMessage()
-            );
+            $server->stop();
         });
         $server->onMessage(function ($server, $connection, $message) {
             $this->assertInstanceOf(Server::class, $server);
@@ -752,25 +740,6 @@ class ServerTest extends TestCase
         $this->expectException(Error::class);
         $this->expectExceptionMessage('Class "WebSocket\Test\Server\UnexistingClass" not found');
         $server->start();
-    }
-
-    public function testDeprecatedSetStreamFactory(): void
-    {
-        $this->expectStreamFactory();
-        $server = new Server(8000);
-
-        $errorHandler = new ErrorHandler();
-        $errorHandler->withAll(function () use ($server) {
-            $factory = new StreamFactory();
-            $this->assertSame($server, $server->setStreamFactory($factory));
-        }, function (array $errors) {
-            $this->assertEquals(
-                'Server.setStreamFactory is deprecated and will be removed in v4.',
-                $errors[0]->getMessage()
-            );
-        });
-
-        $server->disconnect();
     }
 
     public function testExtendTextImplementation(): void

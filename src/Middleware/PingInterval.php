@@ -7,10 +7,6 @@
 
 namespace WebSocket\Middleware;
 
-use Psr\Log\{
-    LoggerInterface,
-    LoggerAwareInterface,
-};
 use Stringable;
 use WebSocket\{
     Configuration,
@@ -29,7 +25,7 @@ use WebSocket\Trait\{
  * WebSocket\Middleware\PingInterval class.
  * Handles close procedure.
  */
-class PingInterval implements LoggerAwareInterface, ProcessOutgoingInterface, ProcessTickInterface, Stringable
+class PingInterval implements ProcessOutgoingInterface, ProcessTickInterface, Stringable
 {
     use ConfigurationTrait;
     use StringableTrait;
@@ -42,16 +38,6 @@ class PingInterval implements LoggerAwareInterface, ProcessOutgoingInterface, Pr
     {
         $this->interval = $interval;
         $this->initConfiguration();
-    }
-
-    /**
-     * Set logger.
-     * @param LoggerInterface $logger
-     * @deprecated Will be removed in future version, retrieved from Configuration instead
-     */
-    public function setLogger(LoggerInterface $logger): void
-    {
-        $this->configuration->setLogger($logger);
     }
 
     public function processOutgoing(ProcessStack $stack, Connection $connection, Message $message): Message
@@ -81,7 +67,7 @@ class PingInterval implements LoggerAwareInterface, ProcessOutgoingInterface, Pr
 
     private function setNext(Connection $connection): float
     {
-        $next = microtime(true) + ($this->interval ?? $connection->getTimeout());
+        $next = microtime(true) + ($this->interval ?? $this->configuration->getTimeout());
         $connection->setMeta('pingInterval.next', $next);
         return $next;
     }

@@ -35,6 +35,7 @@ and is maintained by Sören Jensen, who has been maintaining the original since 
 
 * [v1 -> v2](docs/Migrate_1_2.md) - How to migrate from v1 to v2
 * [v2 -> v3](docs/Migrate_2_3.md) - How to migrate from v2 to v3
+* [v3 -> v4](docs/Migrate_3_4.md) - How to migrate from v3 to v4
 
 ## Installing
 

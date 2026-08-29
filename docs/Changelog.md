@@ -10,6 +10,7 @@
 
  * Improved exception structure (@sirn-se)
  * MessageEncodingException on message compression failure (@sirn-se)
+ * Remove deprecated code (@sirn-se)
 
 
 ## `v3.8`

@@ -15,10 +15,6 @@ use Psr\Http\Message\{
     ResponseInterface,
     ServerRequestInterface,
 };
-use Psr\Log\{
-    LoggerInterface,
-    LoggerAwareInterface,
-};
 use Stringable;
 use WebSocket\{
     Configuration,
@@ -41,7 +37,6 @@ use WebSocket\Trait\{
  * @see https://datatracker.ietf.org/doc/html/rfc7692
  */
 class CompressionExtension implements
-    LoggerAwareInterface,
     ProcessHttpOutgoingInterface,
     ProcessHttpIncomingInterface,
     ProcessIncomingInterface,
@@ -60,16 +55,6 @@ class CompressionExtension implements
     {
         $this->compressors = $compressors;
         $this->initConfiguration();
-    }
-
-    /**
-     * Set logger.
-     * @param LoggerInterface $logger
-     * @deprecated Will be removed in future version, retrieved from Configuration instead
-     */
-    public function setLogger(LoggerInterface $logger): void
-    {
-        $this->configuration->setLogger($logger);
     }
 
     public function processHttpOutgoing(
