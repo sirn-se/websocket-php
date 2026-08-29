@@ -54,7 +54,7 @@ class Connections implements Countable, IteratorAggregate
             $this->pullMaskedRequired,
             $ssl,
             $this->httpFactory,
-            clone $this->configuration,
+            $this->configuration,
         );
     }
 

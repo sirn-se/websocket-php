@@ -65,7 +65,7 @@ echo $message->setCloseStatus(1000);
 
 ## Custom message implementations
 
-By using the OpcodeRegistry, it is possible to register other Message implementations than tge default of this repo.
+By using the OpcodeRegistry, it is possible to register other Message implementations than the default of this repo.
 This includes opcodes *not* required by websocket standard.
 
 ```php
@@ -108,3 +108,5 @@ $server->onText(function ($server, $connection, $message) {
     $server->send(new WebSocket\Message\Text("Some text to be sent"));
 });
 ```
+
+Read more on [Listeners](Listener.md).

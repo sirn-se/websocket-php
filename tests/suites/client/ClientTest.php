@@ -297,12 +297,11 @@ class ClientTest extends TestCase
     {
         $this->expectWsClientCreate();
         $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
+        $client->setFrameSize(8);
 
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake();
         $client->connect();
-
-        $client->setFrameSize(8);
 
         // Sending message
         $this->expectSocketStreamIsConnected();
@@ -819,20 +818,7 @@ class ClientTest extends TestCase
             $this->assertInstanceOf(RequestInterface::class, $request);
             $this->assertInstanceOf(ResponseInterface::class, $response);
             $this->assertTrue($client->isRunning());
-        });
-        $handler->withAll(function () use ($client) {
-            $client->onConnect(function ($client, $connection, $response) {
-                $this->assertInstanceOf(Client::class, $client);
-                $this->assertInstanceOf(Connection::class, $connection);
-                $this->assertInstanceOf(ResponseInterface::class, $response);
-                $this->assertTrue($client->isRunning());
-                $client->stop();
-            });
-        }, function (array $errors) {
-            $this->assertEquals(
-                'onConnect() is deprecated and will be removed in v4. Use onHandshake() instead.',
-                $errors[0]->getMessage()
-            );
+            $client->stop();
         });
         $client->onMessage(function ($client, $connection, $message) {
             $this->assertInstanceOf(Client::class, $client);
@@ -1169,44 +1155,6 @@ class ClientTest extends TestCase
         $this->expectException(Error::class);
         $this->expectExceptionMessage('Class "WebSocket\Test\Client\UnexistingClass" not found');
         $client->start();
-    }
-
-    public function testDeprecatedMeta(): void
-    {
-        $this->expectWsClientCreate();
-        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
-
-        $errorHandler = new ErrorHandler();
-        $errorHandler->withAll(function () use ($client) {
-            $this->assertNull($client->getMeta('metadata'));
-        }, function (array $errors) {
-            $this->assertEquals(
-                'Client.getMeta is deprecated and will be removed in v4.',
-                $errors[0]->getMessage()
-            );
-        });
-
-        $client->disconnect();
-    }
-
-    public function testDeprecatedSetStreamFactory(): void
-    {
-        $this->expectWsClientCreate();
-        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
-
-        $this->expectStreamFactory();
-        $errorHandler = new ErrorHandler();
-        $errorHandler->withAll(function () use ($client) {
-            $factory = new StreamFactory();
-            $this->assertSame($client, $client->setStreamFactory($factory));
-        }, function (array $errors) {
-            $this->assertEquals(
-                'Client.setStreamFactory is deprecated and will be removed in v4.',
-                $errors[0]->getMessage()
-            );
-        });
-
-        $client->disconnect();
     }
 
     public function testExtendTextImplementation(): void

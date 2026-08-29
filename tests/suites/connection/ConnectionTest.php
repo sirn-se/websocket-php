@@ -87,13 +87,6 @@ class ConnectionTest extends TestCase
         $this->assertEquals('meta.data.1', $connection->getMeta('test.meta.1'));
         $this->assertEquals('meta.data.2', $connection->getMeta('test.meta.2'));
 
-        $this->expectSocketStreamSetTimeout();
-        $this->assertSame($connection, $connection->setTimeout(10));
-        $this->assertEquals(10, $connection->getTimeout());
-
-        $connection->setLogger(new NullLogger());
-        $this->assertSame($connection, $connection->setFrameSize(64));
-        $this->assertEquals(64, $connection->getFrameSize());
         $this->assertSame($connection, $connection->addMiddleware(new Callback()));
 
         $this->expectSocketStreamIsReadable();

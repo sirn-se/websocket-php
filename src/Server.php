@@ -137,19 +137,6 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
     }
 
     /**
-     * Set stream factory to use.
-     * @param StreamFactory $streamFactory
-     * @return self
-     * @depracated Remove in v4
-     */
-    public function setStreamFactory(StreamFactory $streamFactory): self
-    {
-        trigger_error('Server.setStreamFactory is deprecated and will be removed in v4.', E_USER_DEPRECATED);
-        $this->streamFactory = $streamFactory;
-        return $this;
-    }
-
-    /**
      * Set HTTP factory to use.
      * @param HttpFactory $httpFactory
      * @return self
@@ -168,9 +155,6 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
     public function setLogger(LoggerInterface $logger): void
     {
         $this->configuration->setLogger($logger);
-        $this->connections->walk(function (Connection $connection) use ($logger) {
-            $connection->setLogger($logger);
-        });
     }
 
     /**
@@ -183,9 +167,6 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
     public function setTimeout(int|float $timeout): self
     {
         $this->configuration->setTimeout($timeout);
-        $this->connections->walk(function (Connection $connection) use ($timeout) {
-            $connection->setTimeout($timeout);
-        });
         return $this;
     }
 
@@ -209,9 +190,6 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
     public function setFrameSize(int $frameSize): self
     {
         $this->configuration->setFrameSize($frameSize);
-        $this->connections->walk(function (Connection $connection) use ($frameSize) {
-            $connection->setFrameSize($frameSize);
-        });
         return $this;
     }
 
@@ -294,19 +272,14 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
 
     /**
      * Set stream context.
-     * @param Context|array<string, mixed> $context Context or options as array
+     * @param Context $context Context
      * @see https://www.php.net/manual/en/context.php
      * @return self
      * @deprecated Will be removed in future version, set on Configuration instead
      */
-    public function setContext(Context|array $context): self
+    public function setContext(Context $context): self
     {
-        if ($context instanceof Context) {
-            $this->configuration->setContext($context);
-        } else {
-            $this->configuration->getContext()->setOptions($context);
-            trigger_error('Calling Server.setContext with array is deprecated, use Context class.', E_USER_DEPRECATED);
-        }
+        $this->configuration->setContext($context);
         return $this;
     }
 

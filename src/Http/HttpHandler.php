@@ -22,10 +22,6 @@ use Psr\Http\Message\{
     ServerRequestFactoryInterface,
     UriFactoryInterface,
 };
-use Psr\Log\{
-    LoggerInterface,
-    LoggerAwareInterface,
-};
 use RuntimeException;
 use Stringable;
 use WebSocket\Trait\StringableTrait;
@@ -33,9 +29,8 @@ use WebSocket\Trait\StringableTrait;
 /**
  * WebSocket\Http\HttpHandler class.
  * Reads and writes HTTP message to/from stream.
- * @deprecated Remove LoggerAwareInterface in v4
  */
-class HttpHandler implements LoggerAwareInterface, Stringable
+class HttpHandler implements Stringable
 {
     use StringableTrait;
 
@@ -53,14 +48,6 @@ class HttpHandler implements LoggerAwareInterface, Stringable
         $this->ssl = $ssl;
         $this->httpFactory = $httpFactory ?? new DefaultHttpFactory();
         $this->serializer = new Serializer();
-    }
-
-    /**
-     * @deprecated Remove in v4
-     */
-    public function setLogger(LoggerInterface $logger): void
-    {
-        trigger_error('HttpHandler.setLogger is deprecated and will be removed in v4.', E_USER_DEPRECATED);
     }
 
     /**

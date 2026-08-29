@@ -7,10 +7,6 @@
 
 namespace WebSocket\Message;
 
-use Psr\Log\{
-    LoggerAwareInterface,
-    LoggerInterface,
-};
 use Stringable;
 use WebSocket\Configuration;
 use WebSocket\Frame\{
@@ -26,7 +22,7 @@ use WebSocket\Trait\{
  * WebSocket\Message\MessageHandler class.
  * Message/Frame handling.
  */
-class MessageHandler implements LoggerAwareInterface, Stringable
+class MessageHandler implements Stringable
 {
     use ConfigurationTrait;
     use StringableTrait;
@@ -42,17 +38,6 @@ class MessageHandler implements LoggerAwareInterface, Stringable
     {
         $this->frameHandler = $frameHandler;
         $this->initConfiguration($configuration);
-    }
-
-    /**
-     * Set logger.
-     * @param LoggerInterface $logger Logger implementation
-     * @deprecated Will be removed in future version, set on Configuration instead
-     */
-    public function setLogger(LoggerInterface $logger): void
-    {
-        $this->configuration->setLogger($logger);
-        $this->frameHandler->setLogger($logger);
     }
 
     /**

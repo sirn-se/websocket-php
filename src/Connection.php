@@ -22,10 +22,6 @@ use Psr\Http\Message\{
     ServerRequestFactoryInterface,
     UriFactoryInterface,
 };
-use Psr\Log\{
-    LoggerAwareInterface,
-    LoggerInterface,
-};
 use Stringable;
 use Throwable;
 use WebSocket\Frame\FrameHandler;
@@ -56,7 +52,7 @@ use WebSocket\Trait\{
  * WebSocket\Connection class.
  * A client/server connection, wrapping socket stream.
  */
-class Connection implements IdentityInterface, LoggerAwareInterface, StreamContainerInterface, Stringable
+class Connection implements IdentityInterface, StreamContainerInterface, Stringable
 {
     use ConfigurationTrait;
     use SendMethodsTrait;
@@ -117,75 +113,6 @@ class Connection implements IdentityInterface, LoggerAwareInterface, StreamConta
     public function getIdentity(): string
     {
         return $this->identity;
-    }
-
-    /**
-     * Set logger.
-     * @param LoggerInterface $logger Logger implementation
-     * @deprecated Will be removed in future version, set on Configuration instead
-     */
-    public function setLogger(LoggerInterface $logger): void
-    {
-        $this->configuration->setLogger($logger);
-        $this->messageHandler->setLogger($logger);
-        $this->middlewareHandler->setLogger($logger);
-        $this->configuration->getLogger()->debug("[{scope}] Setting logger: {logger}", [
-            'scope' => self::SCOPE,
-            'connection' => $this->identity,
-            'logger' => get_class($logger),
-        ]);
-    }
-
-    /**
-     * Set time out on connection.
-     * @param int<0, max>|float $timeout Timeout part in seconds
-     * @return self
-     * @throws InvalidArgumentException
-     * @deprecated Will be removed in future version, set on Configuration instead
-     */
-    public function setTimeout(int|float $timeout): self
-    {
-        $this->configuration->setTimeout($timeout);
-        $this->stream->setTimeout($timeout);
-        $this->configuration->getLogger()->debug("[{scope}] Setting timeout: {timeout} seconds", [
-            'scope' => self::SCOPE,
-            'connection' => $this->identity,
-            'timeout' => $timeout,
-        ]);
-        return $this;
-    }
-
-    /**
-     * Get timeout.
-     * @return int<0, max>|float Timeout in seconds.
-     * @deprecated Will be removed in future version, get from Configuration instead
-     */
-    public function getTimeout(): int|float
-    {
-        return $this->configuration->getTimeout();
-    }
-
-    /**
-     * Set frame size.
-     * @param int<1, max> $frameSize Frame size in bytes.
-     * @return self
-     * @throws InvalidArgumentException
-     * @deprecated Will be removed in future version, set on Configuration instead
-     */
-    public function setFrameSize(int $frameSize): self
-    {
-        $this->configuration->setFrameSize($frameSize);
-        return $this;
-    }
-
-    /**
-     * Get frame size.
-     * @return int<1, max> Frame size in bytes
-     * @deprecated Will be removed in future version, get from Configuration instead
-     */
-    public function getFrameSize(): int
-    {
-        return $this->configuration->getFrameSize();
     }
 
     /**

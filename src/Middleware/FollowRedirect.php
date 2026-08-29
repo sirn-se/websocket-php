@@ -14,10 +14,6 @@ use Psr\Http\Message\{
     MessageInterface,
     ResponseInterface,
 };
-use Psr\Log\{
-    LoggerInterface,
-    LoggerAwareInterface,
-};
 use Stringable;
 use WebSocket\{
     Configuration,
@@ -36,7 +32,7 @@ use WebSocket\Trait\{
  * WebSocket\Middleware\CloseHandler class.
  * Handles close procedure.
  */
-class FollowRedirect implements LoggerAwareInterface, ProcessHttpIncomingInterface, Stringable
+class FollowRedirect implements ProcessHttpIncomingInterface, Stringable
 {
     use ConfigurationTrait;
     use StringableTrait;
@@ -50,16 +46,6 @@ class FollowRedirect implements LoggerAwareInterface, ProcessHttpIncomingInterfa
     {
         $this->limit = $limit;
         $this->initConfiguration();
-    }
-
-    /**
-     * Set logger.
-     * @param LoggerInterface $logger
-     * @deprecated Will be removed in future version, retrieved from Configuration instead
-     */
-    public function setLogger(LoggerInterface $logger): void
-    {
-        $this->configuration->setLogger($logger);
     }
 
     /**

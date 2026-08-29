@@ -249,41 +249,4 @@ class ExceptionTest extends TestCase
         $this->expectExceptionMessage('Connection error');
         $connection->send(new Text('Generic'));
     }
-
-    public function testInvalidTimeout(): void
-    {
-        $temp = tmpfile();
-
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-        $this->expectContext();
-        $stream = new SocketStream($temp);
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
-        $this->expectSocketStreamSetTimeout();
-        $connection = new Connection($stream, false, false);
-
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Invalid timeout '-1' provided");
-        $connection->setTimeout(-1);
-    }
-
-    public function testInvalidFrameSize(): void
-    {
-        $temp = tmpfile();
-
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-        $this->expectContext();
-        $stream = new SocketStream($temp);
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
-        $this->expectSocketStreamSetTimeout();
-        $connection = new Connection($stream, false, false);
-
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Invalid frameSize '0' provided");
-        // @phpstan-ignore argument.type
-        $connection->setFrameSize(0);
-    }
 }

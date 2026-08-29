@@ -94,12 +94,14 @@ $client_or_server
     ;
 ```
 
-## Exception handling
+## Error handling
 
 While running, it will attempt to handle various errors.
 
-* MessageLevelInterface (BadOpcodeException, ConnectionTimeoutException) can not read/send a message, but connection is still open
-* ConnectionLevelInterface (ConnectionClosedException, ConnectionFailureException, HandshakeException) will close connection
-* HandlerLevelInterface (BadUriException, ClientException, RunnerException, ServerException) are not resolvable and exit the application
+* MessageLevelInterface will skip message but keep connection open
+* ConnectionLevelInterface will close connection
+* HandlerLevelInterface are not resolvable and exit the application
 * CloseException will initiate close procedure
-* ReconnectException will close and reconnect, optionally with new URI.
+* ReconnectException will close and reconnect, optionally with new URI
+
+Read more on [Error Handling](ErrorHandling.md).

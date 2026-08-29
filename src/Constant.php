@@ -8,8 +8,8 @@
 namespace WebSocket;
 
 /**
- * WebSocket\Connection class.
- * A client/server connection, wrapping socket stream.
+ * WebSocket\Constant class.
+ * Defines global constants.
  */
 interface Constant
 {
