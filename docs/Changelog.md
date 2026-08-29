@@ -11,6 +11,7 @@
  * Improved exception structure (@sirn-se)
  * MessageEncodingException on message compression failure (@sirn-se)
  * Remove deprecated code (@sirn-se)
+ * Nyholm PSR HTTP (deprecate internal stub classes) (@sirn-se)
 
 
 ## `v3.8`

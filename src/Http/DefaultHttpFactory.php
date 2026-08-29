@@ -8,17 +8,7 @@
 namespace WebSocket\Http;
 
 use Phrity\Http\HttpFactory;
-use Phrity\Net\UriFactory;
-use Psr\Http\Message\{
-    RequestFactoryInterface,
-    RequestInterface,
-    ResponseFactoryInterface,
-    ResponseInterface,
-    ServerRequestFactoryInterface,
-    ServerRequestInterface,
-    UriFactoryInterface,
-    UriInterface,
-};
+use Nyholm\Psr7\Factory\Psr17Factory;
 
 /**
  * WebSocket\Http\DefaultHttpFactory
@@ -26,47 +16,15 @@ use Psr\Http\Message\{
  */
 class DefaultHttpFactory extends HttpFactory
 {
-    private UriFactory $uriFactory;
-
     public function __construct()
     {
-        $this->uriFactory = new UriFactory();
-    }
-
-    /**
-     * Create a new request.
-     * @param string $method
-     * @param UriInterface|string $uri
-     */
-    public function createRequest(string $method, mixed $uri): RequestInterface
-    {
-        return new Request($method, $uri);
-    }
-
-    /**
-     * @param int $code
-     * @param string $reasonPhrase
-     */
-    public function createResponse(int $code = 200, string $reasonPhrase = ''): ResponseInterface
-    {
-        return new Response($code, $reasonPhrase);
-    }
-
-    /**
-     * @param string $method
-     * @param UriInterface|string $uri
-     * @param array<string, mixed> $serverParams
-     */
-    public function createServerRequest(string $method, mixed $uri, array $serverParams = []): ServerRequestInterface
-    {
-        return new ServerRequest($method, $uri);
-    }
-
-    /**
-     * @param string $uri The URI to parse.
-     */
-    public function createUri(string $uri = ''): UriInterface
-    {
-        return $this->uriFactory->createUri($uri);
+        $psrFactory = new Psr17Factory();
+        parent::__construct(
+            uriFactory: $psrFactory,
+            requestFactory: $psrFactory,
+            responseFactory: $psrFactory,
+            serverRequestFactory: $psrFactory,
+            streamFactory: $psrFactory,
+        );
     }
 }

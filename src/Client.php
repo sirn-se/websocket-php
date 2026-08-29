@@ -719,15 +719,13 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
             throw new BadUriException("Invalid URI '{$uri}' provided.");
         }
 
-
         if (!in_array($uriInstance->getScheme(), ['ws', 'wss'])) {
             throw new BadUriException("Invalid URI scheme, must be 'ws' or 'wss'.");
         }
         if (!$uriInstance->getHost()) {
             throw new BadUriException("Invalid URI host.");
         }
-        $uriInstance = $uriInstance->withPath($uriInstance->getPath(), Uri::ABSOLUTE_PATH | Uri::NORMALIZE_PATH);
-        return $uriInstance;
+        return $uriInstance->withPath($uriInstance->getPath(), Uri::ABSOLUTE_PATH | Uri::NORMALIZE_PATH);
     }
 
     protected function connection(): Connection
