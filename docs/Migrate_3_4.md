@@ -46,6 +46,11 @@ $clonedConfiguration->setFrameSize(...);
 $source->setConfiguration($clonedConfiguration);
 ```
 
+## Connections collection
+
+Server `getConnections()`, `getReadableConnections()` and `getWritableConnections()`
+return `WebSocket\Runtime\Connections` collection class instead of array.
+
 ## Exceptions
 
 All internal exceptions are normalized, and extends `AbstractException`.

@@ -18,7 +18,7 @@ use WebSocket\Trait\StringableTrait;
  * WebSocket\Message\Message class.
  * Abstract superclass for WebSocket messages.
  */
-abstract class Message implements Stringable
+abstract class Message implements MessageInterface, Stringable
 {
     use StringableTrait;
 

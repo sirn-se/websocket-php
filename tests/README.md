@@ -14,9 +14,7 @@ make test
 
 ## Continuous integration
 
-GitHub Actions are run on PHP versions `8.1`, `8.2`, `8.3` and `8.4`.
-
-Code coverage by [Coveralls](https://coveralls.io/github/sirn-se/websocket-php).
+GitHub Actions are run on PHP versions `8.2`, `8.3`, `8.4`, `8.5` and `8.6`.
 
 
 ## Test strategy

@@ -236,38 +236,35 @@ class Server implements IdentityInterface, LoggerAwareInterface, StreamContainer
      */
     public function getConnectionCount(): int
     {
-        return count($this->connections);
+        return $this->connections->count();
     }
 
     /**
      * Get currently connected clients.
-     * @return array<non-empty-string, Connection> Connections
      */
-    public function getConnections(): array
+    public function getConnections(): Connections
     {
-        return $this->connections->toArray();
+        return $this->connections;
     }
 
     /**
      * Get currently readable clients.
-     * @return array<Connection> Connections
      */
-    public function getReadableConnections(): array
+    public function getReadableConnections(): Connections
     {
         return $this->connections->filter(function (Connection $connection) {
             return $connection->isReadable();
-        })->toArray();
+        });
     }
 
     /**
      * Get currently writable clients.
-     * @return array<Connection> Connections
      */
-    public function getWritableConnections(): array
+    public function getWritableConnections(): Connections
     {
         return $this->connections->filter(function (Connection $connection) {
             return $connection->isWritable();
-        })->toArray();
+        });
     }
 
     /**
