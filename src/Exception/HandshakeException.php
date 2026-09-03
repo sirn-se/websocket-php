@@ -7,7 +7,10 @@
 
 namespace WebSocket\Exception;
 
-use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\{
+    RequestInterface,
+    ResponseInterface,
+};
 
 /**
  * WebSocket\Exception\HandshakeException class.
@@ -16,24 +19,12 @@ use Psr\Http\Message\ResponseInterface;
 class HandshakeException extends AbstractException implements ConnectionLevelInterface
 {
     protected static string $defaultMessage = 'Handshake failed';
-    /**
-     * @var array{
-     *   headerName: string|null,
-     *   headerValue: scalar|null,
-     *   method: string|null,
-     *   response: ResponseInterface|null,
-     *   statusCode: int<100, 599>|null,
-     * } $defaultContext
-     */
     protected static array $defaultContext = [
-        'headerName' => null,
-        'headerValue' => null,
-        'method' => null,
+        'request' => null,
         'response' => null,
-        'statusCode' => null,
     ];
 
-    public function getResponse(): ResponseInterface
+    public function getResponse(): ResponseInterface|null
     {
         return $this->getContext('response');
     }

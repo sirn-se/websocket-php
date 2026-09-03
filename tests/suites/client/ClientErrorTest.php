@@ -108,7 +108,7 @@ class ClientErrorTest extends TestCase
             return 'Test message';
         });
         $this->expectException(BadOpcodeException::class);
-        $this->expectExceptionMessage("Implementation class null for opcode 15 not found");
+        $this->expectExceptionMessage("Implementation class for opcode 15 not registered");
         $message = $client->receive();
     }
 

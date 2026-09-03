@@ -637,16 +637,16 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
             $response = $connection->pullHttp();
             if ($response->getStatusCode() != 101) {
                 throw new HandshakeException(
-                    'Invalid status code {statusCode}',
+                    'Invalid status code {response.statusCode}',
+                    request: $request,
                     response: $response,
-                    statusCode: $response->getStatusCode(),
                 );
             }
 
             if (empty($response->getHeaderLine('Sec-WebSocket-Accept'))) {
                 throw new HandshakeException(
-                    'Connection to {uri} failed: Invalid upgrade response',
-                    uri: $uri,
+                    'Connection to {request.uri} failed: Invalid upgrade response',
+                    request: $request,
                     response: $response,
                 );
             }
@@ -659,6 +659,7 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
             if ($responseKey !== $expectedKey) {
                 throw new HandshakeException(
                     'Server sent bad upgrade response',
+                    request: $request,
                     response: $response,
                 );
             }
@@ -716,14 +717,14 @@ class Client implements IdentityInterface, LoggerAwareInterface, Stringable
                 $uriInstance = new Uri($uri);
             }
         } catch (InvalidArgumentException $e) {
-            throw new BadUriException("Invalid URI '{$uri}' provided.");
+            throw new BadUriException('Invalid URI: "{uri}" provided', uri: $uri);
         }
 
         if (!in_array($uriInstance->getScheme(), ['ws', 'wss'])) {
-            throw new BadUriException("Invalid URI scheme, must be 'ws' or 'wss'.");
+            throw new BadUriException('Invalid URI scheme: "{uri.scheme}", must be "ws" or "wss"', uri: $uriInstance);
         }
         if (!$uriInstance->getHost()) {
-            throw new BadUriException("Invalid URI host.");
+            throw new BadUriException('Invalid URI host: "{uri.host}"', uri: $uriInstance);
         }
         return $uriInstance->withPath($uriInstance->getPath(), Uri::ABSOLUTE_PATH | Uri::NORMALIZE_PATH);
     }

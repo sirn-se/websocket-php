@@ -53,21 +53,21 @@ class ConfigErrorTest extends TestCase
     public function testUriInvalid(): void
     {
         $this->expectException(BadUriException::class);
-        $this->expectExceptionMessage("Invalid URI '--:this is not an uri:--' provided.");
+        $this->expectExceptionMessage('Invalid URI: "--:this is not an uri:--" provided');
         $client = new Client('--:this is not an uri:--');
     }
 
     public function testUriInvalidScheme(): void
     {
         $this->expectException(BadUriException::class);
-        $this->expectExceptionMessage("Invalid URI scheme, must be 'ws' or 'wss'.");
+        $this->expectExceptionMessage('Invalid URI scheme: "bad", must be "ws" or "wss"');
         $client = new Client('bad://localhost:8000/my/mock/path');
     }
 
     public function testUriInvalidHost(): void
     {
         $this->expectException(BadUriException::class);
-        $this->expectExceptionMessage("Invalid URI host.");
+        $this->expectExceptionMessage('Invalid URI host: ""');
         $client = new Client('ws:///my/mock/path');
     }
 

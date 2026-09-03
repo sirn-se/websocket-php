@@ -82,7 +82,7 @@ abstract class Message implements MessageInterface, Stringable
     public function setCompress(bool $compress): void
     {
         if ($compress) {
-            throw new MessageEncodingException('Must not compress control message.');
+            throw new MessageEncodingException('Must not compress control message');
         }
     }
 

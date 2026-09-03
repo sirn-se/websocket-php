@@ -73,16 +73,16 @@ class OpcodeRegistryTest extends TestCase
         $opcodeRegistry = new OpcodeRegistry();
         $this->expectException(DomainException::class);
         $this->expectExceptionMessage(
-            'Implementation class WebSocket\Message\OpcodeRegistry must extend WebSocket\Message\Message'
+            'Implementation class "WebSocket\Message\OpcodeRegistry" must extend "WebSocket\Message\Message"'
         );
         $opcodeRegistry->register(1, $opcodeRegistry::class);
     }
 
-    public function testGetOpcodeInvalidOpcode(): void
+    public function testGetOpcodeInvalidClass(): void
     {
         $opcodeRegistry = new OpcodeRegistry();
         $this->expectException(BadOpcodeException::class);
-        $this->expectExceptionMessage('Opcode must be integer in range 1-15, false provided');
+        $this->expectExceptionMessage('Implementation class "WebSocket\Message\OpcodeRegistry" not found');
         $opcodeRegistry->getOpcode($opcodeRegistry::class);
     }
 
@@ -93,6 +93,14 @@ class OpcodeRegistryTest extends TestCase
         $this->expectExceptionMessage('Opcode must be integer in range 1-15, 16 provided');
         // @phpstan-ignore argument.type
         $opcodeRegistry->createMessage(16);
+    }
+
+    public function testCreateMessageUnregisteredClass(): void
+    {
+        $opcodeRegistry = new MockOpcodeRegistry();
+        $this->expectException(BadOpcodeException::class);
+        $this->expectExceptionMessage('Implementation class for opcode 15 not registered');
+        $opcodeRegistry->createMessage(15);
     }
 
     public function testCreateMessageUnexistingClass(): void
@@ -110,7 +118,7 @@ class OpcodeRegistryTest extends TestCase
         $opcodeRegistry->mockBind(2, $opcodeRegistry::class);
         $this->expectException(BadOpcodeException::class);
         $this->expectExceptionMessage(
-            'Implementation class WebSocket\Test\MockOpcodeRegistry must extend WebSocket\Message\Message'
+            'Implementation class "WebSocket\Test\MockOpcodeRegistry" must extend "WebSocket\Message\Message"'
         );
         $opcodeRegistry->createMessage(2);
     }
