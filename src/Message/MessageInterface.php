@@ -7,12 +7,10 @@
 
 namespace WebSocket\Message;
 
-use DateTimeImmutable;
 use DateTimeInterface;
 use Stringable;
 use WebSocket\Exception\MessageEncodingException;
 use WebSocket\Frame\Frame;
-use WebSocket\Trait\StringableTrait;
 
 /**
  * WebSocket\Message\MessageInterface interface.

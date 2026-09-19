@@ -5,11 +5,14 @@
 Public API of included classes.
 
 ```php
-abstract class WebSocket\Exception\Exception extends RuntimeException implements WebSocket\Exception\ExceptionInterface
+abstract class WebSocket\Exception\AbstractException extends Exception implements WebSocket\Exception\ExceptionInterface
 {
+    use Phrity\Util\Interpolator\InterpolatorTrait;
+
+    public method __construct(string|null $message = null, int $code = 0, Throwable|null $previous = null, mixed $context);
 }
 
-abstract class WebSocket\Message\Message implements Stringable
+abstract class WebSocket\Message\Message implements WebSocket\Message\MessageInterface, Stringable
 {
     use WebSocket\Trait\StringableTrait;
 
@@ -44,7 +47,6 @@ class WebSocket\Client implements WebSocket\Runtime\IdentityInterface, Psr\Log\L
     public method getFrameSize(): int;
     public method getHandshakeResponse(): Psr\Http\Message\ResponseInterface|null;
     public method getIdentity(): string;
-    public method getMeta(string $key): mixed;
     public method getName(): string|null;
     public method getRemoteName(): string|null;
     public method getTimeout(): int|float;
@@ -54,12 +56,11 @@ class WebSocket\Client implements WebSocket\Runtime\IdentityInterface, Psr\Log\L
     public method isWritable(): bool;
     public method receive(): WebSocket\Message\Message;
     public method send(WebSocket\Message\Message $message): WebSocket\Message\Message;
-    public method setContext(Phrity\Net\Context|array $context): self;
+    public method setContext(Phrity\Net\Context $context): self;
     public method setFrameSize(int $frameSize): self;
     public method setHttpFactory(Phrity\Http\HttpFactory $httpFactory): self;
     public method setLogger(Psr\Log\LoggerInterface $logger): void;
     public method setPersistent(bool $persistent): self;
-    public method setStreamFactory(Phrity\Net\StreamFactory $streamFactory): self;
     public method setTimeout(int|float $timeout): self;
     public method start(int|float|null $timeout = null): void;
     public method stop(): void;
@@ -87,7 +88,7 @@ class WebSocket\Configuration implements Psr\Log\LoggerAwareInterface, Stringabl
     public method setTimeout(int|float $timeout): void;
 }
 
-class WebSocket\Connection implements WebSocket\Runtime\IdentityInterface, Psr\Log\LoggerAwareInterface, Phrity\Net\StreamContainerInterface, Stringable
+class WebSocket\Connection implements WebSocket\Runtime\IdentityInterface, Phrity\Net\StreamContainerInterface, Stringable
 {
     use WebSocket\Trait\ConfigurationTrait;
     use WebSocket\Trait\SendMethodsTrait;
@@ -100,7 +101,6 @@ class WebSocket\Connection implements WebSocket\Runtime\IdentityInterface, Psr\L
     public method closeWrite(): self;
     public method disconnect(): self;
     public method getContext(): Phrity\Net\Context;
-    public method getFrameSize(): int;
     public method getHandshakeRequest(): Psr\Http\Message\RequestInterface|null;
     public method getHandshakeResponse(): Psr\Http\Message\ResponseInterface|null;
     public method getIdentity(): string;
@@ -108,7 +108,6 @@ class WebSocket\Connection implements WebSocket\Runtime\IdentityInterface, Psr\L
     public method getName(): string|null;
     public method getRemoteName(): string|null;
     public method getStream(): Phrity\Net\SocketStream;
-    public method getTimeout(): int|float;
     public method isConnected(): bool;
     public method isReadable(): bool;
     public method isWritable(): bool;
@@ -117,67 +116,60 @@ class WebSocket\Connection implements WebSocket\Runtime\IdentityInterface, Psr\L
     public method pushHttp(Psr\Http\Message\MessageInterface $message): Psr\Http\Message\MessageInterface;
     public method pushMessage(WebSocket\Message\Message $message): WebSocket\Message\Message;
     public method send(WebSocket\Message\Message $message): WebSocket\Message\Message;
-    public method setFrameSize(int $frameSize): self;
     public method setHandshakeRequest(Psr\Http\Message\RequestInterface $request): self;
     public method setHandshakeResponse(Psr\Http\Message\ResponseInterface $response): self;
-    public method setLogger(Psr\Log\LoggerInterface $logger): void;
     public method setMeta(string $key, mixed $value): void;
-    public method setTimeout(int|float $timeout): self;
     public method tick(): void;
 }
 
-class WebSocket\Exception\BadOpcodeException extends WebSocket\Exception\Exception implements WebSocket\Exception\MessageLevelInterface
-{
-    public method __construct(string $message = "Bad Opcode");
-}
-
-class WebSocket\Exception\BadUriException extends WebSocket\Exception\Exception implements WebSocket\Exception\HandlerLevelInterface
-{
-    public method __construct(string $message = "Bad URI");
-}
-
-class WebSocket\Exception\ClientException extends WebSocket\Exception\Exception implements WebSocket\Exception\HandlerLevelInterface
+class WebSocket\Exception\BadOpcodeException extends WebSocket\Exception\AbstractException implements WebSocket\Exception\MessageLevelInterface
 {
 }
 
-class WebSocket\Exception\CloseException extends WebSocket\Exception\Exception implements WebSocket\Exception\ControlInterface
+class WebSocket\Exception\BadUriException extends WebSocket\Exception\AbstractException implements WebSocket\Exception\HandlerLevelInterface
 {
-    public method __construct(int|null $status = null, string $content = "");
+}
+
+class WebSocket\Exception\ClientException extends WebSocket\Exception\AbstractException implements WebSocket\Exception\HandlerLevelInterface
+{
+}
+
+class WebSocket\Exception\CloseException extends WebSocket\Exception\AbstractException implements WebSocket\Exception\ControlInterface
+{
     public method getCloseStatus(): int;
 }
 
-class WebSocket\Exception\ConnectionClosedException extends WebSocket\Exception\Exception implements WebSocket\Exception\ConnectionLevelInterface
+class WebSocket\Exception\ConnectionClosedException extends WebSocket\Exception\AbstractException implements WebSocket\Exception\ConnectionLevelInterface
 {
-    public method __construct();
 }
 
-class WebSocket\Exception\ConnectionFailureException extends WebSocket\Exception\Exception implements WebSocket\Exception\ConnectionLevelInterface
+class WebSocket\Exception\ConnectionFailureException extends WebSocket\Exception\AbstractException implements WebSocket\Exception\ConnectionLevelInterface
 {
-    public method __construct(string|null $message = null);
 }
 
-class WebSocket\Exception\ConnectionTimeoutException extends WebSocket\Exception\Exception implements WebSocket\Exception\MessageLevelInterface
+class WebSocket\Exception\ConnectionTimeoutException extends WebSocket\Exception\AbstractException implements WebSocket\Exception\MessageLevelInterface
 {
-    public method __construct();
 }
 
-class WebSocket\Exception\HandshakeException extends WebSocket\Exception\Exception implements WebSocket\Exception\ConnectionLevelInterface
+class WebSocket\Exception\HandshakeException extends WebSocket\Exception\AbstractException implements WebSocket\Exception\ConnectionLevelInterface
 {
-    public method __construct(string $message, Psr\Http\Message\ResponseInterface $response);
-    public method getResponse(): Psr\Http\Message\ResponseInterface;
+    public method getResponse(): Psr\Http\Message\ResponseInterface|null;
 }
 
-class WebSocket\Exception\ReconnectException extends WebSocket\Exception\Exception implements WebSocket\Exception\ControlInterface
+class WebSocket\Exception\MessageEncodingException extends WebSocket\Exception\AbstractException implements WebSocket\Exception\MessageLevelInterface
 {
-    public method __construct(Phrity\Net\Uri|null $uri = null);
+}
+
+class WebSocket\Exception\ReconnectException extends WebSocket\Exception\AbstractException implements WebSocket\Exception\ControlInterface
+{
     public method getUri(): Phrity\Net\Uri|null;
 }
 
-class WebSocket\Exception\RunnerException extends WebSocket\Exception\Exception implements WebSocket\Exception\HandlerLevelInterface
+class WebSocket\Exception\RunnerException extends WebSocket\Exception\AbstractException implements WebSocket\Exception\HandlerLevelInterface
 {
 }
 
-class WebSocket\Exception\ServerException extends WebSocket\Exception\Exception implements WebSocket\Exception\HandlerLevelInterface
+class WebSocket\Exception\ServerException extends WebSocket\Exception\AbstractException implements WebSocket\Exception\HandlerLevelInterface
 {
 }
 
@@ -198,7 +190,7 @@ class WebSocket\Frame\Frame implements Stringable
     public method setRsv1(bool $rsv1): void;
 }
 
-class WebSocket\Frame\FrameHandler implements Psr\Log\LoggerAwareInterface, Stringable
+class WebSocket\Frame\FrameHandler implements Stringable
 {
     use WebSocket\Trait\ConfigurationTrait;
     use WebSocket\Trait\StringableTrait;
@@ -206,41 +198,20 @@ class WebSocket\Frame\FrameHandler implements Psr\Log\LoggerAwareInterface, Stri
     public method __construct(Phrity\Net\SocketStream $stream, bool $pushMasked, bool $pullMaskedRequired, WebSocket\Configuration|null $configuration = null);
     public method pull(): WebSocket\Frame\Frame;
     public method push(WebSocket\Frame\Frame $frame): int;
-    public method setLogger(Psr\Log\LoggerInterface $logger): void;
 }
 
 class WebSocket\Http\DefaultHttpFactory extends Phrity\Http\HttpFactory
 {
     public method __construct();
-    public method createRequest(string $method, mixed $uri): Psr\Http\Message\RequestInterface;
-    public method createResponse(int $code = 200, string $reasonPhrase = ""): Psr\Http\Message\ResponseInterface;
-    public method createServerRequest(string $method, mixed $uri, array $serverParams = []): Psr\Http\Message\ServerRequestInterface;
-    public method createUri(string $uri = ""): Psr\Http\Message\UriInterface;
 }
 
-class WebSocket\Http\HttpHandler implements Psr\Log\LoggerAwareInterface, Stringable
+class WebSocket\Http\HttpHandler implements Stringable
 {
     use WebSocket\Trait\StringableTrait;
 
     public method __construct(Phrity\Net\SocketStream $stream, bool $ssl = false, Phrity\Http\HttpFactory|null $httpFactory = null);
     public method pull(): Psr\Http\Message\MessageInterface;
     public method push(Psr\Http\Message\MessageInterface $message): Psr\Http\Message\MessageInterface;
-    public method setLogger(Psr\Log\LoggerInterface $logger): void;
-}
-
-class WebSocket\Http\Request extends Nyholm\Psr7\Request implements Psr\Http\Message\RequestInterface
-{
-    public method __construct(string $method = "GET", Psr\Http\Message\UriInterface|string $uri = "");
-}
-
-class WebSocket\Http\Response extends Nyholm\Psr7\Response implements Psr\Http\Message\ResponseInterface
-{
-    public method __construct(int $code = 200, string $reasonPhrase = "");
-}
-
-class WebSocket\Http\ServerRequest extends Nyholm\Psr7\ServerRequest implements Psr\Http\Message\ServerRequestInterface
-{
-    public method __construct(string $method = "GET", Psr\Http\Message\UriInterface|string $uri = "");
 }
 
 class WebSocket\Message\Binary extends WebSocket\Message\Message
@@ -251,14 +222,14 @@ class WebSocket\Message\Binary extends WebSocket\Message\Message
 
 class WebSocket\Message\Close extends WebSocket\Message\Message
 {
-    public method __construct(int|null $status = null, string $content = "");
-    public method getCloseStatus(): int|null;
+    public method __construct(int $status = 1000, string $content = "");
+    public method getCloseStatus(): int;
     public method getPayload(): string;
-    public method setCloseStatus(int|null $status): void;
+    public method setCloseStatus(int $status): void;
     public method setPayload(string $payload = ""): void;
 }
 
-class WebSocket\Message\MessageHandler implements Psr\Log\LoggerAwareInterface, Stringable
+class WebSocket\Message\MessageHandler implements Stringable
 {
     use WebSocket\Trait\ConfigurationTrait;
     use WebSocket\Trait\StringableTrait;
@@ -266,7 +237,6 @@ class WebSocket\Message\MessageHandler implements Psr\Log\LoggerAwareInterface, 
     public method __construct(WebSocket\Frame\FrameHandler $frameHandler, WebSocket\Configuration|null $configuration = null);
     public method pull(): WebSocket\Message\Message;
     public method push(WebSocket\Message\Message $message, int $size = WebSocket\Message\MessageHandler::DEFAULT_SIZE): WebSocket\Message\Message;
-    public method setLogger(Psr\Log\LoggerInterface $logger): void;
 }
 
 class WebSocket\Message\OpcodeRegistry
@@ -290,7 +260,7 @@ class WebSocket\Message\Text extends WebSocket\Message\Message
     public method setCompress(bool $compress): void;
 }
 
-class WebSocket\Middleware\Callback implements Psr\Log\LoggerAwareInterface, WebSocket\Middleware\ProcessHttpIncomingInterface, WebSocket\Middleware\ProcessHttpOutgoingInterface, WebSocket\Middleware\ProcessIncomingInterface, WebSocket\Middleware\ProcessOutgoingInterface, WebSocket\Middleware\ProcessTickInterface, Stringable
+class WebSocket\Middleware\Callback implements WebSocket\Middleware\ProcessHttpIncomingInterface, WebSocket\Middleware\ProcessHttpOutgoingInterface, WebSocket\Middleware\ProcessIncomingInterface, WebSocket\Middleware\ProcessOutgoingInterface, WebSocket\Middleware\ProcessTickInterface, Stringable
 {
     use WebSocket\Trait\ConfigurationTrait;
     use WebSocket\Trait\StringableTrait;
@@ -301,10 +271,9 @@ class WebSocket\Middleware\Callback implements Psr\Log\LoggerAwareInterface, Web
     public method processIncoming(WebSocket\Middleware\ProcessStack $stack, WebSocket\Connection $connection): WebSocket\Message\Message;
     public method processOutgoing(WebSocket\Middleware\ProcessStack $stack, WebSocket\Connection $connection, WebSocket\Message\Message $message): WebSocket\Message\Message;
     public method processTick(WebSocket\Middleware\ProcessTickStack $stack, WebSocket\Connection $connection): void;
-    public method setLogger(Psr\Log\LoggerInterface $logger): void;
 }
 
-class WebSocket\Middleware\CloseHandler implements Psr\Log\LoggerAwareInterface, WebSocket\Middleware\ProcessIncomingInterface, WebSocket\Middleware\ProcessOutgoingInterface, Stringable
+class WebSocket\Middleware\CloseHandler implements WebSocket\Middleware\ProcessIncomingInterface, WebSocket\Middleware\ProcessOutgoingInterface, Stringable
 {
     use WebSocket\Trait\ConfigurationTrait;
     use WebSocket\Trait\StringableTrait;
@@ -312,10 +281,9 @@ class WebSocket\Middleware\CloseHandler implements Psr\Log\LoggerAwareInterface,
     public method __construct();
     public method processIncoming(WebSocket\Middleware\ProcessStack $stack, WebSocket\Connection $connection): WebSocket\Message\Message;
     public method processOutgoing(WebSocket\Middleware\ProcessStack $stack, WebSocket\Connection $connection, WebSocket\Message\Message $message): WebSocket\Message\Message;
-    public method setLogger(Psr\Log\LoggerInterface $logger): void;
 }
 
-class WebSocket\Middleware\CompressionExtension implements Psr\Log\LoggerAwareInterface, WebSocket\Middleware\ProcessHttpOutgoingInterface, WebSocket\Middleware\ProcessHttpIncomingInterface, WebSocket\Middleware\ProcessIncomingInterface, WebSocket\Middleware\ProcessOutgoingInterface, Stringable
+class WebSocket\Middleware\CompressionExtension implements WebSocket\Middleware\ProcessHttpOutgoingInterface, WebSocket\Middleware\ProcessHttpIncomingInterface, WebSocket\Middleware\ProcessIncomingInterface, WebSocket\Middleware\ProcessOutgoingInterface, Stringable
 {
     use WebSocket\Trait\ConfigurationTrait;
     use WebSocket\Trait\StringableTrait;
@@ -325,7 +293,6 @@ class WebSocket\Middleware\CompressionExtension implements Psr\Log\LoggerAwareIn
     public method processHttpOutgoing(WebSocket\Middleware\ProcessHttpStack $stack, WebSocket\Connection $connection, Psr\Http\Message\MessageInterface $message): Psr\Http\Message\MessageInterface;
     public method processIncoming(WebSocket\Middleware\ProcessStack $stack, WebSocket\Connection $connection): WebSocket\Message\Message;
     public method processOutgoing(WebSocket\Middleware\ProcessStack $stack, WebSocket\Connection $connection, WebSocket\Message\Message $message): WebSocket\Message\Message;
-    public method setLogger(Psr\Log\LoggerInterface $logger): void;
 }
 
 class WebSocket\Middleware\CompressionExtension\DeflateCompressor implements WebSocket\Middleware\CompressionExtension\CompressorInterface, Stringable
@@ -341,17 +308,16 @@ class WebSocket\Middleware\CompressionExtension\DeflateCompressor implements Web
     public method isEligable(object $configuration): bool;
 }
 
-class WebSocket\Middleware\FollowRedirect implements Psr\Log\LoggerAwareInterface, WebSocket\Middleware\ProcessHttpIncomingInterface, Stringable
+class WebSocket\Middleware\FollowRedirect implements WebSocket\Middleware\ProcessHttpIncomingInterface, Stringable
 {
     use WebSocket\Trait\ConfigurationTrait;
     use WebSocket\Trait\StringableTrait;
 
     public method __construct(int $limit = 10);
     public method processHttpIncoming(WebSocket\Middleware\ProcessHttpStack $stack, WebSocket\Connection $connection): Psr\Http\Message\MessageInterface;
-    public method setLogger(Psr\Log\LoggerInterface $logger): void;
 }
 
-class WebSocket\Middleware\MiddlewareHandler implements Psr\Log\LoggerAwareInterface, Stringable
+class WebSocket\Middleware\MiddlewareHandler implements Stringable
 {
     use WebSocket\Trait\ConfigurationTrait;
     use WebSocket\Trait\StringableTrait;
@@ -363,10 +329,9 @@ class WebSocket\Middleware\MiddlewareHandler implements Psr\Log\LoggerAwareInter
     public method processIncoming(WebSocket\Connection $connection): WebSocket\Message\Message;
     public method processOutgoing(WebSocket\Connection $connection, WebSocket\Message\Message $message): WebSocket\Message\Message;
     public method processTick(WebSocket\Connection $connection): void;
-    public method setLogger(Psr\Log\LoggerInterface $logger): void;
 }
 
-class WebSocket\Middleware\PingInterval implements Psr\Log\LoggerAwareInterface, WebSocket\Middleware\ProcessOutgoingInterface, WebSocket\Middleware\ProcessTickInterface, Stringable
+class WebSocket\Middleware\PingInterval implements WebSocket\Middleware\ProcessOutgoingInterface, WebSocket\Middleware\ProcessTickInterface, Stringable
 {
     use WebSocket\Trait\ConfigurationTrait;
     use WebSocket\Trait\StringableTrait;
@@ -374,17 +339,15 @@ class WebSocket\Middleware\PingInterval implements Psr\Log\LoggerAwareInterface,
     public method __construct(int|float|null $interval = null);
     public method processOutgoing(WebSocket\Middleware\ProcessStack $stack, WebSocket\Connection $connection, WebSocket\Message\Message $message): WebSocket\Message\Message;
     public method processTick(WebSocket\Middleware\ProcessTickStack $stack, WebSocket\Connection $connection): void;
-    public method setLogger(Psr\Log\LoggerInterface $logger): void;
 }
 
-class WebSocket\Middleware\PingResponder implements Psr\Log\LoggerAwareInterface, WebSocket\Middleware\ProcessIncomingInterface, Stringable
+class WebSocket\Middleware\PingResponder implements WebSocket\Middleware\ProcessIncomingInterface, Stringable
 {
     use WebSocket\Trait\ConfigurationTrait;
     use WebSocket\Trait\StringableTrait;
 
     public method __construct();
     public method processIncoming(WebSocket\Middleware\ProcessStack $stack, WebSocket\Connection $connection): WebSocket\Message\Message;
-    public method setLogger(Psr\Log\LoggerInterface $logger): void;
 }
 
 class WebSocket\Middleware\ProcessHttpStack implements Stringable
@@ -413,7 +376,7 @@ class WebSocket\Middleware\ProcessTickStack implements Stringable
     public method handleTick(): void;
 }
 
-class WebSocket\Middleware\SubprotocolNegotiation implements Psr\Log\LoggerAwareInterface, WebSocket\Middleware\ProcessHttpOutgoingInterface, WebSocket\Middleware\ProcessHttpIncomingInterface, Stringable
+class WebSocket\Middleware\SubprotocolNegotiation implements WebSocket\Middleware\ProcessHttpOutgoingInterface, WebSocket\Middleware\ProcessHttpIncomingInterface, Stringable
 {
     use WebSocket\Trait\ConfigurationTrait;
     use WebSocket\Trait\StringableTrait;
@@ -421,7 +384,6 @@ class WebSocket\Middleware\SubprotocolNegotiation implements Psr\Log\LoggerAware
     public method __construct(array $subprotocols, bool $require = false);
     public method processHttpIncoming(WebSocket\Middleware\ProcessHttpStack $stack, WebSocket\Connection $connection): Psr\Http\Message\MessageInterface;
     public method processHttpOutgoing(WebSocket\Middleware\ProcessHttpStack $stack, WebSocket\Connection $connection, Psr\Http\Message\MessageInterface $message): Psr\Http\Message\MessageInterface;
-    public method setLogger(Psr\Log\LoggerInterface $logger): void;
 }
 
 class WebSocket\Runtime\Connections implements Countable, IteratorAggregate
@@ -463,25 +425,24 @@ class WebSocket\Server implements WebSocket\Runtime\IdentityInterface, Psr\Log\L
     public method addMiddleware(WebSocket\Middleware\MiddlewareInterface $middleware): self;
     public method disconnect(): void;
     public method getConnectionCount(): int;
-    public method getConnections(): array;
+    public method getConnections(): WebSocket\Runtime\Connections;
     public method getContext(): Phrity\Net\Context;
     public method getFrameSize(): int;
     public method getIdentity(): string;
     public method getPort(): int;
-    public method getReadableConnections(): array;
+    public method getReadableConnections(): WebSocket\Runtime\Connections;
     public method getScheme(): string;
     public method getStream(): Phrity\Net\SocketServer;
     public method getTimeout(): int|float;
-    public method getWritableConnections(): array;
+    public method getWritableConnections(): WebSocket\Runtime\Connections;
     public method isRunning(): bool;
     public method isSsl(): bool;
     public method send(WebSocket\Message\Message $message): WebSocket\Message\Message;
-    public method setContext(Phrity\Net\Context|array $context): self;
+    public method setContext(Phrity\Net\Context $context): self;
     public method setFrameSize(int $frameSize): self;
     public method setHttpFactory(Phrity\Http\HttpFactory $httpFactory): self;
     public method setLogger(Psr\Log\LoggerInterface $logger): void;
     public method setMaxConnections(int|null $maxConnections): self;
-    public method setStreamFactory(Phrity\Net\StreamFactory $streamFactory): self;
     public method setTimeout(int|float $timeout): self;
     public method shutdown(int $closeStatus = 1001): void;
     public method start(int|float|null $timeout = null): void;
@@ -512,6 +473,21 @@ inteface WebSocket\Exception\HandlerLevelInterface implements WebSocket\Exceptio
 
 inteface WebSocket\Exception\MessageLevelInterface implements WebSocket\Exception\ExceptionInterface
 {
+}
+
+inteface WebSocket\Message\MessageInterface implements Stringable
+{
+    public method getContent(): string;
+    public method getFrames(int $frameSize = 4096, WebSocket\Message\OpcodeRegistry|null $opcodeRegistry = null): array;
+    public method getLength(): int;
+    public method getOpcode(): string;
+    public method getPayload(): string;
+    public method getTimestamp(): DateTimeInterface;
+    public method hasContent(): bool;
+    public method isCompressed(): bool;
+    public method setCompress(bool $compress): void;
+    public method setContent(string $content = ""): void;
+    public method setPayload(string $payload = ""): void;
 }
 
 inteface WebSocket\Middleware\CompressionExtension\CompressorInterface implements Stringable
@@ -569,7 +545,6 @@ trait WebSocket\Trait\ListenerTrait
 {
     public method onBinary(Closure $closure): self;
     public method onClose(Closure $closure): self;
-    public method onConnect(Closure $closure): self;
     public method onDisconnect(Closure $closure): self;
     public method onError(Closure $closure): self;
     public method onHandshake(Closure $closure): self;
@@ -578,10 +553,6 @@ trait WebSocket\Trait\ListenerTrait
     public method onPong(Closure $closure): self;
     public method onText(Closure $closure): self;
     public method onTick(Closure $closure): self;
-}
-
-trait WebSocket\Trait\OpcodeTrait
-{
 }
 
 trait WebSocket\Trait\SendMethodsTrait
@@ -593,7 +564,7 @@ trait WebSocket\Trait\SendMethodsTrait
     public method text(string $message): WebSocket\Message\Text;
 }
 
-trait WebSocket\Trait\StringableTrait
+trait WebSocket\Trait\StringableTrait implements Stringable
 {
     public method __toString(): string;
 }
