@@ -138,7 +138,7 @@ class Connections implements Countable, IteratorAggregate
     {
         $identity = $connection->getIdentity();
         if ($this->has($identity)) {
-            throw new RunnerException("Connection with identity {$identity} already attached");
+            throw new RunnerException("Connection with identity {identity} already attached", identity: $identity);
         }
         $this->connections[$identity] = $connection;
         return $identity;

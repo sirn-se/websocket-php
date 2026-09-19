@@ -9,6 +9,14 @@ namespace WebSocket\Exception;
 
 use Exception;
 use Phrity\Util\Interpolator\InterpolatorTrait;
+use Phrity\Util\Transformer\{
+    BasicTypeConverter,
+    FirstMatchResolver,
+    HttpMessageConverter,
+    ReadableConverter,
+    ThrowableConverter,
+    Type,
+};
 use Throwable;
 
 /**
@@ -36,8 +44,16 @@ abstract class AbstractException extends Exception implements ExceptionInterface
         Throwable|null $previous = null,
         mixed ...$context,
     ) {
-        $this->context = array_merge(static::$defaultContext, $context);
-        $message = $this->interpolate($message ?? static::$defaultMessage, $this->context);
+        $this->context = array_merge(static::$defaultContext, ['previous' => $previous], $context);
+
+        $transformer = new FirstMatchResolver([
+            new HttpMessageConverter(),
+            new ReadableConverter(),
+            new ThrowableConverter(),
+            new BasicTypeConverter(),
+        ]);
+
+        $message = $this->interpolate($message ?? static::$defaultMessage, $this->context, transformer: $transformer);
         parent::__construct($message, $code, $previous);
     }
 

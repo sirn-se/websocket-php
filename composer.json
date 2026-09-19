@@ -32,6 +32,7 @@
         "phrity/net-uri": "^2.1",
         "phrity/net-stream": "^2.4",
         "phrity/util-interpolator": "^1.0",
+        "phrity/util-transformer": "^1.4",
         "psr/http-factory": "^1.0",
         "psr/http-message": "^1.1 || ^2.0",
         "psr/log": "^1.0 || ^2.0 || ^3.0"

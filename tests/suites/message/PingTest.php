@@ -59,7 +59,7 @@ class PingTest extends TestCase
         $message = new Ping('Some content');
         $this->assertFalse($message->isCompressed());
         $this->expectException(MessageEncodingException::class);
-        $this->expectExceptionMessage('Must not compress control message.');
+        $this->expectExceptionMessage('Must not compress control message');
         $message->setCompress(true);
     }
 }

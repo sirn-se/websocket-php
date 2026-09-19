@@ -36,11 +36,11 @@ class OpcodeRegistry
     public function getOpcode(string $classname): int
     {
         $opcode = array_search($classname, $this->map);
-        if (!is_int($opcode) || $opcode < 1 || $opcode > 15) {
-            throw new BadOpcodeException(sprintf(
-                'Opcode must be integer in range 1-15, %s provided',
-                json_encode($opcode)
-            ));
+        if ($opcode === false) {
+            throw new BadOpcodeException(
+                'Implementation class "{class}" not found',
+                class: $classname,
+            );
         }
         return $opcode;
     }
@@ -53,26 +53,32 @@ class OpcodeRegistry
     public function createMessage(int $opcode): Message
     {
         if ($opcode < 1 || $opcode > 15) {
-            throw new BadOpcodeException(sprintf(
-                'Opcode must be integer in range 1-15, %s provided',
-                json_encode($opcode)
-            ));
+            throw new BadOpcodeException(
+                'Opcode must be integer in range 1-15, {opcode} provided',
+                opcode: $opcode,
+            );
         }
         $classname = $this->map[$opcode] ?? null;
-        if (!is_string($classname) || !class_exists($classname)) {
-            throw new BadOpcodeException(sprintf(
-                'Implementation class %s for opcode %s not found',
-                json_encode($classname),
-                $opcode
-            ));
+        if (!is_string($classname)) {
+            throw new BadOpcodeException(
+                'Implementation class for opcode {opcode} not registered',
+                opcode: $opcode,
+            );
+        }
+        if (!class_exists($classname)) {
+            throw new BadOpcodeException(
+                'Implementation class "{class}" for opcode {opcode} not found',
+                class: $classname,
+                opcode: $opcode,
+            );
         }
         $reflector = new ReflectionClass($classname);
         if (!$reflector->isSubclassOf(Message::class)) {
-            throw new BadOpcodeException(sprintf(
-                'Implementation class %s must extend %s',
-                $classname,
-                Message::class,
-            ));
+            throw new BadOpcodeException(
+                'Implementation class "{class}" must extend "{parent}"',
+                class: $classname,
+                parent: Message::class,
+            );
         }
         return $reflector->newInstanceWithoutConstructor();
     }
@@ -87,7 +93,7 @@ class OpcodeRegistry
         if ($opcode < 1 || $opcode > 15) {
             throw new RangeException(sprintf(
                 'Opcode must be integer in range 1-15, %s provided',
-                json_encode($opcode)
+                $opcode
             ));
         }
         if (empty($classname) || !class_exists($classname)) {
@@ -99,7 +105,7 @@ class OpcodeRegistry
         $reflector = new ReflectionClass($classname);
         if (!$reflector->isSubclassOf(Message::class)) {
             throw new DomainException(sprintf(
-                'Implementation class %s must extend %s',
+                'Implementation class "%s" must extend "%s"',
                 $classname,
                 Message::class,
             ));
