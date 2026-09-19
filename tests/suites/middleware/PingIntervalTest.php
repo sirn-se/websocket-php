@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
@@ -12,10 +12,7 @@ namespace WebSocket\Test\Middleware;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\SocketStream;
 use Stringable;
-use WebSocket\{
-    Client,
-    Connection,
-};
+use WebSocket\Connection;
 use WebSocket\Middleware\PingInterval;
 use WebSocket\Test\MockStreamTrait;
 
@@ -28,7 +25,6 @@ class PingIntervalTest extends TestCase
 
     public function setUp(): void
     {
-        error_reporting(-1);
         $this->setUpStack();
     }
 
@@ -40,7 +36,6 @@ class PingIntervalTest extends TestCase
     public function testPingInterval(): void
     {
         $temp = tmpfile();
-        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $middleware = new PingInterval(1);
         $this->assertEquals('WebSocket\Middleware\PingInterval', "{$middleware}");
@@ -51,8 +46,10 @@ class PingIntervalTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectWsConnectionCreate();
-        $connection = new Connection($client, $stream, false, false);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $connection = new Connection($stream, false, false);
         $connection->addMiddleware($middleware);
 
         // First tick set interval
@@ -72,6 +69,7 @@ class PingIntervalTest extends TestCase
         });
         $connection->tick();
 
-        unset($stream);
+        $this->expectSocketStreamClose();
+        $connection->disconnect();
     }
 }

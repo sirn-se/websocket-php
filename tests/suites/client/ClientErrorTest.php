@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
@@ -45,7 +45,6 @@ class ClientErrorTest extends TestCase
 
     public function setUp(): void
     {
-        error_reporting(-1);
         $this->setUpStack();
     }
 
@@ -64,10 +63,8 @@ class ClientErrorTest extends TestCase
             throw new StreamException(StreamException::CLIENT_CONNECT_ERR, ['uri' => 'tcp://localhost:8000']);
         });
         $this->expectException(ClientException::class);
-        $this->expectExceptionMessage('Could not open socket to "tcp://localhost:8000": Client could not connect');
+        $this->expectExceptionMessage('Could not connect to tcp://localhost:8000');
         $client->connect();
-
-        unset($client);
     }
 
     public function testFailedConnection(): void
@@ -80,26 +77,16 @@ class ClientErrorTest extends TestCase
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
-        $this->expectSocketStreamGetLocalName()->setReturn(function () {
-            return "12:34";
-        });
-        $this->expectSocketStreamGetRemoteName()->setReturn(function () {
-            return "56:78";
-        });
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
         $this->expectSocketStreamSetTimeout();
         $this->expectStreamCollectionAttach();
         $this->expectSocketStreamIsConnected()->setReturn(function () {
             return false;
         });
-        $this->expectStreamCollectionDetach();
-        $this->expectSocketStreamIsConnected()->setReturn(function () {
-            return false;
-        });
         $this->expectException(ClientException::class);
-        $this->expectExceptionMessage('Invalid stream on "tcp://localhost:8000".');
+        $this->expectExceptionMessage('Invalid stream on tcp://localhost:8000');
         $client->connect();
-
-        unset($client);
     }
 
     public function testReceiveBadOpcode(): void
@@ -120,12 +107,9 @@ class ClientErrorTest extends TestCase
         $this->expectSocketStreamRead()->setReturn(function () {
             return 'Test message';
         });
-
         $this->expectException(BadOpcodeException::class);
-        $this->expectExceptionMessage("Invalid opcode '15' provided");
+        $this->expectExceptionMessage("Implementation class null for opcode 15 not found");
         $message = $client->receive();
-
-        unset($client);
     }
 
     public function testBrokenWrite(): void
@@ -145,13 +129,9 @@ class ClientErrorTest extends TestCase
         $this->expectSocketStreamGetMetadata()->setReturn(function () {
             return ['eof' => true, 'mode' => 'rw', 'seekable' => false];
         });
-//        $this->expectSocketStreamClose();
         $this->expectException(ConnectionClosedException::class);
         $this->expectExceptionMessage('Connection has unexpectedly closed');
-
         $client->text('Failing to write');
-
-        unset($client);
     }
 
     public function testReadTimeout(): void
@@ -171,12 +151,9 @@ class ClientErrorTest extends TestCase
         $this->expectSocketStreamGetMetadata()->setReturn(function () {
             return ['timed_out' => true, 'mode' => 'rw', 'seekable' => false];
         });
-//        $this->expectSocketStreamClose();
         $this->expectException(ConnectionTimeoutException::class);
         $this->expectExceptionMessage('Connection operation timeout');
         $client->receive();
-
-        unset($client);
     }
 
     public function testEmptyRead(): void
@@ -196,12 +173,8 @@ class ClientErrorTest extends TestCase
         $this->expectSocketStreamGetMetadata()->setReturn(function () {
             return ['timed_out' => true, 'mode' => 'rw', 'seekable' => false];
         });
-//        $this->expectSocketStreamClose();
         $this->expectException(ConnectionTimeoutException::class);
         $this->expectExceptionMessage('Connection operation timeout');
         $client->receive();
-
-        $this->expectSocketStreamClose();
-        unset($client);
     }
 }

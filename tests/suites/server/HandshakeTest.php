@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
@@ -11,9 +11,11 @@ namespace WebSocket\Test\Server;
 
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\StreamException;
-use Phrity\Net\Mock\SocketStream;
-use Phrity\Net\Mock\StreamCollection;
-use Phrity\Net\Mock\StreamFactory;
+use Phrity\Net\Mock\{
+    SocketStream,
+    StreamCollection,
+    StreamFactory,
+};
 use Phrity\Net\Mock\Stack\{
     ExpectContextTrait,
     ExpectSocketServerTrait,
@@ -25,7 +27,6 @@ use WebSocket\{
     ConnectionException,
     Server
 };
-use WebSocket\Http\ServerRequest;
 use WebSocket\Test\{
     MockStreamTrait,
     MockUri
@@ -45,7 +46,6 @@ class HandshakeTest extends TestCase
 
     public function setUp(): void
     {
-        error_reporting(-1);
         $this->setUpStack();
     }
 
@@ -67,12 +67,11 @@ class HandshakeTest extends TestCase
         $this->expectWsServerPerformHandshake();
         $server->start();
 
-        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
+        $this->expectStreamCollectionDetach();
         $this->expectSocketServerClose();
+        $this->expectStreamCollectionDetach();
         $server->disconnect();
-
-        unset($server);
     }
 
     public function testHandshakeRequestVariant(): void
@@ -116,12 +115,11 @@ class HandshakeTest extends TestCase
         });
         $server->start();
 
-        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
+        $this->expectStreamCollectionDetach();
         $this->expectSocketServerClose();
+        $this->expectStreamCollectionDetach();
         $server->disconnect();
-
-        unset($server);
     }
 
     public function testHandshakeRequestFailure(): void
@@ -134,19 +132,19 @@ class HandshakeTest extends TestCase
         $this->expectWsServerAccept()->addAssert(function ($method, $params) use ($server) {
             $server->stop();
         });
+
         $this->expectSocketStreamReadLine()->setReturn(function () {
             throw new StreamException(StreamException::FAIL_READ);
         });
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamGetMetadata();
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
         $server->start();
 
-        $this->expectStreamCollectionDetach();
         $this->expectSocketServerClose();
+        $this->expectStreamCollectionDetach();
         $server->disconnect();
-
-        unset($server);
     }
 
     public function testHandshakeMethodFailure(): void
@@ -159,6 +157,7 @@ class HandshakeTest extends TestCase
         $this->expectWsServerAccept()->addAssert(function ($method, $params) use ($server) {
             $server->stop();
         });
+
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "POST / HTTP/1.1\r\n";
         });
@@ -183,14 +182,13 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals("HTTP/1.1 405 Method Not Allowed\r\n\r\n", $params[0]);
         });
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
         $server->start();
 
-        $this->expectStreamCollectionDetach();
         $this->expectSocketServerClose();
+        $this->expectStreamCollectionDetach();
         $server->disconnect();
-
-        unset($server);
     }
 
     public function testHandshakeConnectionHeaderFailure(): void
@@ -203,6 +201,7 @@ class HandshakeTest extends TestCase
         $this->expectWsServerAccept()->addAssert(function ($method, $params) use ($server) {
             $server->stop();
         });
+
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "GET / HTTP/1.1\r\n";
         });
@@ -227,14 +226,13 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals("HTTP/1.1 426 Upgrade Required\r\n\r\n", $params[0]);
         });
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
         $server->start();
 
-        $this->expectStreamCollectionDetach();
         $this->expectSocketServerClose();
+        $this->expectStreamCollectionDetach();
         $server->disconnect();
-
-        unset($server);
     }
 
     public function testHandshakeUpgradeHeaderFailure(): void
@@ -247,6 +245,7 @@ class HandshakeTest extends TestCase
         $this->expectWsServerAccept()->addAssert(function ($method, $params) use ($server) {
             $server->stop();
         });
+
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "GET / HTTP/1.1\r\n";
         });
@@ -271,14 +270,13 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals("HTTP/1.1 426 Upgrade Required\r\n\r\n", $params[0]);
         });
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
         $server->start();
 
-        $this->expectStreamCollectionDetach();
         $this->expectSocketServerClose();
+        $this->expectStreamCollectionDetach();
         $server->disconnect();
-
-        unset($server);
     }
 
     public function testHandshakeVersionHeaderFailure(): void
@@ -291,6 +289,7 @@ class HandshakeTest extends TestCase
         $this->expectWsServerAccept()->addAssert(function ($method, $params) use ($server) {
             $server->stop();
         });
+
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "GET / HTTP/1.1\r\n";
         });
@@ -315,14 +314,13 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals("HTTP/1.1 426 Upgrade Required\r\nSec-WebSocket-Version: 13\r\n\r\n", $params[0]);
         });
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
         $server->start();
 
-        $this->expectStreamCollectionDetach();
         $this->expectSocketServerClose();
+        $this->expectStreamCollectionDetach();
         $server->disconnect();
-
-        unset($server);
     }
 
     public function testHandshakeWebSocketKeyHeaderFailure(): void
@@ -335,6 +333,7 @@ class HandshakeTest extends TestCase
         $this->expectWsServerAccept()->addAssert(function ($method, $params) use ($server) {
             $server->stop();
         });
+
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "GET / HTTP/1.1\r\n";
         });
@@ -356,14 +355,13 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals("HTTP/1.1 426 Upgrade Required\r\n\r\n", $params[0]);
         });
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
         $server->start();
 
-        $this->expectStreamCollectionDetach();
         $this->expectSocketServerClose();
+        $this->expectStreamCollectionDetach();
         $server->disconnect();
-
-        unset($server);
     }
 
     public function testHandshakeWebSocketKeyInvalidFailure(): void
@@ -376,6 +374,7 @@ class HandshakeTest extends TestCase
         $this->expectWsServerAccept()->addAssert(function ($method, $params) use ($server) {
             $server->stop();
         });
+
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "GET / HTTP/1.1\r\n";
         });
@@ -400,14 +399,13 @@ class HandshakeTest extends TestCase
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $this->assertEquals("HTTP/1.1 426 Upgrade Required\r\n\r\n", $params[0]);
         });
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
         $server->start();
 
-        $this->expectStreamCollectionDetach();
         $this->expectSocketServerClose();
+        $this->expectStreamCollectionDetach();
         $server->disconnect();
-
-        unset($server);
     }
 
     public function testHandshakeResponseFailure(): void
@@ -420,6 +418,7 @@ class HandshakeTest extends TestCase
         $this->expectWsServerAccept()->addAssert(function ($method, $params) use ($server) {
             $server->stop();
         });
+
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "GET / HTTP/1.1\r\n";
         });
@@ -446,13 +445,12 @@ class HandshakeTest extends TestCase
         });
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamGetMetadata();
+        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
         $server->start();
 
-        $this->expectStreamCollectionDetach();
         $this->expectSocketServerClose();
+        $this->expectStreamCollectionDetach();
         $server->disconnect();
-
-        unset($server);
     }
 }

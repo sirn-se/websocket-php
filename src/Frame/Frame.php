@@ -18,15 +18,19 @@ class Frame implements Stringable
 {
     use StringableTrait;
 
-    private string $opcode;
+    /** @var int<0, 15> $opcode */
+    private int $opcode;
     private string $payload;
     private bool $final;
     private bool $rsv1;
     private bool $rsv2;
     private bool $rsv3;
 
+    /**
+     * @param int<0, 15> $opcode
+     */
     public function __construct(
-        string $opcode,
+        int $opcode,
         string $payload,
         bool $final,
         bool $rsv1 = false,
@@ -68,10 +72,13 @@ class Frame implements Stringable
 
     public function isContinuation(): bool
     {
-        return $this->opcode === 'continuation';
+        return $this->opcode === 0;
     }
 
-    public function getOpcode(): string
+    /**
+     * @return int<0, 15>
+     */
+    public function getOpcode(): int
     {
         return $this->opcode;
     }

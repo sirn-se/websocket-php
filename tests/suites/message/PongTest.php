@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
@@ -23,11 +23,6 @@ use WebSocket\Message\{
  */
 class PongTest extends TestCase
 {
-    public function setUp(): void
-    {
-        error_reporting(-1);
-    }
-
     public function testPongMessage(): void
     {
         $message = new Pong('Some content');

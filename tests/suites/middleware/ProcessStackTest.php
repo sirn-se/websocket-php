@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
@@ -11,11 +11,7 @@ namespace WebSocket\Test\Middleware;
 
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\SocketStream;
-use Psr\Log\NullLogger;
-use WebSocket\{
-    Client,
-    Connection,
-};
+use WebSocket\Connection;
 use WebSocket\Message\Text;
 use WebSocket\Middleware\{
     Callback,
@@ -33,7 +29,6 @@ class ProcessStackTest extends TestCase
 
     public function setUp(): void
     {
-        error_reporting(-1);
         $this->setUpStack();
     }
 
@@ -45,15 +40,16 @@ class ProcessStackTest extends TestCase
     public function testIncoming(): void
     {
         $temp = tmpfile();
-        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectWsConnectionCreate();
-        $connection = new Connection($client, $stream, false, false);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $connection = new Connection($stream, false, false);
 
         $connection->addMiddleware(new Callback(incoming: function ($stack, $connection) {
             $message = $stack->handleIncoming();
@@ -85,22 +81,21 @@ class ProcessStackTest extends TestCase
         });
         $message = $connection->pullMessage();
         $this->assertEquals('Test message<-C<-B<-A', $message->getContent());
-
-        unset($stream);
     }
 
     public function testOutgoing(): void
     {
         $temp = tmpfile();
-        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectWsConnectionCreate();
-        $connection = new Connection($client, $stream, false, false);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $connection = new Connection($stream, false, false);
 
         $connection->addMiddleware(new Callback(outgoing: function ($stack, $connection, $message) {
             $this->assertEquals('Test message', $message->getContent());
@@ -132,7 +127,5 @@ class ProcessStackTest extends TestCase
 
         $this->expectSocketStreamWrite();
         $connection->send(new Text('Test message'));
-
-        unset($stream);
     }
 }

@@ -13,18 +13,28 @@ use Psr\Http\Message\ResponseInterface;
  * WebSocket\Exception\HandshakeException class.
  * Exception during handshake
  */
-class HandshakeException extends Exception implements ConnectionLevelInterface
+class HandshakeException extends AbstractException implements ConnectionLevelInterface
 {
-    private ResponseInterface $response;
-
-    public function __construct(string $message, ResponseInterface $response)
-    {
-        parent::__construct($message);
-        $this->response = $response;
-    }
+    protected static string $defaultMessage = 'Handshake failed';
+    /**
+     * @var array{
+     *   headerName: string|null,
+     *   headerValue: scalar|null,
+     *   method: string|null,
+     *   response: ResponseInterface|null,
+     *   statusCode: int<100, 599>|null,
+     * } $defaultContext
+     */
+    protected static array $defaultContext = [
+        'headerName' => null,
+        'headerValue' => null,
+        'method' => null,
+        'response' => null,
+        'statusCode' => null,
+    ];
 
     public function getResponse(): ResponseInterface
     {
-        return $this->response;
+        return $this->getContext('response');
     }
 }

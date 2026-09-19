@@ -19,7 +19,7 @@ All exceptions on this level implement `MessageLevelInterface`.
 
 ### Connection errors
 
-Indicates that the connection has failed, closed or must be closed for some reason.
+Indicates that the connection has failed, closed, or must be closed for some reason.
 The connection is no longer usable, but could possibly be reconnected.
 All exceptions on this level implement `ConnectionLevelInterface`.
 
@@ -34,6 +34,7 @@ All exceptions on this level implement `HandlerLevelInterface`.
 
 - `BadUriException` - The provided URI is invalid
 - `ClientException` - The Client failed to connect to server
+- `RunnerException` - Failed to initiate Client or Server for listening
 - `ServerException` - The Server failed to open server socket
 
 ### Control flow exceptions
@@ -49,6 +50,7 @@ All exceptions on this level implement `ControlLevelInterface`.
 These standard exceptions typically indicate a configuration error.
 
 - `BadMethodCallException`
+- `DomainException`
 - `InvalidArgumentException`
 - `RangeException`
 - `RuntimeException`

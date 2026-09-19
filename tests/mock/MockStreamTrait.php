@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
@@ -12,9 +12,10 @@ use Phrity\Net\Mock\Stack\{
     ExpectSocketClientTrait,
     ExpectSocketStreamTrait,
     ExpectSocketServerTrait,
+    ExpectStreamTrait,
     ExpectStreamCollectionTrait,
     ExpectStreamFactoryTrait,
-    StackItem
+    StackItem,
 };
 use Phrity\Net\Mock\StreamCollection;
 use Phrity\Net\Context;
@@ -28,6 +29,7 @@ trait MockStreamTrait
     use ExpectSocketClientTrait;
     use ExpectSocketServerTrait;
     use ExpectSocketStreamTrait;
+    use ExpectStreamTrait;
     use ExpectStreamCollectionTrait;
     use ExpectStreamFactoryTrait;
 
@@ -195,28 +197,6 @@ trait MockStreamTrait
      */
     private function expectWsSelectConnections(array $keys = []): StackItem
     {
-        $this->expectStreamCollectionCount();
-        $this->expectStreamCollectionWaitRead()->setReturn(function ($params, $default, $collection) use ($keys) {
-            $selected = new StreamCollection();
-            foreach ($collection as $key => $stream) {
-                if (in_array($key, $keys)) {
-                    $selected->attach($stream, $key);
-                }
-            }
-            return $selected;
-        });
-        $last = $this->expectStreamCollection();
-        foreach ($keys as $key) {
-            $last = $this->expectStreamCollectionAttach();
-        }
-        return $last;
-    }
-
-    /**
-     * @param array<mixed> $keys
-     */
-    private function expectWsClientSelectConnections(array $keys = []): StackItem
-    {
         $this->expectStreamCollectionWaitRead()->setReturn(function ($params, $default, $collection) use ($keys) {
             $selected = new StreamCollection();
             foreach ($collection as $key => $stream) {
@@ -258,7 +238,7 @@ trait MockStreamTrait
         string $host = 'localhost:8000',
         string $path = '/my/mock/path',
         array $headers = []
-    ): StackItem {
+    ): void {
         $this->expectSocketStreamReadLine()->addAssert(function (string $method, array $params): void {
             $this->assertEquals(1024, $params[0]);
         })->setReturn(function (array $params) use ($path) {
@@ -306,7 +286,7 @@ trait MockStreamTrait
         })->setReturn(function (array $params) {
             return "\r\n";
         });
-        return $this->expectSocketStreamWrite()->addAssert(function (string $method, array $params): void {
+        $this->expectSocketStreamWrite()->addAssert(function (string $method, array $params): void {
             $expect = "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
             . "Sec-WebSocket-Accept: YmysboNHNoWzWVeQpduY7xELjgU=\r\n\r\n";
             $this->assertEquals($expect, $params[0]);
@@ -322,12 +302,5 @@ trait MockStreamTrait
                 return base64_decode($encodedFrame);
             });
         }
-    }
-
-    private function expectWsConnectionCreate(string ...$encodedFrames): void
-    {
-        $this->expectSocketStreamGetLocalName();
-        $this->expectSocketStreamGetRemoteName();
-        $this->expectSocketStreamSetTimeout();
     }
 }

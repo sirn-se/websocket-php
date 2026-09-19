@@ -11,19 +11,17 @@ namespace WebSocket\Exception;
  * WebSocket\Exception\CloseException class.
  * Connection should close
  */
-class CloseException extends Exception
+class CloseException extends AbstractException implements ControlInterface
 {
-    protected int|null $status;
-    protected string $content;
+    protected static string $defaultMessage = 'Closing connection ({status})';
+    /** @var array{status: int<0, 4999>} $defaultContext */
+    protected static array $defaultContext = ['status' => 1000];
 
-    public function __construct(int|null $status = null, string $content = '')
-    {
-        $this->status = $status;
-        parent::__construct($content);
-    }
-
+    /**
+     * @return int<0, 4999>
+     */
     public function getCloseStatus(): int
     {
-        return $this->status ?? 1000;
+        return $this->getContext('status');
     }
 }

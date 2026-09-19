@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
@@ -14,7 +14,7 @@ use Stringable;
 use WebSocket\Frame\Frame;
 use WebSocket\Message\{
     Binary,
-    Message
+    Message,
 };
 
 /**
@@ -22,11 +22,6 @@ use WebSocket\Message\{
  */
 class BinaryTest extends TestCase
 {
-    public function setUp(): void
-    {
-        error_reporting(-1);
-    }
-
     public function testBinaryMessage(): void
     {
         $bin = base64_encode('Some content');

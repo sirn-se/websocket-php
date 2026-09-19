@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
@@ -11,6 +11,7 @@ namespace WebSocket\Test\Http;
 
 use BadMethodCallException;
 use GuzzleHttp\Psr7\Request as GuzzleRequest;
+use Nyholm\Psr7\Factory\Psr17Factory;
 use PHPUnit\Framework\TestCase;
 use Phrity\Logger\Console\ConsoleLogger;
 use Phrity\Net\Mock\SocketStream;
@@ -23,17 +24,13 @@ use Phrity\Net\Uri;
 use Phrity\Util\ErrorHandler;
 use Psr\Http\Message\{
     RequestInterface,
+    ResponseInterface,
+    ServerRequestInterface,
     UriInterface
 };
 use RuntimeException;
 use Stringable;
-use WebSocket\Http\{
-    HttpHandler,
-    Message,
-    Request,
-    Response,
-    ServerRequest
-};
+use WebSocket\Http\HttpHandler;
 
 /**
  * Test case for WebSocket\Http\HttpHandler.
@@ -43,10 +40,12 @@ class HttpHandlerTest extends TestCase
     use ExpectContextTrait;
     use ExpectSocketStreamTrait;
 
+    private Psr17Factory $psrFactory;
+
     public function setUp(): void
     {
-        error_reporting(-1);
         $this->setUpStack();
+        $this->psrFactory = new Psr17Factory();
     }
 
     public function tearDown(): void
@@ -65,7 +64,7 @@ class HttpHandlerTest extends TestCase
         $handler = new HttpHandler($stream);
         $this->assertInstanceOf(HttpHandler::class, $handler);
 
-        $request = new Request('GET', 'ws://test.com:123/a/path?a=b');
+        $request = $this->psrFactory->createServerRequest('GET', 'ws://test.com:123/a/path?a=b');
 
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $expect = "GET /a/path?a=b HTTP/1.1\r\nHost: test.com:123\r\n\r\n";
@@ -90,7 +89,7 @@ class HttpHandlerTest extends TestCase
         $handler = new HttpHandler($stream);
         $this->assertInstanceOf(HttpHandler::class, $handler);
 
-        $request = new ServerRequest('GET', 'ws://test.com:123/a/path?a=b');
+        $request = $this->psrFactory->createServerRequest('GET', 'ws://test.com:123/a/path?a=b');
 
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $expect = "GET /a/path?a=b HTTP/1.1\r\nHost: test.com:123\r\n\r\n";
@@ -132,7 +131,7 @@ class HttpHandlerTest extends TestCase
             return "\r\n";
         });
         $request = $handler->pull();
-        $this->assertInstanceOf(ServerRequest::class, $request);
+        $this->assertInstanceOf(ServerRequestInterface::class, $request);
         $this->assertEquals('/a/path?a=b', $request->getRequestTarget());
         $this->assertEquals('GET', $request->getMethod());
         $this->assertEquals('1.1', $request->getProtocolVersion());
@@ -159,8 +158,7 @@ class HttpHandlerTest extends TestCase
         $handler = new HttpHandler($stream);
         $this->assertInstanceOf(HttpHandler::class, $handler);
 
-        $response = new Response(200);
-        $response = $response->withHeader('Host', 'test.com:123');
+        $response = $this->psrFactory->createResponse(200)->withHeader('Host', 'test.com:123');
 
         $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
             $expect = "HTTP/1.1 200 OK\r\nHost: test.com:123\r\n\r\n";
@@ -193,7 +191,7 @@ class HttpHandlerTest extends TestCase
             return "\r\n";
         });
         $response = $handler->pull();
-        $this->assertInstanceOf(Response::class, $response);
+        $this->assertInstanceOf(ResponseInterface::class, $response);
         $this->assertEquals('1.1', $response->getProtocolVersion());
         $this->assertEquals(['Host' => ['test.com:123']], $response->getHeaders());
         $this->assertTrue($response->hasHeader('Host'));
@@ -231,7 +229,7 @@ class HttpHandlerTest extends TestCase
             return "\n";
         });
         $response = $handler->pull();
-        $this->assertInstanceOf(Response::class, $response);
+        $this->assertInstanceOf(ResponseInterface::class, $response);
         $this->assertEquals('1.1', $response->getProtocolVersion());
         $this->assertEquals(['Host' => ['test.com:123']], $response->getHeaders());
         $this->assertTrue($response->hasHeader('Host'));
@@ -279,25 +277,6 @@ class HttpHandlerTest extends TestCase
         $this->expectExceptionMessage("Could not read Http request.");
 
         $handler->pull();
-
-        fclose($temp);
-    }
-
-    public function testPushUnsupported(): void
-    {
-        $temp = tmpfile();
-
-        $this->expectSocketStream();
-        $this->expectSocketStreamGetMetadata();
-        $this->expectContext();
-        $stream = new SocketStream($temp);
-        $handler = new HttpHandler($stream);
-        $this->assertInstanceOf(HttpHandler::class, $handler);
-
-        $request = new GuzzleRequest('GET', 'ws://test.com:123/a/path?a=b');
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage("Generic MessageInterface currently not supported.");
-        $handler->push($request);
 
         fclose($temp);
     }

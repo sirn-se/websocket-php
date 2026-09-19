@@ -1,14 +1,17 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
 namespace WebSocket\Middleware;
 
 use Stringable;
-use WebSocket\Connection;
+use WebSocket\{
+    Configuration,
+    Connection,
+};
 use WebSocket\Message\{
     Close,
     Message
@@ -27,6 +30,8 @@ class CloseHandler implements ProcessIncomingInterface, ProcessOutgoingInterface
     use ConfigurationTrait;
     use StringableTrait;
 
+    private const SCOPE = 'close-handler';
+
     public function __construct()
     {
         $this->initConfiguration();
@@ -40,7 +45,9 @@ class CloseHandler implements ProcessIncomingInterface, ProcessOutgoingInterface
         }
         if ($connection->isWritable()) {
             // Remote sent Close; acknowledge and close for further reading
-            $this->configuration->getLogger()->debug('[close-handler] Received \'close\', status: {status}', [
+            $this->configuration->getLogger()->debug("[{scope}] Received 'close', status: {status}", [
+                'scope' => self::SCOPE,
+                'connection' => $connection->getIdentity(),
                 'status' => $message->getCloseStatus(),
             ]);
             $ack =  "Close acknowledged: {$message->getCloseStatus()}";
@@ -48,7 +55,11 @@ class CloseHandler implements ProcessIncomingInterface, ProcessOutgoingInterface
             $connection->send(new Close($message->getCloseStatus(), $ack));
         } else {
             // Remote sent Close/Ack: disconnect
-            $this->configuration->getLogger()->debug('[close-handler] Received \'close\', acknowledge, disconnecting');
+            $this->configuration->getLogger()->debug("[{scope}] Received 'close' acknowledge, disconnecting", [
+                'scope' => self::SCOPE,
+                'connection' => $connection->getIdentity(),
+                'status' => $message->getCloseStatus(),
+            ]);
             $connection->disconnect();
         }
         return $message;
@@ -62,13 +73,19 @@ class CloseHandler implements ProcessIncomingInterface, ProcessOutgoingInterface
         }
         if ($connection->isReadable()) {
             // Local sent Close: close for further writing, expect remote acknowledge
-            $this->configuration->getLogger()->debug('[close-handler] Sent \'close\', status: {status}', [
+            $this->configuration->getLogger()->debug("[{scope}] Sent 'close', status: {status}", [
+                'scope' => self::SCOPE,
+                'connection' => $connection->getIdentity(),
                 'status' => $message->getCloseStatus(),
             ]);
             $connection->closeWrite();
         } else {
             // Local sent Close/Ack: disconnect
-            $this->configuration->getLogger()->debug('[close-handler] Sent \'close\', acknowledge, disconnecting');
+            $this->configuration->getLogger()->debug("[{scope}] Sent 'close' acknowledge, disconnecting", [
+                'scope' => self::SCOPE,
+                'connection' => $connection->getIdentity(),
+                'status' => $message->getCloseStatus(),
+            ]);
             $connection->disconnect();
         }
         return $message;

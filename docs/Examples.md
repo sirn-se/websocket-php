@@ -8,7 +8,7 @@ Here are some examples on how to use the WebSocket library.
 
 Client and Server accepts a [PSR-3](https://www.php-fig.org/psr/psr-3/) compatible logger to be attached.
 
-The ConsoleLogger in example is useful for debugging.
+The `phrity/logger-console` in example is useful for debugging.
 For production, use a logger that stores or accumulates log data.
 
 ```php
@@ -189,19 +189,24 @@ use WebSocket\Server;
 $port = 443; // Port to use
 $logger = new Logger(); // PSR-3 Logger to use
 
+// Create context
+$context = new Phrity\Net\Context();
+// Set up SSL with CA certificate
+$context->setOptions(['ssl' => [
+    'local_cert'        => 'certs/CA/acs-ws-server.crt',
+    'local_pk'          => 'certs/CA/acs-ws-server.key',
+    'cafile'            => 'certs/CA/ca.crt',
+    'verify_peer'       => true, // if false, accept SSL handshake without client certificate
+    'verify_peer_name'  => false,
+    'allow_self_signed' => false,
+    'capture_peer_cert' => true,
+]]);
+
 // Create server
 $server = new Server(port: $port, ssl: true);
 $server
-    // Set up SSL with CA certificate
-    ->setContext(['ssl' => [
-        'local_cert'        => 'certs/CA/acs-ws-server.crt',
-        'local_pk'          => 'certs/CA/acs-ws-server.key',
-        'cafile'            => 'certs/CA/ca.crt',
-        'verify_peer'       => true, // if false, accept SSL handshake without client certificate
-        'verify_peer_name'  => false,
-        'allow_self_signed' => false,
-        'capture_peer_cert' => true,
-    ]])
+    // Add the context
+    ->setContext($context)
     // Add standard middlewares
     ->addMiddleware(new CloseHandler())
     ->addMiddleware(new PingResponder())
@@ -215,7 +220,7 @@ $server
         $user = myUserVerification($cn); // Verify user using yout own code
         if (!$user) {
             $logger->warning("[{$conn->getRemoteName()}] Client authentication failed, unknown CN: {$cn}");
-            throw new CloseException(1008, Client Auth failed');  // CLOSE_POLICY_VIOLATION
+            throw new CloseException('Client Auth failed', status: 1008);  // CLOSE_POLICY_VIOLATION
         }
         $logger->info("[{$conn->getRemoteName()}] Client authenticated as '{$user}'");
         $connection->setMeta('user', $user); // Store for later use

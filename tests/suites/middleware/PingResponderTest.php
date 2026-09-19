@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
@@ -12,10 +12,7 @@ namespace WebSocket\Test\Middleware;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\SocketStream;
 use Stringable;
-use WebSocket\{
-    Client,
-    Connection,
-};
+use WebSocket\Connection;
 use WebSocket\Message\Ping;
 use WebSocket\Middleware\PingResponder;
 use WebSocket\Test\MockStreamTrait;
@@ -29,7 +26,6 @@ class PingResponderTest extends TestCase
 
     public function setUp(): void
     {
-        error_reporting(-1);
         $this->setUpStack();
     }
 
@@ -41,15 +37,16 @@ class PingResponderTest extends TestCase
     public function testPingAutoResponse(): void
     {
         $temp = tmpfile();
-        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectWsConnectionCreate();
-        $connection = new Connection($client, $stream, false, false);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $connection = new Connection($stream, false, false);
 
         $middleware = new PingResponder();
         $connection->addMiddleware($middleware);
@@ -70,7 +67,5 @@ class PingResponderTest extends TestCase
 
         $this->expectSocketStreamClose();
         $this->assertSame($connection, $connection->disconnect());
-
-        unset($stream);
     }
 }

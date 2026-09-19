@@ -46,7 +46,14 @@ $clonedConfiguration->setFrameSize(...);
 $source->setConfiguration($clonedConfiguration);
 ```
 
+## Exceptions
+
+All internal exceptions are normalized, and extends `AbstractException`.
+If your code throws or extend exceptions from this library, review these and adapt accordingly.
+
 ## Extending
 
 Increased modularization affects many internal classes and methods.
 If you rely on using these directly (extending or adapting) your code may be incompatible.
+
+- `OpcodeTrait` has been removed

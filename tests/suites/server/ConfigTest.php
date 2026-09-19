@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace WebSocket\Test\Server;
 
-use GuzzleHttp\Psr7\HttpFactory as GuzzleFactory;
+use Nyholm\Psr7\Factory\Psr17Factory;
 use PHPUnit\Framework\TestCase;
 use Phrity\Http\HttpFactory;
 use Phrity\Net\Mock\{
@@ -22,8 +22,10 @@ use Phrity\Net\Mock\Stack\{
     ExpectStreamCollectionTrait,
     ExpectStreamFactoryTrait
 };
+use Phrity\Util\ErrorHandler;
 use Psr\Log\NullLogger;
 use WebSocket\{
+    Configuration,
     Connection,
     Server,
 };
@@ -46,7 +48,6 @@ class ConfigTest extends TestCase
 
     public function setUp(): void
     {
-        error_reporting(-1);
         $this->setUpStack();
     }
 
@@ -59,8 +60,8 @@ class ConfigTest extends TestCase
     {
         $this->expectWsServerCreate();
         $server = new Server(8000, streamFactory: new StreamFactory());
-
         $this->assertSame($server, $server->addMiddleware(new Callback()));
+
         $this->assertEquals('WebSocket\Server(closed)', "{$server}");
         $this->assertEquals(60, $server->getTimeout());
         $this->assertEquals(4096, $server->getFrameSize());
@@ -73,7 +74,6 @@ class ConfigTest extends TestCase
         $this->assertEmpty($server->getWritableConnections());
 
         $this->expectWsServerSetup(scheme: 'tcp', port: 8000);
-        $this->expectStreamCollectionCount();
         $this->expectStreamCollectionWaitRead()->addAssert(function ($method, $params) {
             $this->assertEquals(60, $params[0]);
         });
@@ -83,24 +83,18 @@ class ConfigTest extends TestCase
             $server->stop();
         });
         $server->start();
-
         $this->assertEquals('WebSocket\Server(tcp://0.0.0.0:8000)', "{$server}");
         $this->assertFalse($server->isRunning());
 
-        $this->expectStreamCollectionDetach();
         $this->expectSocketServerClose();
+        $this->expectStreamCollectionDetach();
         $server->disconnect();
-
-        unset($server);
     }
 
     public function testServerConfiguration(): void
     {
         $this->expectWsServerCreate();
         $server = new Server(9000, true, streamFactory: new StreamFactory());
-
-        $this->expectStreamFactory();
-        $this->assertSame($server, $server->setStreamFactory(new StreamFactory()));
 
         $this->expectWsServerSetup(scheme: 'ssl', port: 9000);
         $this->expectWsSelectConnections(['server/9000']);
@@ -111,7 +105,6 @@ class ConfigTest extends TestCase
         $server->start();
 
         $server->setLogger(new NullLogger());
-
         $this->assertSame($server, $server->setTimeout(300));
         $this->assertSame($server, $server->setFrameSize(64));
         $this->assertSame($server, $server->setMaxConnections(null));
@@ -119,6 +112,7 @@ class ConfigTest extends TestCase
         $this->assertSame($server, $server->addMiddleware(new Callback()));
 
         $this->assertEquals('WebSocket\Server(ssl://0.0.0.0:9000)', "{$server}");
+        $this->assertEquals(300, $server->getTimeout());
         $this->assertEquals(64, $server->getFrameSize());
         $this->assertEquals(9000, $server->getPort());
         $this->assertEquals('ssl', $server->getScheme());
@@ -130,15 +124,14 @@ class ConfigTest extends TestCase
         $this->expectSocketStreamIsWritable();
         $this->assertCount(1, $server->getWritableConnections());
 
-        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
+        $this->expectStreamCollectionDetach();
         $this->expectSocketServerClose();
+        $this->expectStreamCollectionDetach();
         $server->disconnect();
-
-        unset($server);
     }
 
-    public function testContext(): void
+    public function testContextClass(): void
     {
         $this->expectContext();
         $context = new Context();
@@ -148,7 +141,6 @@ class ConfigTest extends TestCase
 
         $this->expectWsServerCreate();
         $server = new Server(8000, streamFactory: new StreamFactory());
-
         $server->onHandshake(function (Server $server, Connection $connection) {
             $this->expectSocketStreamGetContext();
             $connectionContext = $connection->getContext();
@@ -167,17 +159,16 @@ class ConfigTest extends TestCase
         $this->expectWsServerPerformHandshake();
         $server->start();
 
-        $this->expectStreamCollectionDetach();
         $this->expectSocketStreamClose();
+        $this->expectStreamCollectionDetach();
         $this->expectSocketServerClose();
+        $this->expectStreamCollectionDetach();
         $server->disconnect();
-
-        unset($server);
     }
 
     public function testHttpFactories(): void
     {
-        $httpFactory = new GuzzleFactory();
+        $httpFactory = new Psr17Factory();
         $this->expectContext();
         $context = new Context();
         $this->expectContextSetOptions();
@@ -189,9 +180,25 @@ class ConfigTest extends TestCase
 
         $this->assertSame($server, $server->setHttpFactory(HttpFactory::create($httpFactory)));
 
-        $this->expectStreamCollectionDetach();
         $server->disconnect();
+    }
 
-        unset($server);
+    public function testConfiguration(): void
+    {
+        $logger = new NullLogger();
+        $this->expectContext();
+        $context = new Context();
+        $configuration = new Configuration(
+            logger: $logger,
+            context: $context,
+            timeout: 120,
+            frameSize: 64,
+            maxConnections: 1,
+        );
+        $server = new Server(8000, configuration: $configuration);
+        $this->assertInstanceOf(Configuration::class, $server->getConfiguration());
+        $this->assertSame($server, $server->setConfiguration($configuration));
+
+        $server->disconnect();
     }
 }

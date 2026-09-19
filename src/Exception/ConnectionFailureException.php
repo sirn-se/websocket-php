@@ -11,10 +11,7 @@ namespace WebSocket\Exception;
  * WebSocket\Exception\ConnectionFailureException class.
  * Unspecified error on connection.
  */
-class ConnectionFailureException extends Exception implements ConnectionLevelInterface
+class ConnectionFailureException extends AbstractException implements ConnectionLevelInterface
 {
-    public function __construct(string|null $message = null)
-    {
-        parent::__construct($message ?? 'Connection error');
-    }
+    protected static string $defaultMessage = 'Connection error';
 }

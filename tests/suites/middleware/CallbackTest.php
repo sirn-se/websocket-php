@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
@@ -9,18 +9,16 @@ declare(strict_types=1);
 
 namespace WebSocket\Test\Middleware;
 
+use Nyholm\Psr7\Factory\Psr17Factory;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\SocketStream;
 use Psr\Log\NullLogger;
+use Psr\Http\Message\{
+    RequestInterface,
+    ResponseInterface,
+};
 use Stringable;
-use WebSocket\{
-    Client,
-    Connection,
-};
-use WebSocket\Http\{
-    Request,
-    Response,
-};
+use WebSocket\Connection;
 use WebSocket\Message\Text;
 use WebSocket\Middleware\Callback;
 use WebSocket\Test\MockStreamTrait;
@@ -32,10 +30,12 @@ class CallbackTest extends TestCase
 {
     use MockStreamTrait;
 
+    private Psr17Factory $psrFactory;
+
     public function setUp(): void
     {
-        error_reporting(-1);
         $this->setUpStack();
+        $this->psrFactory = new Psr17Factory();
     }
 
     public function tearDown(): void
@@ -46,16 +46,16 @@ class CallbackTest extends TestCase
     public function testIncoming(): void
     {
         $temp = tmpfile();
-        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectWsConnectionCreate();
-        $connection = new Connection($client, $stream, false, false);
-
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $connection = new Connection($stream, false, false);
         $middleware = new Callback(incoming: function ($stack, $connection) {
             $message = $stack->handleIncoming();
             $message->setContent("Changed message");
@@ -75,22 +75,21 @@ class CallbackTest extends TestCase
         });
         $message = $connection->pullMessage();
         $this->assertEquals('Changed message', $message->getContent());
-
-        unset($stream);
     }
 
     public function testOutgoing(): void
     {
         $temp = tmpfile();
-        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectWsConnectionCreate();
-        $connection = new Connection($client, $stream, false, false);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $connection = new Connection($stream, false, false);
 
         $connection->addMiddleware(new Callback(outgoing: function ($stack, $connection, $message) {
             $this->assertEquals('Test message', $message->getContent());
@@ -102,22 +101,21 @@ class CallbackTest extends TestCase
 
         $this->expectSocketStreamWrite();
         $connection->send(new Text('Test message'));
-
-        unset($stream);
     }
 
     public function testHttpIncoming(): void
     {
         $temp = tmpfile();
-        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectWsConnectionCreate();
-        $connection = new Connection($client, $stream, false, false);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $connection = new Connection($stream, false, false);
 
         $connection->addMiddleware(new Callback(httpIncoming: function ($stack, $connection) {
             $message = $stack->handleHttpIncoming();
@@ -134,25 +132,24 @@ class CallbackTest extends TestCase
         $this->expectSocketStreamReadLine()->setReturn(function () {
             return "\r\n";
         });
-        /** @var Request $message */
+        /** @var RequestInterface $message */
         $message = $connection->pullHttp();
         $this->assertEquals('POST', $message->getMethod());
-
-        unset($stream);
     }
 
     public function testHttpOutgoing(): void
     {
         $temp = tmpfile();
-        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectWsConnectionCreate();
-        $connection = new Connection($client, $stream, false, false);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $connection = new Connection($stream, false, false);
 
         $connection->addMiddleware(new Callback(httpOutgoing: function ($stack, $connection, $message) {
             $message = $stack->handleHttpOutgoing($message);
@@ -161,31 +158,28 @@ class CallbackTest extends TestCase
             return $message;
         }));
         $this->expectSocketStreamWrite();
-        /** @var Response $message */
-        $message = $connection->pushHttp(new Response(200));
+        /** @var ResponseInterface $message */
+        $message = $connection->pushHttp($this->psrFactory->createResponse(200));
         $this->assertEquals(400, $message->getStatusCode());
-
-        unset($stream);
     }
 
     public function testTick(): void
     {
         $temp = tmpfile();
-        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectWsConnectionCreate();
-        $connection = new Connection($client, $stream, false, false);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $connection = new Connection($stream, false, false);
 
         $connection->addMiddleware(new Callback(tick: function ($stack, $connection) {
             $stack->handleTick();
         }));
         $connection->tick();
-
-        unset($stream);
     }
 }

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  *
  * This file is part of Websocket PHP and is free software under the ISC License.
  * License text: https://raw.githubusercontent.com/sirn-se/websocket-php/master/COPYING.md
@@ -16,7 +16,10 @@ use Psr\Http\Message\{
     ServerRequestInterface,
 };
 use Stringable;
-use WebSocket\Connection;
+use WebSocket\{
+    Configuration,
+    Connection,
+};
 use WebSocket\Message\{
     Binary,
     Message,
@@ -42,6 +45,8 @@ class CompressionExtension implements
 {
     use ConfigurationTrait;
     use StringableTrait;
+
+    private const SCOPE = 'permessage-compression';
 
     /** @var array<CompressorInterface> $compressors */
     private array $compressors = [];
@@ -89,7 +94,9 @@ class CompressionExtension implements
             if ($preferred = $this->getPreferred($message)) {
                 $connection->setMeta('compressionExtension.compressor', $preferred->compressor);
                 $connection->setMeta('compressionExtension.configuration', $preferred->configuration);
-                $this->configuration->getLogger()->debug('[permessage-compression] Using {compressor}', [
+                $this->configuration->getLogger()->debug("[{scope}] Using: {compressor}", [
+                    'scope' => self::SCOPE,
+                    'connection' => $connection->getIdentity(),
                     'compressor' => $preferred->compressor,
                     'configuration' => (array)$preferred->configuration,
                 ]);
@@ -99,7 +106,9 @@ class CompressionExtension implements
             if ($preferred = $this->getPreferred($message)) {
                 $connection->setMeta('compressionExtension.compressor', $preferred->compressor);
                 $connection->setMeta('compressionExtension.configuration', $preferred->configuration);
-                $this->configuration->getLogger()->debug('[permessage-compression] Using {compressor}', [
+                $this->configuration->getLogger()->debug("[{scope}] Using: {compressor}", [
+                    'scope' => self::SCOPE,
+                    'connection' => $connection->getIdentity(),
                     'compressor' => $preferred->compressor,
                     'configuration' => (array)$preferred->configuration,
                 ]);

@@ -155,6 +155,7 @@ Other options are available using the Configuration class.
 - Timeout
 - Frame size
 - Max connections
+- Opcode registry
 
 Read more on [Configuration](Configuration.md).
 

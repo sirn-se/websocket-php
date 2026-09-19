@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
@@ -41,7 +41,6 @@ class MessageHandlerTest extends TestCase
 
     public function setUp(): void
     {
-        error_reporting(-1);
         $this->setUpStack();
     }
 
@@ -295,7 +294,7 @@ class MessageHandlerTest extends TestCase
             return base64_decode('gwA=');
         });
         $this->expectException(BadOpcodeException::class);
-        $this->expectExceptionMessage("Invalid opcode '3' provided");
+        $this->expectExceptionMessage("Implementation class null for opcode 3 not found");
         $message = $handler->pull();
 
         fclose($temp);

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
@@ -27,6 +27,10 @@ use Phrity\Net\{
     Uri,
 };
 use Phrity\Util\ErrorHandler;
+use Psr\Http\Message\{
+    RequestInterface,
+    ResponseInterface,
+};
 use Stringable;
 use WebSocket\{
     Client,
@@ -39,14 +43,14 @@ use WebSocket\Exception\{
     CloseException,
     ReconnectException,
 };
-use WebSocket\Http\{
-    Request,
-    Response
+use WebSocket\Test\{
+    CustomMessage,
+    MockStreamTrait,
 };
-use WebSocket\Test\MockStreamTrait;
 use WebSocket\Message\{
     Binary,
     Close,
+    Message,
     Ping,
     Pong,
     Text
@@ -66,7 +70,6 @@ class ClientTest extends TestCase
 
     public function setUp(): void
     {
-        error_reporting(-1);
         $this->setUpStack();
     }
 
@@ -81,6 +84,7 @@ class ClientTest extends TestCase
         $this->expectWsClientCreate();
         $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
         $this->assertInstanceOf(Stringable::class, $client);
+        $this->assertEquals('client/localhost', $client->getIdentity());
 
         $this->assertFalse($client->isConnected());
         $this->assertFalse($client->isReadable());
@@ -126,15 +130,11 @@ class ClientTest extends TestCase
 
         $this->expectSocketStreamIsConnected();
         $this->assertTrue($client->isConnected());
-        $this->assertInstanceOf(Connection::class, $client->getConnection());
-        $this->assertSame($client, $client->getConnection()->getHandler());
 
         $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
         $client->disconnect();
-
-        unset($client);
     }
 
     public function testSendMessages(): void
@@ -161,8 +161,6 @@ class ClientTest extends TestCase
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
         $client->disconnect();
-
-        unset($client);
     }
 
     public function testPayload128(): void
@@ -210,15 +208,12 @@ class ClientTest extends TestCase
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
         $client->disconnect();
-
-        unset($client);
     }
 
     public function testPayload65536(): void
     {
         $this->expectWsClientCreate();
         $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
-
         $client->setFrameSize(65540);
 
         $this->expectWsClientConnect();
@@ -296,20 +291,17 @@ class ClientTest extends TestCase
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
         $client->disconnect();
-
-        unset($client);
     }
 
     public function testMultiFrame(): void
     {
         $this->expectWsClientCreate();
         $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
+        $client->setFrameSize(8);
 
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake();
         $client->connect();
-
-        $client->setFrameSize(8);
 
         // Sending message
         $this->expectSocketStreamIsConnected();
@@ -383,15 +375,12 @@ class ClientTest extends TestCase
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
         $client->disconnect();
-
-        unset($client);
     }
 
     public function testPingPong(): void
     {
         $this->expectWsClientCreate();
         $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
-
         $client->addMiddleware(new PingResponder());
 
         $this->expectWsClientConnect();
@@ -493,15 +482,12 @@ class ClientTest extends TestCase
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
         $client->disconnect();
-
-        unset($client);
     }
 
     public function testRemoteClose(): void
     {
         $this->expectWsClientCreate();
         $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
-
         $client->addMiddleware(new CloseHandler());
 
         $this->expectWsClientConnect();
@@ -536,14 +522,15 @@ class ClientTest extends TestCase
         $message = $client->receive();
         $this->assertInstanceOf(Close::class, $message);
 
-        unset($client);
+        $this->expectStreamCollectionDetach();
+        $this->expectSocketStreamIsConnected();
+        $client->disconnect();
     }
 
     public function testAutoConnect(): void
     {
         $this->expectWsClientCreate();
         $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
-
         $client->addMiddleware(new CloseHandler());
 
         $this->expectWsClientConnect();
@@ -573,6 +560,7 @@ class ClientTest extends TestCase
         $this->expectSocketStreamClose();
         $this->expectSocketStreamIsConnected();
         $message = $client->receive();
+
         $this->assertInstanceOf(Close::class, $message);
 
         $this->expectSocketStreamIsConnected();
@@ -607,15 +595,12 @@ class ClientTest extends TestCase
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
         $client->disconnect();
-
-        unset($client);
     }
 
     public function testFrameFragmentation(): void
     {
         $this->expectWsClientCreate();
         $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
-
         $client->addMiddleware(new CloseHandler());
         $client->addMiddleware(new PingResponder());
 
@@ -727,14 +712,15 @@ class ClientTest extends TestCase
         $this->assertEquals('Closing', $message->getContent());
         $this->assertFalse($client->isConnected());
 
-        unset($client);
+        $this->expectStreamCollectionDetach();
+        $this->expectSocketStreamIsConnected();
+        $client->disconnect();
     }
 
     public function testConvenienceMethods(): void
     {
         $this->expectWsClientCreate();
         $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
-
         $client->addMiddleware(new CloseHandler());
         $client->addMiddleware(new PingResponder());
 
@@ -801,8 +787,6 @@ class ClientTest extends TestCase
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
         $client->disconnect();
-
-        unset($client);
     }
 
     public function testDisconnect(): void
@@ -819,8 +803,6 @@ class ClientTest extends TestCase
         $this->expectSocketStreamClose();
         $client->disconnect();
 
-        $this->expectStreamCollectionDetach();
-        $this->expectSocketStreamIsConnected();
         $client->disconnect();
     }
 
@@ -828,14 +810,20 @@ class ClientTest extends TestCase
     {
         $this->expectWsClientCreate();
         $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
+        $handler = new ErrorHandler();
 
         $client->onHandshake(function ($client, $connection, $request, $response) {
             $this->assertInstanceOf(Client::class, $client);
             $this->assertInstanceOf(Connection::class, $connection);
-            $this->assertInstanceOf(Request::class, $request);
-            $this->assertInstanceOf(Response::class, $response);
+            $this->assertInstanceOf(RequestInterface::class, $request);
+            $this->assertInstanceOf(ResponseInterface::class, $response);
             $this->assertTrue($client->isRunning());
             $client->stop();
+        });
+        $client->onMessage(function ($client, $connection, $message) {
+            $this->assertInstanceOf(Client::class, $client);
+            $this->assertInstanceOf(Connection::class, $connection);
+            $this->assertInstanceOf(Message::class, $message);
         });
         $client->onText(function ($client, $connection, $message) {
             $this->assertInstanceOf(Client::class, $client);
@@ -888,7 +876,7 @@ class ClientTest extends TestCase
         $client->start();
 
         $this->expectSocketStreamIsConnected();
-        $this->expectWsClientSelectConnections(['client/localhost/connection/12345/8000']);
+        $this->expectWsSelectConnections(['*/connection/12345/8000']);
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
@@ -898,7 +886,7 @@ class ClientTest extends TestCase
         $client->start();
 
         $this->expectSocketStreamIsConnected();
-        $this->expectWsClientSelectConnections(['client/localhost/connection/12345/8000']);
+        $this->expectWsSelectConnections(['*/connection/12345/8000']);
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
@@ -908,7 +896,7 @@ class ClientTest extends TestCase
         $client->start();
 
         $this->expectSocketStreamIsConnected();
-        $this->expectWsClientSelectConnections(['client/localhost/connection/12345/8000']);
+        $this->expectWsSelectConnections(['*/connection/12345/8000']);
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
@@ -918,7 +906,7 @@ class ClientTest extends TestCase
         $client->start();
 
         $this->expectSocketStreamIsConnected();
-        $this->expectWsClientSelectConnections(['client/localhost/connection/12345/8000']);
+        $this->expectWsSelectConnections(['*/connection/12345/8000']);
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
@@ -928,7 +916,7 @@ class ClientTest extends TestCase
         $client->start();
 
         $this->expectSocketStreamIsConnected();
-        $this->expectWsClientSelectConnections(['client/localhost/connection/12345/8000']);
+        $this->expectWsSelectConnections(['*/connection/12345/8000']);
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
@@ -938,7 +926,7 @@ class ClientTest extends TestCase
         $client->start();
 
         $this->expectSocketStreamIsConnected();
-        $this->expectWsClientSelectConnections(['client/localhost/connection/12345/8000']);
+        $this->expectWsSelectConnections(['*/connection/12345/8000']);
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
@@ -948,7 +936,7 @@ class ClientTest extends TestCase
         $client->start();
 
         $this->expectSocketStreamIsConnected();
-        $this->expectWsClientSelectConnections(['client/localhost/connection/12345/8000']);
+        $this->expectWsSelectConnections(['*/connection/12345/8000']);
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
@@ -961,8 +949,6 @@ class ClientTest extends TestCase
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
         $client->disconnect();
-
-        unset($client);
     }
 
     public function testAlreadyStarted(): void
@@ -982,8 +968,6 @@ class ClientTest extends TestCase
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
         $client->disconnect();
-
-        unset($client);
     }
 
     public function testRunConnectionClosedException(): void
@@ -1000,7 +984,7 @@ class ClientTest extends TestCase
 
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake();
-        $this->expectWsClientSelectConnections(['client/localhost/connection/12345/8000']);
+        $this->expectWsSelectConnections(['*/connection/12345/8000']);
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
         })->setReturn(function () {
@@ -1012,7 +996,7 @@ class ClientTest extends TestCase
         $this->expectSocketStreamIsConnected();
         $client->start();
 
-        unset($client);
+        $client->disconnect();
     }
 
     public function testRunClientException(): void
@@ -1029,18 +1013,18 @@ class ClientTest extends TestCase
 
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake();
-        $this->expectWsClientSelectConnections(['client/localhost/connection/12345/8000']);
+        $this->expectWsSelectConnections(['*/connection/12345/8000']);
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
             $this->assertEquals(2, $params[0]);
-        })->setReturn(function () use ($client) {
-            throw new ClientException($client, 'Test error');
+        })->setReturn(function () {
+            throw new ClientException();
         });
         $this->expectStreamCollectionDetach();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamClose();
         $client->start();
 
-        unset($client);
+        $client->disconnect();
     }
 
     public function testRunExternalException(): void
@@ -1050,7 +1034,7 @@ class ClientTest extends TestCase
 
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake();
-        $this->expectWsClientSelectConnections(['client/localhost/connection/12345/8000'])->setReturn(function () {
+        $this->expectWsSelectConnections(['*/connection/12345/8000'])->setReturn(function () {
             throw new StreamException(1000);
         });
         $this->expectStreamCollectionDetach();
@@ -1059,15 +1043,12 @@ class ClientTest extends TestCase
         $this->expectException(StreamException::class);
         $this->expectExceptionMessage('Stream is detached.');
         $client->start();
-
-        unset($client);
     }
 
     public function testCloseException(): void
     {
         $this->expectWsClientCreate();
         $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
-
         $client->addMiddleware(new CloseHandler());
         $client->onText(function ($client, $connection, $message) {
             throw new CloseException();
@@ -1075,7 +1056,7 @@ class ClientTest extends TestCase
 
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake();
-        $this->expectWsClientSelectConnections(['client/localhost/connection/12345/8000']);
+        $this->expectWsSelectConnections(['*/connection/12345/8000']);
         $this->expectSocketStreamRead()->setReturn(function () {
             return base64_decode('gQA=');
         });
@@ -1083,7 +1064,7 @@ class ClientTest extends TestCase
         $this->expectSocketStreamIsReadable();
         $this->expectSocketStreamCloseWrite();
         $this->expectSocketStreamGetMetadata();
-        $this->expectWsClientSelectConnections(['client/localhost/connection/12345/8000']);
+        $this->expectWsSelectConnections(['*/connection/12345/8000']);
         $this->expectSocketStreamRead()->setReturn(function () {
             return base64_decode('iIk=');
         });
@@ -1096,26 +1077,27 @@ class ClientTest extends TestCase
         $this->expectSocketStreamIsWritable();
         $this->expectSocketStreamClose();
         $this->expectSocketStreamIsConnected();
+        $this->expectStreamCollectionDetach();
+        $this->expectSocketStreamIsConnected();
         $client->start();
 
-        unset($client);
+        $client->disconnect();
     }
 
     public function testReconnectException(): void
     {
         $this->expectWsClientCreate();
         $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
-
         $client->addMiddleware(new CloseHandler());
         $client->onText(function ($client, $connection, $message) {
-            throw new ReconnectException(new Uri('ws://localhost:8000/my/mock/path'));
+            throw new ReconnectException(uri: new Uri('ws://localhost:8000/my/mock/path'));
         });
         $client->onBinary(function ($client, $connection, $message) {
             $client->disconnect();
         });
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake();
-        $this->expectWsClientSelectConnections(['client/localhost/connection/12345/8000']);
+        $this->expectWsSelectConnections(['*/connection/12345/8000']);
         $this->expectSocketStreamRead()->setReturn(function () {
             return base64_decode('gQA='); // text
         });
@@ -1124,7 +1106,7 @@ class ClientTest extends TestCase
         $this->expectSocketStreamCloseWrite();
         $this->expectSocketStreamGetMetadata();
         $this->expectSocketStreamIsConnected();
-        $this->expectWsClientSelectConnections(['client/localhost/connection/12345/8000']);
+        $this->expectWsSelectConnections(['*/connection/12345/8000']);
         $this->expectSocketStreamRead()->setReturn(function () {
             return base64_decode('iBo='); // close
         });
@@ -1135,7 +1117,7 @@ class ClientTest extends TestCase
         $this->expectSocketStreamClose();
         $this->expectSocketStreamIsConnected();
         $this->expectSocketStreamIsConnected();
-        $this->expectWsClientSelectConnections(['client/localhost/connection/12345/8000']);
+        $this->expectWsSelectConnections(['*/connection/12345/8000']);
         $this->expectSocketStreamRead()->setReturn(function () {
             return base64_decode('ggA='); // binary
         });
@@ -1144,11 +1126,7 @@ class ClientTest extends TestCase
         $this->expectSocketStreamIsConnected();
         $client->start();
 
-        $this->expectStreamCollectionDetach();
-        $this->expectSocketStreamIsConnected();
         $client->disconnect();
-
-        unset($client);
     }
 
     public function testUnresolvableError(): void
@@ -1166,7 +1144,7 @@ class ClientTest extends TestCase
 
         $this->expectWsClientConnect();
         $this->expectWsClientPerformHandshake();
-        $this->expectWsClientSelectConnections(['client/localhost/connection/12345/8000']);
+        $this->expectWsSelectConnections(['*/connection/12345/8000']);
         $this->expectSocketStreamRead()->setReturn(function () {
             return base64_decode('gQA=');
         });
@@ -1177,7 +1155,139 @@ class ClientTest extends TestCase
         $this->expectException(Error::class);
         $this->expectExceptionMessage('Class "WebSocket\Test\Client\UnexistingClass" not found');
         $client->start();
+    }
 
-        unset($client);
+    public function testExtendTextImplementation(): void
+    {
+        CustomMessage::$customOpcode = 'text';
+
+        // Creating client
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
+        $client->getConfiguration()->getOpcodeRegistry()->register(1, CustomMessage::class);
+
+        $this->expectWsClientConnect();
+        $this->expectWsClientPerformHandshake();
+        $client->connect();
+
+        // Sending message
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(23, strlen($params[0]));
+        });
+        $message = $client->send(new CustomMessage('Sending a message'));
+        $this->assertInstanceof(CustomMessage::class, $message);
+        $this->assertEquals('text', $message->getOpcode());
+
+        // Receiving message
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('gZM=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('IW+Vrg==');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(19, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('cwr2y0gZ/MBGT/SOTArm3UAI8A==');
+        });
+        $message = $client->receive();
+        $this->assertInstanceof(CustomMessage::class, $message);
+        $this->assertEquals('text', $message->getOpcode());
+
+        $client->onMessage(function ($client, $connection, $message) {
+            $this->assertInstanceOf(Client::class, $client);
+            $this->assertInstanceOf(Connection::class, $connection);
+            $this->assertInstanceOf(CustomMessage::class, $message);
+            $this->assertEquals('text', $message->getOpcode());
+            $client->stop();
+        });
+
+        $this->expectSocketStreamIsConnected();
+        $this->expectWsSelectConnections(['*/connection/12345/8000']);
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('gQA=');
+        });
+        $this->expectSocketStreamIsConnected();
+        $client->start();
+
+        $this->expectStreamCollectionDetach();
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
+        $client->disconnect();
+    }
+
+    public function testExtendCustomImplementation(): void
+    {
+        CustomMessage::$customOpcode = 'custom-3';
+
+        // Creating client
+        $this->expectWsClientCreate();
+        $client = new Client('ws://localhost:8000/my/mock/path', streamFactory: new StreamFactory());
+        $client->getConfiguration()->getOpcodeRegistry()->register(3, CustomMessage::class);
+
+        $this->expectWsClientConnect();
+        $this->expectWsClientPerformHandshake();
+        $client->connect();
+
+        // Sending message
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamWrite()->addAssert(function ($method, $params) {
+            $this->assertEquals(23, strlen($params[0]));
+        });
+        $message = $client->send(new CustomMessage('Sending a message'));
+        $this->assertInstanceof(CustomMessage::class, $message);
+        $this->assertEquals('custom-3', $message->getOpcode());
+
+        // Receiving message
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('g5M=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(4, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('IW+Vrg==');
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(19, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('cwr2y0gZ/MBGT/SOTArm3UAI8A==');
+        });
+        $message = $client->receive();
+        $this->assertInstanceof(CustomMessage::class, $message);
+        $this->assertEquals('custom-3', $message->getOpcode());
+
+        $client->onMessage(function ($client, $connection, $message) {
+            $this->assertInstanceOf(Client::class, $client);
+            $this->assertInstanceOf(Connection::class, $connection);
+            $this->assertInstanceOf(CustomMessage::class, $message);
+            $this->assertEquals('custom-3', $message->getOpcode());
+            $client->stop();
+        });
+
+        $this->expectSocketStreamIsConnected();
+        $this->expectWsSelectConnections(['*/connection/12345/8000']);
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('gwA=');
+        });
+        $this->expectSocketStreamIsConnected();
+        $client->start();
+
+        $this->expectStreamCollectionDetach();
+        $this->expectSocketStreamIsConnected();
+        $this->expectSocketStreamClose();
+        $client->disconnect();
     }
 }

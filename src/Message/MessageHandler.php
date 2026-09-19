@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
@@ -9,7 +9,6 @@ namespace WebSocket\Message;
 
 use Stringable;
 use WebSocket\Configuration;
-use WebSocket\Exception\BadOpcodeException;
 use WebSocket\Frame\{
     Frame,
     FrameHandler,
@@ -29,6 +28,7 @@ class MessageHandler implements Stringable
     use StringableTrait;
 
     private const DEFAULT_SIZE = 4096;
+    private const SCOPE = 'message-handler';
 
     private FrameHandler $frameHandler;
     /** @var array<Frame> $frameBuffer */
@@ -49,15 +49,16 @@ class MessageHandler implements Stringable
      */
     public function push(Message $message, int $size = self::DEFAULT_SIZE): Message
     {
-        $frames = $message->getFrames($size);
+        $frames = $message->getFrames($size, $this->configuration->getOpcodeRegistry());
         foreach ($frames as $frame) {
             $this->frameHandler->push($frame);
         }
-        $this->configuration->getLogger()->info('[message-handler] Pushed {message}', [
+        $this->configuration->getLogger()->info("[{scope}] Pushed {message}", [
+            'scope' => self::SCOPE,
+            'message' => $message,
+            'opcode' => $message->getOpcode(),
             'content-length' => $message->getLength(),
             'frames' => count($frames),
-            'message' => (string)$message,
-            'opcode' => $message->getOpcode(),
         ]);
         return $message;
     }
@@ -83,28 +84,23 @@ class MessageHandler implements Stringable
 
     /**
      * @param non-empty-array<Frame> $frames
-     * @throws BadOpcodeException
      */
     private function createMessage(array $frames): Message
     {
-        $opcode = $frames[0]->getOpcode() ?? null;
-        $message = match ($opcode) {
-            'text' => new Text(),
-            'binary' => new Binary(),
-            'ping' => new Ping(),
-            'pong' => new Pong(),
-            'close' => new Close(),
-            default => throw new BadOpcodeException("Invalid opcode '{$opcode}' provided"),
-        };
+        /** @var int<1, 15> $opcode */
+        $opcode = $frames[0]->getOpcode();
+        $message = $this->configuration->getOpcodeRegistry()->createMessage($opcode);
+
         $message->setPayload(array_reduce($frames, function (string $carry, Frame $item) {
             return $carry . $item->getPayload();
         }, ''));
         $message->setCompress($frames[0]->getRsv1() ?? false);
-        $this->configuration->getLogger()->info('[message-handler] Pulled {message}', [
+        $this->configuration->getLogger()->info("[{scope}] Pulled {message}", [
+            'scope' => self::SCOPE,
+            'message' => $message,
+            'opcode' => $message->getOpcode(),
             'content-length' => $message->getLength(),
             'frames' => count($frames),
-            'message' => (string)$message,
-            'opcode' => $message->getOpcode(),
         ]);
         return $message;
     }

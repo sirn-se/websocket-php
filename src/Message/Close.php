@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
@@ -14,37 +14,41 @@ namespace WebSocket\Message;
 class Close extends Message
 {
     protected string $opcode = 'close';
-    protected int|null $status = null;
+    /** @var int<0, 4999> $status */
+    protected int $status = 1000;
 
-    public function __construct(int|null $status = null, string $content = '')
+    /**
+     * @param int<0, 4999> $status
+     */
+    public function __construct(int $status = 1000, string $content = '')
     {
         $this->status = $status;
         parent::__construct($content);
     }
 
-    public function getCloseStatus(): int|null
+    /**
+     * @return int<0, 4999>
+     */
+    public function getCloseStatus(): int
     {
         return $this->status;
     }
 
-    public function setCloseStatus(int|null $status): void
+    /**
+     * @param int<0, 4999> $status
+     */
+    public function setCloseStatus(int $status): void
     {
         $this->status = $status;
     }
 
     public function getPayload(): string
     {
-        $statusBinstr = sprintf('%016b', $this->status);
-        $statusStr = '';
-        foreach (str_split($statusBinstr, 8) as $binstr) {
-            $statusStr .= chr((int)bindec($binstr));
-        }
-        return $statusStr . $this->content;
+        return pack("n", $this->status) . $this->content;
     }
 
     public function setPayload(string $payload = ''): void
     {
-        $this->status = 0;
         $this->content = '';
         if (strlen($payload) > 0) {
             $this->status = current(unpack('n', $payload) ?: []);

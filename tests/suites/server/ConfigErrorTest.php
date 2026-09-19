@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
@@ -18,17 +18,11 @@ use WebSocket\Server;
  */
 class ConfigErrorTest extends TestCase
 {
-    public function setUp(): void
-    {
-        error_reporting(-1);
-    }
-
     public function testPortTooLow(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionCode(0);
         $this->expectExceptionMessage("Invalid port '-1' provided");
-        // @phpstan-ignore argument.type
         $server = new Server(-1);
     }
 
@@ -37,7 +31,6 @@ class ConfigErrorTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionCode(0);
         $this->expectExceptionMessage("Invalid port '65536' provided");
-        // @phpstan-ignore argument.type
         $server = new Server(65536);
     }
 

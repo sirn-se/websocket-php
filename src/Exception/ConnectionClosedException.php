@@ -11,10 +11,7 @@ namespace WebSocket\Exception;
  * WebSocket\Exception\ConnectionClosedException class.
  * Connection is unexpectedly closed exception.
  */
-class ConnectionClosedException extends Exception implements ConnectionLevelInterface
+class ConnectionClosedException extends AbstractException implements ConnectionLevelInterface
 {
-    public function __construct()
-    {
-        parent::__construct('Connection has unexpectedly closed');
-    }
+    protected static string $defaultMessage = 'Connection has unexpectedly closed';
 }

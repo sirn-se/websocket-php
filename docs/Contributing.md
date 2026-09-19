@@ -105,3 +105,4 @@ make stan
 * Sebastian Hagens
 * Adrian Mihai
 * Pieter Oliver
+* srebb

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
@@ -9,19 +9,17 @@ declare(strict_types=1);
 
 namespace WebSocket\Test\Middleware;
 
+use Nyholm\Psr7\Factory\Psr17Factory;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\SocketStream;
+use Psr\Http\Message\{
+    RequestInterface,
+    ResponseInterface,
+};
 use RangeException;
 use RuntimeException;
 use Stringable;
-use WebSocket\{
-    Client,
-    Connection,
-};
-use WebSocket\Http\{
-    Request,
-    Response,
-};
+use WebSocket\Connection;
 use WebSocket\Middleware\CompressionExtension;
 use WebSocket\Middleware\CompressionExtension\DeflateCompressor;
 use WebSocket\Test\MockStreamTrait;
@@ -34,10 +32,12 @@ class DeflateCompressorTest extends TestCase
 {
     use MockStreamTrait;
 
+    private Psr17Factory $psrFactory;
+
     public function setUp(): void
     {
-        error_reporting(-1);
         $this->setUpStack();
+        $this->psrFactory = new Psr17Factory();
     }
 
     public function tearDown(): void
@@ -48,15 +48,16 @@ class DeflateCompressorTest extends TestCase
     public function testClientDefault(): void
     {
         $temp = tmpfile();
-        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectWsConnectionCreate();
-        $connection = new Connection($client, $stream, false, false);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $connection = new Connection($stream, false, false);
 
         $compressor = new DeflateCompressor();
         $this->assertInstanceOf(Stringable::class, $compressor);
@@ -76,7 +77,7 @@ class DeflateCompressorTest extends TestCase
                 );
             }
         );
-        $request = new Request('GET', 'ws://test.url');
+        $request = $this->psrFactory->createRequest('GET', 'ws://test.url');
         $request = $connection->pushHttp($request);
         $this->assertEquals(['permessage-deflate'], $request->getHeader('Sec-WebSocket-Extensions'));
         $this->assertNull($connection->getMeta('compressionExtension.compressor'));
@@ -136,21 +137,23 @@ class DeflateCompressorTest extends TestCase
         $this->assertNotNull($this->getConfiguration($connection)->inflator);
         $this->assertSame($inflator, $this->getConfiguration($connection)->inflator);
 
-        unset($connection);
+        $this->expectSocketStreamClose();
+        $connection->disconnect();
     }
 
     public function testServerDefault(): void
     {
         $temp = tmpfile();
-        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectWsConnectionCreate();
-        $connection = new Connection($client, $stream, false, false);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $connection = new Connection($stream, false, false);
 
         $compressor = new DeflateCompressor();
         $this->assertInstanceOf(Stringable::class, $compressor);
@@ -175,7 +178,7 @@ class DeflateCompressorTest extends TestCase
         $request = $connection->pullHttp();
         $this->assertEquals(['permessage-deflate'], $request->getHeader('Sec-WebSocket-Extensions'));
 
-        $response = new Response(200);
+        $response = $this->psrFactory->createResponse(200);
         $this->expectSocketStreamWrite()->addAssert(
             function (string $method, array $params): void {
                 $this->assertEquals(
@@ -229,22 +232,24 @@ class DeflateCompressorTest extends TestCase
         $this->assertNotNull($connection->getMeta('compressionExtension.configuration')->inflator);
         $this->assertSame($deflator, $connection->getMeta('compressionExtension.configuration')->deflator);
 
-        unset($connection);
+        $this->expectSocketStreamClose();
+        $connection->disconnect();
     }
 
     // Client request compression, but Server declines - do not use compression
     public function testClientServerDeclines(): void
     {
         $temp = tmpfile();
-        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectWsConnectionCreate();
-        $connection = new Connection($client, $stream, false, false);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $connection = new Connection($stream, false, false);
 
         $compressor = new DeflateCompressor();
         $this->assertInstanceOf(Stringable::class, $compressor);
@@ -264,7 +269,7 @@ class DeflateCompressorTest extends TestCase
                 );
             }
         );
-        $request = new Request('GET', 'ws://test.url');
+        $request = $this->psrFactory->createRequest('GET', 'ws://test.url');
         $request = $connection->pushHttp($request);
         $this->assertEquals(['permessage-deflate'], $request->getHeader('Sec-WebSocket-Extensions'));
 
@@ -303,21 +308,23 @@ class DeflateCompressorTest extends TestCase
         $this->assertNull($connection->getMeta('compressionExtension.compressor'));
         $this->assertNull($connection->getMeta('compressionExtension.configuration'));
 
-        unset($connection);
+        $this->expectSocketStreamClose();
+        $connection->disconnect();
     }
 
     public function testClientConfiguration(): void
     {
         $temp = tmpfile();
-        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectWsConnectionCreate();
-        $connection = new Connection($client, $stream, false, false);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $connection = new Connection($stream, false, false);
 
         $compressor = new DeflateCompressor(
             clientNoContextTakeover: true,
@@ -343,7 +350,7 @@ class DeflateCompressorTest extends TestCase
                 );
             }
         );
-        $request = new Request('GET', 'ws://test.url');
+        $request = $this->psrFactory->createRequest('GET', 'ws://test.url');
         $request = $connection->pushHttp($request);
         $this->assertNull($connection->getMeta('compressionExtension.compressor'));
         $this->assertNull($connection->getMeta('compressionExtension.configuration'));
@@ -402,21 +409,23 @@ class DeflateCompressorTest extends TestCase
         $this->assertNotNull($this->getConfiguration($connection)->inflator);
         $this->assertNotSame($inflator, $this->getConfiguration($connection)->inflator);
 
-        unset($connection);
+        $this->expectSocketStreamClose();
+        $connection->disconnect();
     }
 
     public function testServerConfiguration(): void
     {
         $temp = tmpfile();
-        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectWsConnectionCreate();
-        $connection = new Connection($client, $stream, false, false);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $connection = new Connection($stream, false, false);
 
         $compressor = new DeflateCompressor(
             clientNoContextTakeover: true,
@@ -446,7 +455,7 @@ class DeflateCompressorTest extends TestCase
         $request = $connection->pullHttp();
         $this->assertEquals(['permessage-deflate'], $request->getHeader('Sec-WebSocket-Extensions'));
 
-        $response = new Response(200);
+        $response = $this->psrFactory->createResponse(200);
         $this->expectSocketStreamWrite()->addAssert(
             function (string $method, array $params): void {
                 $this->assertEquals(
@@ -500,21 +509,23 @@ class DeflateCompressorTest extends TestCase
         $this->assertNotNull($connection->getMeta('compressionExtension.configuration')->inflator);
         $this->assertNotSame($deflator, $connection->getMeta('compressionExtension.configuration')->deflator);
 
-        unset($connection);
+        $this->expectSocketStreamClose();
+        $connection->disconnect();
     }
 
     public function testClientConfigurationByServer(): void
     {
         $temp = tmpfile();
-        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectWsConnectionCreate();
-        $connection = new Connection($client, $stream, false, false);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $connection = new Connection($stream, false, false);
 
         $compressor = new DeflateCompressor(
             clientMaxWindowBits: 10,
@@ -538,7 +549,7 @@ class DeflateCompressorTest extends TestCase
                 );
             }
         );
-        $request = new Request('GET', 'ws://test.url');
+        $request = $this->psrFactory->createRequest('GET', 'ws://test.url');
         $request = $connection->pushHttp($request);
 
         // Receive heders from Server
@@ -565,21 +576,23 @@ class DeflateCompressorTest extends TestCase
             'inflator' => null,
         ], $connection->getMeta('compressionExtension.configuration'));
 
-        unset($connection);
+        $this->expectSocketStreamClose();
+        $connection->disconnect();
     }
 
     public function testServerConfigurationByServer(): void
     {
         $temp = tmpfile();
-        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $this->expectSocketStream();
         $this->expectSocketStreamGetMetadata();
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectWsConnectionCreate();
-        $connection = new Connection($client, $stream, false, false);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $connection = new Connection($stream, false, false);
 
         $compressor = new DeflateCompressor(
             clientNoContextTakeover: true,
@@ -609,7 +622,7 @@ class DeflateCompressorTest extends TestCase
         });
         $request = $connection->pullHttp();
 
-        $response = new Response(200);
+        $response = $this->psrFactory->createResponse(200);
         $this->expectSocketStreamWrite()->addAssert(
             function (string $method, array $params): void {
                 $this->assertEquals(
@@ -663,7 +676,8 @@ class DeflateCompressorTest extends TestCase
         $this->assertNotNull($connection->getMeta('compressionExtension.configuration')->inflator);
         $this->assertNotSame($deflator, $connection->getMeta('compressionExtension.configuration')->deflator);
 
-        unset($connection);
+        $this->expectSocketStreamClose();
+        $connection->disconnect();
     }
 
     public function testDeflateCompressorNoExtension(): void
@@ -699,6 +713,31 @@ class DeflateCompressorTest extends TestCase
         $this->expectException(RangeException::class);
         $this->expectExceptionMessage('clientMaxWindowBits must be in range 9-15.');
         new DeflateCompressor(clientMaxWindowBits: 16);
+    }
+
+    public function testHeaderParsing(): void
+    {
+        $compressor = new DeflateCompressor();
+
+        $header = 'client_max_window_bits=10;server_max_window_bits=11;';
+        $configuration = $compressor->getConfiguration($header, false);
+        $this->assertSame(10, $configuration->clientMaxWindowBits);
+        $this->assertSame(11, $configuration->serverMaxWindowBits);
+
+        $header = ' client_max_window_bits = "10" ; server_max_window_bits=\'11\' ; ';
+        $configuration = $compressor->getConfiguration($header, false);
+        $this->assertSame(10, $configuration->clientMaxWindowBits);
+        $this->assertSame(11, $configuration->serverMaxWindowBits);
+
+        $header = 'client_max_window_bits; server_max_window_bits=invalid;';
+        $configuration = $compressor->getConfiguration($header, false);
+        $this->assertSame(15, $configuration->clientMaxWindowBits);
+        $this->assertSame(15, $configuration->serverMaxWindowBits);
+
+        $header = 'client_max_window_bits=8;server_max_window_bits=16;';
+        $configuration = $compressor->getConfiguration($header, false);
+        $this->assertSame(9, $configuration->clientMaxWindowBits);
+        $this->assertSame(15, $configuration->serverMaxWindowBits);
     }
 
 

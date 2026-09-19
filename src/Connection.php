@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
@@ -13,12 +13,20 @@ use Phrity\Net\{
     Context,
     SocketStream,
     StreamContainerInterface,
+<<<<<<< HEAD
     StreamInterface,
+=======
+>>>>>>> v4.0-main
 };
 use Psr\Http\Message\{
     MessageInterface,
     RequestInterface,
     ResponseInterface,
+<<<<<<< HEAD
+=======
+    ServerRequestFactoryInterface,
+    UriFactoryInterface,
+>>>>>>> v4.0-main
 };
 use Stringable;
 use Throwable;
@@ -39,11 +47,15 @@ use WebSocket\Middleware\{
     MiddlewareHandler,
     MiddlewareInterface
 };
+<<<<<<< HEAD
 use WebSocket\Runtime\{
     HandlerInterface,
     SelectableInterface,
     IdentityInterface,
 };
+=======
+use WebSocket\Runtime\IdentityInterface;
+>>>>>>> v4.0-main
 use WebSocket\Trait\{
     ConfigurationTrait,
     SendMethodsTrait,
@@ -54,13 +66,22 @@ use WebSocket\Trait\{
  * WebSocket\Connection class.
  * A client/server connection, wrapping socket stream.
  */
+<<<<<<< HEAD
 class Connection implements IdentityInterface, SelectableInterface. Stringable
+=======
+class Connection implements IdentityInterface, StreamContainerInterface, Stringable
+>>>>>>> v4.0-main
 {
     use ConfigurationTrait;
     use SendMethodsTrait;
     use StringableTrait;
 
+<<<<<<< HEAD
     private HandlerInterface $handler;
+=======
+    private const SCOPE = 'connection';
+
+>>>>>>> v4.0-main
     private SocketStream $stream;
     private HttpHandler $httpHandler;
     private MessageHandler $messageHandler;
@@ -72,7 +93,11 @@ class Connection implements IdentityInterface, SelectableInterface. Stringable
     /** @var array<string, mixed> $meta */
     private array $meta = [];
     /** @var non-empty-string $identity */
+<<<<<<< HEAD
     private string $identity = 'client/<unconnected>';
+=======
+    private string $identity = '*/connection/<unconnected>';
+>>>>>>> v4.0-main
 
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
@@ -91,6 +116,7 @@ class Connection implements IdentityInterface, SelectableInterface. Stringable
         $this->initConfiguration($configuration);
         $this->httpHandler = new HttpHandler($this->stream, $ssl, $httpFactory);
         $this->messageHandler = new MessageHandler(
+<<<<<<< HEAD
             new FrameHandler($this->stream, $pushMasked, $pullMaskedRequired, $this->configuration),
             $this->configuration
         );
@@ -108,6 +134,20 @@ class Connection implements IdentityInterface, SelectableInterface. Stringable
             $this->getIdentityPart($this->localName),
             $this->getIdentityPart($this->remoteName),
         );
+=======
+            new FrameHandler($this->stream, $pushMasked, $pullMaskedRequired),
+            $this->configuration
+        );
+        $this->middlewareHandler = new MiddlewareHandler($this->messageHandler, $this->httpHandler);
+        $this->localName = $this->stream->getLocalName() ?? '<unknown>';
+        $this->remoteName = $this->stream->getRemoteName() ?? '<unknown>';
+        $this->identity = sprintf(
+            '*/connection/%s/%s',
+            $this->getIdentityPart($this->localName),
+            $this->getIdentityPart($this->remoteName),
+        );
+        $this->stream->setTimeout($this->configuration->getTimeout());
+>>>>>>> v4.0-main
     }
 
     public function __toString(): string
@@ -128,6 +168,14 @@ class Connection implements IdentityInterface, SelectableInterface. Stringable
 
     /* ---------- Configuration ------------------------------------------------------------------------------------ */
 
+<<<<<<< HEAD
+=======
+    public function getIdentity(): string
+    {
+        return $this->identity;
+    }
+
+>>>>>>> v4.0-main
     /**
      * Get current stream context.
      * @return Context
@@ -145,9 +193,16 @@ class Connection implements IdentityInterface, SelectableInterface. Stringable
     public function addMiddleware(MiddlewareInterface $middleware): self
     {
         $this->middlewareHandler->add($middleware);
+<<<<<<< HEAD
         $this->configuration->getLogger()->debug('[{identity}] Added middleware: {middleware}', [
             'identity' => $this->identity,
             'middleware' => (string)$middleware,
+=======
+        $this->configuration->getLogger()->debug("[{scope}] Added middleware: {middleware}", [
+            'scope' => self::SCOPE,
+            'connection' => $this->identity,
+            'middleware' => $middleware,
+>>>>>>> v4.0-main
         ]);
         return $this;
     }
@@ -188,8 +243,14 @@ class Connection implements IdentityInterface, SelectableInterface. Stringable
      */
     public function disconnect(): self
     {
+<<<<<<< HEAD
         $this->configuration->getLogger()->info('[{identity}] Closing connection', [
             'identity' => $this->identity,
+=======
+        $this->configuration->getLogger()->info("[{scope}] Closing connection", [
+            'scope' => self::SCOPE,
+            'connection' => $this->identity,
+>>>>>>> v4.0-main
         ]);
         $this->stream->close();
         return $this;
@@ -201,8 +262,14 @@ class Connection implements IdentityInterface, SelectableInterface. Stringable
      */
     public function closeRead(): self
     {
+<<<<<<< HEAD
         $this->configuration->getLogger()->info('[{identity}] Closing further reading', [
             'identity' => $this->identity,
+=======
+        $this->configuration->getLogger()->info("[{scope}] Closing further reading", [
+            'scope' => self::SCOPE,
+            'connection' => $this->identity,
+>>>>>>> v4.0-main
         ]);
         $this->stream->closeRead();
         return $this;
@@ -214,8 +281,14 @@ class Connection implements IdentityInterface, SelectableInterface. Stringable
      */
     public function closeWrite(): self
     {
+<<<<<<< HEAD
         $this->configuration->getLogger()->info('[{identity}] Closing further writing', [
             'identity' => $this->identity,
+=======
+        $this->configuration->getLogger()->info("[{scope}] Closing further writing", [
+            'scope' => self::SCOPE,
+            'connection' => $this->identity,
+>>>>>>> v4.0-main
         ]);
         $this->stream->closeWrite();
         return $this;
@@ -359,15 +432,22 @@ class Connection implements IdentityInterface, SelectableInterface. Stringable
         return $this->handshakeResponse;
     }
 
+<<<<<<< HEAD
     public function getStream(): StreamInterface
+=======
+    public function getStream(): SocketStream
+>>>>>>> v4.0-main
     {
         return $this->stream;
     }
 
+<<<<<<< HEAD
     public function onSelect(): void
     {
         $this->getHandler()->selectHandler($this);
     }
+=======
+>>>>>>> v4.0-main
 
     /* ---------- Internal helper methods -------------------------------------------------------------------------- */
 
@@ -382,18 +462,34 @@ class Connection implements IdentityInterface, SelectableInterface. Stringable
     {
         // Internal exceptions are handled and re-thrown
         if ($e instanceof ReconnectException) {
+<<<<<<< HEAD
             $this->configuration->getLogger()->info('[{identity}] {error}', [
                 'identity' => $this->identity,
                 'exception' => $e,
                 'error' => $e->getMessage(),
+=======
+            $this->configuration->getLogger()->info("[{scope}] {message}", [
+                'scope' => self::SCOPE,
+                'connection' => $this->identity,
+                'exception' => $e,
+                'message' => $e->getMessage(),
+>>>>>>> v4.0-main
             ]);
             throw $e;
         }
         if ($e instanceof ExceptionInterface) {
+<<<<<<< HEAD
             $this->configuration->getLogger()->error('[{identity}] {error}', [
                 'identity' => $this->identity,
                 'exception' => $e,
                 'error' => $e->getMessage(),
+=======
+            $this->configuration->getLogger()->error("[{scope}] {message}", [
+                'scope' => self::SCOPE,
+                'connection' => $this->identity,
+                'exception' => $e,
+                'message' => $e->getMessage(),
+>>>>>>> v4.0-main
             ]);
             throw $e;
         }
@@ -402,15 +498,25 @@ class Connection implements IdentityInterface, SelectableInterface. Stringable
             $meta = $this->stream->getMetadata();
             $json = json_encode($meta);
             if (!empty($meta['timed_out'])) {
+<<<<<<< HEAD
                 $this->configuration->getLogger()->error('[{identity}] {error}', [
                     'identity' => $this->identity,
                     'exception' => $e,
                     'error' => $e->getMessage(),
                     'meta' => $meta,
+=======
+                $this->configuration->getLogger()->error("[{scope}] {message}", [
+                    'scope' => self::SCOPE,
+                    'connection' => $this->identity,
+                    'exception' => $e,
+                    'message' => $e->getMessage(),
+                    'meta' => $meta
+>>>>>>> v4.0-main
                 ]);
                 throw new ConnectionTimeoutException();
             }
             if (!empty($meta['eof'])) {
+<<<<<<< HEAD
                 $this->configuration->getLogger()->error('[{identity}] {error}', [
                     'identity' => $this->identity,
                     'exception' => $e,
@@ -426,6 +532,31 @@ class Connection implements IdentityInterface, SelectableInterface. Stringable
             'error' => $e->getMessage(),
         ]);
         throw new ConnectionFailureException($this, null, $e);
+    }
+
+    protected function getIdentityPart(string $source): string
+    {
+        preg_match('/([0-9]+)$/', $source, $result);
+        return empty($result) ? $source : array_shift($result);
+=======
+                $this->configuration->getLogger()->error("[{scope}] {message}", [
+                    'scope' => self::SCOPE,
+                    'connection' => $this->identity,
+                    'exception' => $e,
+                    'message' => $e->getMessage(),
+                    'meta' => $meta
+                ]);
+                throw new ConnectionClosedException();
+            }
+        }
+        $this->configuration->getLogger()->error("[{scope}] {message}", [
+            'scope' => self::SCOPE,
+            'connection' => $this->identity,
+            'exception' => $e,
+            'message' => $e->getMessage(),
+        ]);
+        throw new ConnectionFailureException();
+>>>>>>> v4.0-main
     }
 
     protected function getIdentityPart(string $source): string

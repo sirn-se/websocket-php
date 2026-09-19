@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  *
  * This file is part of Websocket PHP and is free software under the ISC License.
  * License text: https://raw.githubusercontent.com/sirn-se/websocket-php/master/COPYING.md
@@ -15,7 +15,10 @@ use Psr\Http\Message\{
     ResponseInterface,
 };
 use Stringable;
-use WebSocket\Connection;
+use WebSocket\{
+    Configuration,
+    Connection,
+};
 use WebSocket\Exception\{
     HandshakeException,
     ReconnectException,
@@ -33,6 +36,8 @@ class FollowRedirect implements ProcessHttpIncomingInterface, Stringable
 {
     use ConfigurationTrait;
     use StringableTrait;
+
+    private const SCOPE = 'follow-redirect';
 
     private int $limit;
     private int $attempts = 1;
@@ -56,21 +61,21 @@ class FollowRedirect implements ProcessHttpIncomingInterface, Stringable
             && $message->getStatusCode() < 400
             && $locationHeader = $message->getHeaderLine('Location')
         ) {
-            if ($this->attempts > $this->limit) {
-                $this->configuration->getLogger()->warning('[follow-redirect] Too many redirect attempts, giving up', [
-                    'attempts' => $this->attempts,
-                    'limit' => $this->limit,
-                ]);
-                throw new HandshakeException($connection, $message, "Too many redirect attempts, giving up");
-            }
-            $this->attempts++;
-            $this->configuration->getLogger()->debug('[follow-redirect] Redirect {status} {location}', [
-                'status' => $message->getStatusCode(),
-                'location' => $locationHeader,
+            $context = [
+                'scope' => self::SCOPE,
+                'connection' => $connection->getIdentity(),
                 'attempts' => $this->attempts,
                 'limit' => $this->limit,
-            ]);
-            throw new ReconnectException(new Uri($locationHeader), "Reconnect requested: {$locationHeader}");
+                'status' => $message->getStatusCode(),
+                'location' => $locationHeader,
+            ];
+            if ($this->attempts > $this->limit) {
+                $this->configuration->getLogger()->warning("[{scope}] Too many redirect attempts, giving up", $context);
+                throw new HandshakeException('Too many redirect attempts, giving up', response: $message);
+            }
+            $this->attempts++;
+            $this->configuration->getLogger()->info("[{scope}] Redirect {status} to {location}", $context);
+            throw new ReconnectException(uri: new Uri($locationHeader));
         }
         return $message;
     }

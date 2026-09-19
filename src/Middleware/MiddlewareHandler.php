@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
@@ -10,8 +10,10 @@ namespace WebSocket\Middleware;
 use Closure;
 use Psr\Http\Message\MessageInterface;
 use Stringable;
-use WebSocket\Connection;
-use WebSocket\Configuration;
+use WebSocket\{
+    Configuration,
+    Connection,
+};
 use WebSocket\Http\HttpHandler;
 use WebSocket\Message\{
     Message,
@@ -30,6 +32,8 @@ class MiddlewareHandler implements Stringable
 {
     use ConfigurationTrait;
     use StringableTrait;
+
+    private const SCOPE = 'middleware-handler';
 
     // Processor collections
     /** @var array<ProcessIncomingInterface> */
@@ -55,7 +59,7 @@ class MiddlewareHandler implements Stringable
     public function __construct(
         MessageHandler $messageHandler,
         HttpHandler $httpHandler,
-        Configuration|null $configuration = null
+        Configuration|null $configuration = null,
     ) {
         $this->messageHandler = $messageHandler;
         $this->httpHandler = $httpHandler;
@@ -69,38 +73,30 @@ class MiddlewareHandler implements Stringable
      */
     public function add(MiddlewareInterface $middleware): self
     {
+        $context = [
+            'scope' => self::SCOPE,
+            'middleware' => $middleware,
+        ];
         if ($middleware instanceof ProcessIncomingInterface) {
-            $this->configuration->getLogger()->debug('[middleware-handler] Added incoming: {middleware}', [
-                'middleware' => (string)$middleware,
-            ]);
+            $this->configuration->getLogger()->info("[{scope}] Added incoming: {middleware}", $context);
             $this->incoming[] = $middleware;
         }
         if ($middleware instanceof ProcessOutgoingInterface) {
-            $this->configuration->getLogger()->debug('[middleware-handler] Added outgoing: {middleware}', [
-                'middleware' => (string)$middleware,
-            ]);
-
+            $this->configuration->getLogger()->info("[{scope}] Added outgoing: {middleware}", $context);
             $this->outgoing[] = $middleware;
         }
         if ($middleware instanceof ProcessHttpIncomingInterface) {
-            $this->configuration->getLogger()->debug('[middleware-handler] Added http incoming: {middleware}', [
-                'middleware' => (string)$middleware,
-            ]);
+            $this->configuration->getLogger()->info("[{scope}] Added http incoming: {middleware}", $context);
             $this->httpIncoming[] = $middleware;
         }
         if ($middleware instanceof ProcessHttpOutgoingInterface) {
-            $this->configuration->getLogger()->debug('[middleware-handler] Added http outgoing: {middleware}', [
-                'middleware' => (string)$middleware,
-            ]);
+            $this->configuration->getLogger()->info("[{scope}] Added http outgoing: {middleware}", $context);
             $this->httpOutgoing[] = $middleware;
         }
         if ($middleware instanceof ProcessTickInterface) {
-            $this->configuration->getLogger()->debug('[middleware-handler] Added tick: {middleware}', [
-                'middleware' => (string)$middleware,
-            ]);
+            $this->configuration->getLogger()->info("[{scope}] Added tick: {middleware}", $context);
             $this->tick[] = $middleware;
         }
-        $middleware->setConfiguration($this->configuration);
         return $this;
     }
 
@@ -111,7 +107,10 @@ class MiddlewareHandler implements Stringable
      */
     public function processIncoming(Connection $connection): Message
     {
-        $this->configuration->getLogger()->debug('[middleware-handler] Processing incoming');
+        $this->configuration->getLogger()->info("[{scope}] Processing incoming", [
+            'scope' => self::SCOPE,
+            'connection' => $connection->getIdentity(),
+        ]);
         $stack = new ProcessStack($connection, $this->messageHandler, $this->incoming);
         return $stack->handleIncoming();
     }
@@ -125,7 +124,10 @@ class MiddlewareHandler implements Stringable
      */
     public function processOutgoing(Connection $connection, Message $message): Message
     {
-        $this->configuration->getLogger()->debug('[middleware-handler] Processing outgoing');
+        $this->configuration->getLogger()->info("[{scope}] Processing outgoing", [
+            'scope' => self::SCOPE,
+            'connection' => $connection->getIdentity(),
+        ]);
         $stack = new ProcessStack($connection, $this->messageHandler, $this->outgoing);
         return $stack->handleOutgoing($message);
     }
@@ -137,7 +139,10 @@ class MiddlewareHandler implements Stringable
      */
     public function processHttpIncoming(Connection $connection): MessageInterface
     {
-        $this->configuration->getLogger()->debug('[middleware-handler] Processing http incoming');
+        $this->configuration->getLogger()->info("[{scope}] Processing http incoming", [
+            'scope' => self::SCOPE,
+            'connection' => $connection->getIdentity(),
+        ]);
         $stack = new ProcessHttpStack($connection, $this->httpHandler, $this->httpIncoming);
         return $stack->handleHttpIncoming();
     }
@@ -150,7 +155,10 @@ class MiddlewareHandler implements Stringable
      */
     public function processHttpOutgoing(Connection $connection, MessageInterface $message): MessageInterface
     {
-        $this->configuration->getLogger()->debug('[middleware-handler] Processing http outgoing');
+        $this->configuration->getLogger()->info("[{scope}] Processing http outgoing", [
+            'scope' => self::SCOPE,
+            'connection' => $connection->getIdentity(),
+        ]);
         $stack = new ProcessHttpStack($connection, $this->httpHandler, $this->httpOutgoing);
         return $stack->handleHttpOutgoing($message);
     }
@@ -161,7 +169,10 @@ class MiddlewareHandler implements Stringable
      */
     public function processTick(Connection $connection): void
     {
-        $this->configuration->getLogger()->debug('[middleware-handler] Processing tick');
+        $this->configuration->getLogger()->info("[{scope}] Processing tick", [
+            'scope' => self::SCOPE,
+            'connection' => $connection->getIdentity(),
+        ]);
         $stack = new ProcessTickStack($connection, $this->tick);
         $stack->handleTick();
     }

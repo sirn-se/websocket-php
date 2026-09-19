@@ -14,23 +14,27 @@ All message listeners receive Client or Server, [Connection](Connection.md) and 
 ```php
 $client_or_server
     // Listen to incoming Text messages
-    ->onText(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection $connection, WebSocket\Message\Text $message) {
+    ->onText(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection $connection, WebSocket\Message\Message $message) {
         // Act on incoming message
     })
     // Listen to incoming Binary messages
-    ->onBinary(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection $connection, WebSocket\Message\Binary $message) {
+    ->onBinary(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection $connection, WebSocket\Message\Message $message) {
         // Act on incoming message
     })
     // Listen to incoming Ping messages
-    ->onPing(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection $connection, WebSocket\Message\Ping $message) {
+    ->onPing(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection $connection, WebSocket\Message\Message $message) {
         // Act on incoming message
     })
     // Listen to incoming Pong messages
-    ->onPong(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection $connection, WebSocket\Message\Pong $message) {
+    ->onPong(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection $connection, WebSocket\Message\Message $message) {
         // Act on incoming message
     })
     // Listen to incoming Close messages
-    ->onClose(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection $connection, WebSocket\Message\Close $message) {
+    ->onClose(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection $connection, WebSocket\Message\Message $message) {
+        // Act on incoming message
+    })
+    // Listen to all messages
+    ->onMessage(function (WebSocket\Client|WebSocket\Server $client_or_server, WebSocket\Connection $connection, WebSocket\Message\Message $message) {
         // Act on incoming message
     })
     ;
@@ -90,12 +94,14 @@ $client_or_server
     ;
 ```
 
-## Exception handling
+## Error handling
 
 While running, it will attempt to handle various errors.
 
-* MessageLevelInterface (BadOpcodeException, ConnectionTimeoutException) can not read/send a message, but connection is still open
-* ConnectionLevelInterface (ConnectionClosedException, ConnectionFailureException, HandshakeException) will close connection
-* BadUriException, ClientException, ServerException are not resolvable and exit the application
+* MessageLevelInterface will skip message but keep connection open
+* ConnectionLevelInterface will close connection
+* HandlerLevelInterface are not resolvable and exit the application
 * CloseException will initiate close procedure
-* ReconnectException will close and reconnect, optionally with new URI.
+* ReconnectException will close and reconnect, optionally with new URI
+
+Read more on [Error Handling](ErrorHandling.md).

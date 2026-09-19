@@ -1,19 +1,23 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
 namespace WebSocket\Http;
 
-use Phrity\Http\HttpFactory;
+use Phrity\Http\{
+    HttpFactory,
+    Serializer,
+};
 use Phrity\Net\{
     SocketStream,
     Uri
 };
 use Psr\Http\Message\{
     MessageInterface,
+    RequestInterface,
     ResponseFactoryInterface,
     ServerRequestFactoryInterface,
     UriFactoryInterface,
@@ -33,6 +37,7 @@ class HttpHandler implements Stringable
     private SocketStream $stream;
     private bool $ssl;
     private HttpFactory $httpFactory;
+    private Serializer $serializer;
 
     public function __construct(
         SocketStream $stream,
@@ -42,6 +47,7 @@ class HttpHandler implements Stringable
         $this->stream = $stream;
         $this->ssl = $ssl;
         $this->httpFactory = $httpFactory ?? new DefaultHttpFactory();
+        $this->serializer = new Serializer();
     }
 
     /**
@@ -55,9 +61,9 @@ class HttpHandler implements Stringable
         // Pulling server request
         preg_match('!^(?P<method>[A-Z]+) (?P<path>[^ ]*) HTTP/(?P<version>[0-9/.]+)!', $status, $matches);
         if (!empty($matches)) {
-            $message = $this->httpFactory->createServerRequest($matches['method'], '');
             $path = $matches['path'];
             $version = $matches['version'];
+            $message = $this->httpFactory->createServerRequest($matches['method'], $path);
         }
 
         // Pulling response
@@ -85,7 +91,7 @@ class HttpHandler implements Stringable
                 }
             }
         }
-        if ($message instanceof Request) {
+        if ($message instanceof RequestInterface) {
             $scheme = $this->ssl ? 'wss' : 'ws';
             $uri = $this->httpFactory->createUri("{$scheme}://{$message->getHeaderLine('Host')}{$path}");
             $message = $message->withUri($uri, true);
@@ -101,10 +107,7 @@ class HttpHandler implements Stringable
      */
     public function push(MessageInterface $message): MessageInterface
     {
-        if (!$message instanceof Message) {
-            throw new RuntimeException('Generic MessageInterface currently not supported.');
-        }
-        $data = implode("\r\n", $message->getAsArray()) . "\r\n\r\n";
+        $data = $this->serializer->message($message);
         $this->stream->write($data);
         return $message;
     }

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
@@ -9,17 +9,15 @@ declare(strict_types=1);
 
 namespace WebSocket\Test\Middleware;
 
+use Nyholm\Psr7\Factory\Psr17Factory;
 use PHPUnit\Framework\TestCase;
 use Phrity\Net\Mock\SocketStream;
+use Psr\Http\Message\{
+    RequestInterface,
+    ResponseInterface,
+};
 use Stringable;
-use WebSocket\Http\{
-    Request,
-    Response,
-};
-use WebSocket\{
-    Client,
-    Connection,
-};
+use WebSocket\Connection;
 use WebSocket\Exception\HandshakeException;
 use WebSocket\Middleware\SubprotocolNegotiation;
 use WebSocket\Test\MockStreamTrait;
@@ -31,10 +29,12 @@ class SubprotocolNegotiationTest extends TestCase
 {
     use MockStreamTrait;
 
+    private Psr17Factory $psrFactory;
+
     public function setUp(): void
     {
-        error_reporting(-1);
         $this->setUpStack();
+        $this->psrFactory = new Psr17Factory();
     }
 
     public function tearDown(): void
@@ -45,7 +45,6 @@ class SubprotocolNegotiationTest extends TestCase
     public function testClientProtocolMatch(): void
     {
         $temp = tmpfile();
-        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $middleware = new SubprotocolNegotiation(['sp-1', 'sp-2', 'sp-3']);
         $this->assertEquals('WebSocket\Middleware\SubprotocolNegotiation', "{$middleware}");
@@ -56,8 +55,10 @@ class SubprotocolNegotiationTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectWsConnectionCreate();
-        $connection = new Connection($client, $stream, false, false);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $connection = new Connection($stream, false, false);
         $connection->addMiddleware($middleware);
 
         $this->expectSocketStreamWrite()->addAssert(
@@ -71,7 +72,7 @@ class SubprotocolNegotiationTest extends TestCase
                 );
             }
         );
-        $request = new Request('GET', 'ws://test.url');
+        $request = $this->psrFactory->createRequest('GET', 'ws://test.url');
         $request = $connection->pushHttp($request);
         $this->assertEquals(['sp-1', 'sp-2', 'sp-3'], $request->getHeader('Sec-WebSocket-Protocol'));
         $this->assertNull($connection->getMeta('subprotocolNegotiation.selected'));
@@ -88,14 +89,11 @@ class SubprotocolNegotiationTest extends TestCase
         $response = $connection->pullHttp();
         $this->assertEquals(['sp-2'], $response->getHeader('Sec-WebSocket-Protocol'));
         $this->assertEquals('sp-2', $connection->getMeta('subprotocolNegotiation.selected'));
-
-        unset($connection);
     }
 
     public function testClientProtocolNoMatch(): void
     {
         $temp = tmpfile();
-        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $middleware = new SubprotocolNegotiation(['sp-1', 'sp-2', 'sp-3']);
         $this->assertEquals('WebSocket\Middleware\SubprotocolNegotiation', "{$middleware}");
@@ -106,8 +104,10 @@ class SubprotocolNegotiationTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectWsConnectionCreate();
-        $connection = new Connection($client, $stream, false, false);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $connection = new Connection($stream, false, false);
         $connection->addMiddleware($middleware);
 
         $this->expectSocketStreamWrite()->addAssert(
@@ -121,7 +121,7 @@ class SubprotocolNegotiationTest extends TestCase
                 );
             }
         );
-        $request = new Request('GET', 'ws://test.url');
+        $request = $this->psrFactory->createRequest('GET', 'ws://test.url');
         $request = $connection->pushHttp($request);
         $this->assertEquals(['sp-1', 'sp-2', 'sp-3'], $request->getHeader('Sec-WebSocket-Protocol'));
         $this->assertNull($connection->getMeta('subprotocolNegotiation.selected'));
@@ -135,14 +135,11 @@ class SubprotocolNegotiationTest extends TestCase
         $response = $connection->pullHttp();
         $this->assertEquals([], $response->getHeader('Sec-WebSocket-Protocol'));
         $this->assertNull($connection->getMeta('subprotocolNegotiation.selected'));
-
-        unset($connection);
     }
 
     public function testClientProtocolRequire(): void
     {
         $temp = tmpfile();
-        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $middleware = new SubprotocolNegotiation(['sp-1', 'sp-2', 'sp-3'], true);
         $this->assertEquals('WebSocket\Middleware\SubprotocolNegotiation', "{$middleware}");
@@ -153,8 +150,10 @@ class SubprotocolNegotiationTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectWsConnectionCreate();
-        $connection = new Connection($client, $stream, false, false);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $connection = new Connection($stream, false, false);
         $connection->addMiddleware($middleware);
 
         $this->expectSocketStreamWrite()->addAssert(
@@ -168,7 +167,7 @@ class SubprotocolNegotiationTest extends TestCase
                 );
             }
         );
-        $request = new Request('GET', 'ws://test.url');
+        $request = $this->psrFactory->createRequest('GET', 'ws://test.url');
         $request = $connection->pushHttp($request);
         $this->assertEquals(['sp-1', 'sp-2', 'sp-3'], $request->getHeader('Sec-WebSocket-Protocol'));
         $this->assertNull($connection->getMeta('subprotocolNegotiation.selected'));
@@ -181,14 +180,13 @@ class SubprotocolNegotiationTest extends TestCase
         });
         $this->expectSocketStreamWrite();
         $this->expectException(HandshakeException::class);
-        $this->expectExceptionMessage('Could not resolve subprotocol.');
+        $this->expectExceptionMessage('Could not resolve subprotocol');
         $connection->pullHttp();
     }
 
     public function testServerProtocolMatch(): void
     {
         $temp = tmpfile();
-        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $middleware = new SubprotocolNegotiation(['sp-1', 'sp-2', 'sp-3']);
         $this->assertEquals('WebSocket\Middleware\SubprotocolNegotiation', "{$middleware}");
@@ -199,8 +197,10 @@ class SubprotocolNegotiationTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectWsConnectionCreate();
-        $connection = new Connection($client, $stream, false, false);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $connection = new Connection($stream, false, false);
         $connection->addMiddleware($middleware);
 
         $this->expectSocketStreamReadLine()->setReturn(function () {
@@ -225,7 +225,7 @@ class SubprotocolNegotiationTest extends TestCase
         $this->assertEquals(['sp-11', 'sp-2', 'sp-33'], $request->getHeader('Sec-WebSocket-Protocol'));
         $this->assertEquals('sp-2', $connection->getMeta('subprotocolNegotiation.selected'));
 
-        $response = new Response(200);
+        $response = $this->psrFactory->createResponse(200);
         $this->expectSocketStreamWrite()->addAssert(
             function (string $method, array $params): void {
                 $this->assertEquals(
@@ -237,14 +237,11 @@ class SubprotocolNegotiationTest extends TestCase
         $response = $connection->pushHttp($response);
         $this->assertEquals(['sp-2'], $response->getHeader('Sec-WebSocket-Protocol'));
         $this->assertEquals('sp-2', $connection->getMeta('subprotocolNegotiation.selected'));
-
-        unset($connection);
     }
 
     public function testServerProtocolNoMatch(): void
     {
         $temp = tmpfile();
-        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $middleware = new SubprotocolNegotiation(['sp-1', 'sp-2', 'sp-3']);
         $this->assertEquals('WebSocket\Middleware\SubprotocolNegotiation', "{$middleware}");
@@ -255,8 +252,10 @@ class SubprotocolNegotiationTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectWsConnectionCreate();
-        $connection = new Connection($client, $stream, false, false);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $connection = new Connection($stream, false, false);
         $connection->addMiddleware($middleware);
 
         $this->expectSocketStreamReadLine()->setReturn(function () {
@@ -282,7 +281,7 @@ class SubprotocolNegotiationTest extends TestCase
         $this->assertEquals(['sp-11', 'sp-22', 'sp-33'], $request->getHeader('Sec-WebSocket-Protocol'));
         $this->assertNull($connection->getMeta('subprotocolNegotiation.selected'));
 
-        $response = new Response(200);
+        $response = $this->psrFactory->createResponse(200);
         $this->expectSocketStreamWrite()->addAssert(
             function (string $method, array $params): void {
                 $this->assertEquals(
@@ -294,14 +293,11 @@ class SubprotocolNegotiationTest extends TestCase
         $response = $connection->pushHttp($response);
         $this->assertEquals([], $response->getHeader('Sec-WebSocket-Protocol'));
         $this->assertNull($connection->getMeta('subprotocolNegotiation.selected'));
-
-        unset($connection);
     }
 
     public function testServerProtocolRequire(): void
     {
         $temp = tmpfile();
-        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $middleware = new SubprotocolNegotiation(['sp-1', 'sp-2', 'sp-3'], true);
         $this->assertEquals('WebSocket\Middleware\SubprotocolNegotiation', "{$middleware}");
@@ -312,8 +308,10 @@ class SubprotocolNegotiationTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectWsConnectionCreate();
-        $connection = new Connection($client, $stream, false, false);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $connection = new Connection($stream, false, false);
         $connection->addMiddleware($middleware);
 
         $this->expectSocketStreamReadLine()->setReturn(function () {
@@ -339,7 +337,7 @@ class SubprotocolNegotiationTest extends TestCase
         $this->assertEquals(['sp-11', 'sp-22', 'sp-33'], $request->getHeader('Sec-WebSocket-Protocol'));
         $this->assertNull($connection->getMeta('subprotocolNegotiation.selected'));
 
-        $response = new Response(200);
+        $response = $this->psrFactory->createResponse(200);
         $this->expectSocketStreamWrite()->addAssert(
             function (string $method, array $params): void {
                 $this->assertEquals(
@@ -351,7 +349,5 @@ class SubprotocolNegotiationTest extends TestCase
         $response = $connection->pushHttp($response);
         $this->assertEquals([], $response->getHeader('Sec-WebSocket-Protocol'));
         $this->assertNull($connection->getMeta('subprotocolNegotiation.selected'));
-
-        unset($connection);
     }
 }

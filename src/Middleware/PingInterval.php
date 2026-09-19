@@ -1,14 +1,17 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
 namespace WebSocket\Middleware;
 
 use Stringable;
-use WebSocket\Connection;
+use WebSocket\{
+    Configuration,
+    Connection,
+};
 use WebSocket\Message\{
     Ping,
     Message
@@ -26,6 +29,8 @@ class PingInterval implements ProcessOutgoingInterface, ProcessTickInterface, St
 {
     use ConfigurationTrait;
     use StringableTrait;
+
+    private const SCOPE = 'ping-interval';
 
     private int|float|null $interval;
 
@@ -45,7 +50,10 @@ class PingInterval implements ProcessOutgoingInterface, ProcessTickInterface, St
     {
         // Push if time exceeds timestamp for next ping
         if ($connection->isWritable() && microtime(true) >= $this->getNext($connection)) {
-            $this->configuration->getLogger()->debug('[ping-interval] Auto-pushing ping');
+            $this->configuration->getLogger()->debug("[{scope}] Auto-pushing ping", [
+                'scope' => self::SCOPE,
+                'connection' => $connection->getIdentity(),
+            ]);
             $connection->send(new Ping());
             $this->setNext($connection); // Update timestamp for next ping
         }
@@ -59,7 +67,7 @@ class PingInterval implements ProcessOutgoingInterface, ProcessTickInterface, St
 
     private function setNext(Connection $connection): float
     {
-        $next = microtime(true) + ($this->interval ?? $this->getConfiguration()->getTimeout());
+        $next = microtime(true) + ($this->interval ?? $this->configuration->getTimeout());
         $connection->setMeta('pingInterval.next', $next);
         return $next;
     }

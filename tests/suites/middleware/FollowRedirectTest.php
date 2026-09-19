@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2014-2025 Textalk and contributors.
+ * Copyright (C) 2014-2026 Textalk and contributors.
  * This file is part of Websocket PHP and is free software under the ISC License.
  */
 
@@ -17,7 +17,7 @@ use Phrity\Net\Mock\{
 use Stringable;
 use WebSocket\{
     Client,
-    Connection,
+    Connection
 };
 use WebSocket\Exception\{
     HandshakeException,
@@ -35,7 +35,6 @@ class FollowRedirectTest extends TestCase
 
     public function setUp(): void
     {
-        error_reporting(-1);
         $this->setUpStack();
     }
 
@@ -47,7 +46,6 @@ class FollowRedirectTest extends TestCase
     public function testRedirect(): void
     {
         $temp = tmpfile();
-        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $middleware = new FollowRedirect(2);
         $this->assertEquals('WebSocket\Middleware\FollowRedirect', "{$middleware}");
@@ -58,8 +56,10 @@ class FollowRedirectTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectWsConnectionCreate();
-        $connection = new Connection($client, $stream, false, false);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $connection = new Connection($stream, false, false);
         $connection->addMiddleware($middleware);
 
         $this->expectSocketStreamReadLine()->setReturn(function () {
@@ -79,7 +79,6 @@ class FollowRedirectTest extends TestCase
     public function testMaxRedirect(): void
     {
         $temp = tmpfile();
-        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $middleware = new FollowRedirect(0);
 
@@ -88,8 +87,10 @@ class FollowRedirectTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectWsConnectionCreate();
-        $connection = new Connection($client, $stream, false, false);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $connection = new Connection($stream, false, false);
         $connection->addMiddleware($middleware);
 
         $this->expectSocketStreamReadLine()->setReturn(function () {
@@ -109,7 +110,6 @@ class FollowRedirectTest extends TestCase
     public function testNoLocation(): void
     {
         $temp = tmpfile();
-        $client = new Client('ws://localhost:8000/my/mock/path');
 
         $middleware = new FollowRedirect(0);
 
@@ -118,8 +118,10 @@ class FollowRedirectTest extends TestCase
         $this->expectContext();
         $stream = new SocketStream($temp);
 
-        $this->expectWsConnectionCreate();
-        $connection = new Connection($client, $stream, false, false);
+        $this->expectSocketStreamGetLocalName();
+        $this->expectSocketStreamGetRemoteName();
+        $this->expectSocketStreamSetTimeout();
+        $connection = new Connection($stream, false, false);
         $connection->addMiddleware($middleware);
 
         $this->expectSocketStreamReadLine()->setReturn(function () {
@@ -130,6 +132,7 @@ class FollowRedirectTest extends TestCase
         });
         $response = $connection->pullHttp();
 
-        unset($connection);
+        $this->expectSocketStreamClose();
+        $connection->disconnect();
     }
 }
