@@ -11,7 +11,7 @@
  * Improved exception structure (@sirn-se)
  * MessageEncodingException on message compression failure (@sirn-se)
  * Remove deprecated code (@sirn-se)
- * Nyholm PSR HTTP (deprecate internal stub classes) (@sirn-se)
+ * Nyholm PSR HTTP (remove internal stub classes) (@sirn-se)
  * getConnections() return Connections collection instead of array (@sirn-se)
 
 ## `v3.8`

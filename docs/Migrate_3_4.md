@@ -56,9 +56,13 @@ return `WebSocket\Runtime\Connections` collection class instead of array.
 All internal exceptions are normalized, and extends `AbstractException`.
 If your code throws or extend exceptions from this library, review these and adapt accordingly.
 
+## Removed intermidiates
+
+* `OpcodeTrait` has been removed
+* Internal HTTP Message classes (`WebSocket\Http\Message`, `WebSocket\Http\Request`, `WebSocket\Http\Response` and `WebSocket\Http\ServerReques`) have been removed.
+
 ## Extending
 
 Increased modularization affects many internal classes and methods.
 If you rely on using these directly (extending or adapting) your code may be incompatible.
 
-- `OpcodeTrait` has been removed
