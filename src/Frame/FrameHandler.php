@@ -232,7 +232,6 @@ class FrameHandler implements Stringable
     {
         $limit = ini_parse_quantity(ini_get('memory_limit'));
         $usage = memory_get_usage(true);
-        echo "limit: $limit usage: $usage $bytes: bytes \n";
-        return ($limit - $usage) >= $bytes;
+        return $limit < 0 || ($limit - $usage) >= $bytes;
     }
 }
