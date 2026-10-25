@@ -62,12 +62,16 @@ class ConfigurationTest extends TestCase
         $configuration->setContext(new Context());
         $configuration->setTimeout(360);
         $configuration->setFrameSize(65540);
+        $configuration->setMaxReceivedFrameSize(65540);
+        $configuration->setMaxReceivedMessageSize(65540);
         $configuration->setPersistent(true);
         $configuration->setMaxConnections(10);
         $this->assertInstanceOf(ConsoleLogger::class, $configuration->getLogger());
         $this->assertInstanceOf(Context::class, $configuration->getContext());
         $this->assertEquals(360, $configuration->getTimeout());
         $this->assertEquals(65540, $configuration->getFrameSize());
+        $this->assertEquals(65540, $configuration->getMaxReceivedFrameSize());
+        $this->assertEquals(65540, $configuration->getMaxReceivedMessageSize());
         $this->assertTrue($configuration->isPersistent());
         $this->assertEquals(10, $configuration->getMaxConnections());
     }
@@ -89,6 +93,26 @@ class ConfigurationTest extends TestCase
         $this->expectExceptionMessage("Invalid frameSize '0' provided");
         // @phpstan-ignore argument.type
         $configuration->setFrameSize(0);
+    }
+
+    public function testInvalidMaxReceivedFrameSize(): void
+    {
+        $configuration = new Configuration();
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionCode(0);
+        $this->expectExceptionMessage("Invalid maxReceivedFrameSize '-1' provided");
+        // @phpstan-ignore argument.type
+        $configuration->setMaxReceivedFrameSize(-1);
+    }
+
+    public function testInvalidMaxReceivedMessageSize(): void
+    {
+        $configuration = new Configuration();
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionCode(0);
+        $this->expectExceptionMessage("Invalid maxReceivedMessageSize '-1' provided");
+        // @phpstan-ignore argument.type
+        $configuration->setMaxReceivedMessageSize(-1);
     }
 
     public function testInvalidMaxConnextions(): void

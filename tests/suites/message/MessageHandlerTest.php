@@ -15,7 +15,9 @@ use Phrity\Net\Mock\Stack\{
     ExpectContextTrait,
     ExpectSocketStreamTrait,
 };
+use RuntimeException;
 use Stringable;
+use WebSocket\Configuration;
 use WebSocket\Exception\BadOpcodeException;
 use WebSocket\Frame\{
     Frame,
@@ -295,6 +297,46 @@ class MessageHandlerTest extends TestCase
         });
         $this->expectException(BadOpcodeException::class);
         $this->expectExceptionMessage("Implementation class for opcode 3 not registered");
+        $message = $handler->pull();
+
+        fclose($temp);
+    }
+
+    public function testReceivedMessageSizeError(): void
+    {
+        $temp = tmpfile();
+
+        $configuration = new Configuration();
+        $configuration->setMaxReceivedMessageSize(8);
+
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectContext();
+        $handler = new MessageHandler(new FrameHandler(new SocketStream($temp), false, false), $configuration);
+        $this->assertInstanceOf(MessageHandler::class, $handler);
+
+        $this->expectSocketStreamRead()->addAssert(function ($method, $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('AQU=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function ($method, $params) {
+            $this->assertEquals(5, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('VGV4dCA=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function ($method, $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('AAU=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function ($method, $params) {
+            $this->assertEquals(5, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('bWVzc2E=');
+        });
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("Message larger than max received message size configuration");
         $message = $handler->pull();
 
         fclose($temp);

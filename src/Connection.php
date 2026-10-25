@@ -88,7 +88,7 @@ class Connection implements IdentityInterface, StreamContainerInterface, Stringa
         $this->initConfiguration($configuration);
         $this->httpHandler = new HttpHandler($this->stream, $ssl, $httpFactory);
         $this->messageHandler = new MessageHandler(
-            new FrameHandler($this->stream, $pushMasked, $pullMaskedRequired),
+            new FrameHandler($this->stream, $pushMasked, $pullMaskedRequired, $this->configuration),
             $this->configuration
         );
         $this->middlewareHandler = new MiddlewareHandler($this->messageHandler, $this->httpHandler);

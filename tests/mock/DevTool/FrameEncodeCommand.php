@@ -39,6 +39,8 @@ class FrameEncodeCommand
         bool $rsv2 = false,
         #[Option('Rsv3')]
         bool $rsv3 = false,
+        #[Option('Payload length')]
+        int|null $length = null,
     ): int {
         if ($opcode < 1 || $opcode > 15) {
             throw new RuntimeException("Opcode must be integer in range 1-15, {$opcode} provided");
@@ -53,7 +55,7 @@ class FrameEncodeCommand
             }
         }
 
-        $payloadLength = strlen($payload);
+        $payloadLength = $length ?? strlen($payload);
 
         $header = '';
         $byte1 = $final ? 0b10000000 : 0b00000000; // Final fragment marker.
@@ -65,17 +67,21 @@ class FrameEncodeCommand
 
         $byte2 = is_string($mask) ? 0b10000000 : 0b00000000; // Masking bit marker.
         // 7 bits of payload length
+        $extLength = '';
         if ($payloadLength > 65535) {
             $header .= pack('C', $byte2 | 0b01111111);
-            $header .= pack('J', $payloadLength);
+            $extLength = pack('J', $payloadLength);
         } elseif ($payloadLength > 125) {
             $header .= pack('C', $byte2 | 0b01111110);
-            $header .= pack('n', $payloadLength);
+            $extLength = pack('n', $payloadLength);
         } else {
             $header .= pack('C', $byte2 | $payloadLength);
         }
 
         $output->writeln("Header:  " . base64_encode($header));
+        if ($extLength !== '') {
+            $output->writeln("Length:  " . base64_encode($extLength));
+        }
 
         if ($mask !== false) {
             $output->writeln("Mask:    " . base64_encode($mask));
@@ -91,7 +97,7 @@ class FrameEncodeCommand
 
         $output->writeln("Payload: " . base64_encode($payloadEncoded));
 
-        $all = $header . ($mask ?: '') . $payloadEncoded;
+        $all = $header . $extLength . ($mask ?: '') . $payloadEncoded;
         $output->writeln("All:     " . base64_encode($all));
 
         return Command::SUCCESS;

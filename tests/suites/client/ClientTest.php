@@ -243,44 +243,44 @@ class ClientTest extends TestCase
             return base64_decode('AAAAAAABAAA=');
         });
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
-            $this->assertEquals(65536, $params[0]);
+            $this->assertEquals(8192, $params[0]);
         })->setReturn(function () use ($payload) {
-            return substr($payload, 0, 16374);
+            return substr($payload, 0, 8192);
         });
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
-            $this->assertEquals(49162, $params[0]);
+            $this->assertEquals(8192, $params[0]);
         })->setReturn(function () use ($payload) {
-            return substr($payload, 16374, 8192);
+            return substr($payload, 8192, 8192);
         });
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
-            $this->assertEquals(40970, $params[0]);
+            $this->assertEquals(8192, $params[0]);
         })->setReturn(function () use ($payload) {
-            return substr($payload, 24566, 8192);
+            return substr($payload, 16384, 8192);
         });
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
-            $this->assertEquals(32778, $params[0]);
+            $this->assertEquals(8192, $params[0]);
         })->setReturn(function () use ($payload) {
-            return substr($payload, 32758, 8192);
+            return substr($payload, 24576, 8192);
         });
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
-            $this->assertEquals(24586, $params[0]);
+            $this->assertEquals(8192, $params[0]);
         })->setReturn(function () use ($payload) {
-            return substr($payload, 40950, 8192);
+            return substr($payload, 32768, 8192);
         });
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
-            $this->assertEquals(16394, $params[0]);
+            $this->assertEquals(8192, $params[0]);
         })->setReturn(function () use ($payload) {
-            return substr($payload, 49142, 8192);
+            return substr($payload, 40960, 8192);
         });
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
-            $this->assertEquals(8202, $params[0]);
+            $this->assertEquals(8192, $params[0]);
         })->setReturn(function () use ($payload) {
-            return substr($payload, 57334, 8192);
+            return substr($payload, 49152, 8192);
         });
         $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
-            $this->assertEquals(10, $params[0]);
+            $this->assertEquals(8192, $params[0]);
         })->setReturn(function () use ($payload) {
-            return substr($payload, 65526, 10);
+            return substr($payload, 57344, 8192);
         });
         $message = $client->receive();
 

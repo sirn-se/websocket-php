@@ -146,6 +146,40 @@ $frameSize = $server->getFrameSize();
 $server->setFrameSize($frameSize);
 ```
 
+### Max received frame size
+
+```
+type: int<1, max>|null
+default: null
+```
+
+Will drop connection if frame larger than limit is received.
+No limit by default. Minimum is `1` byte.
+
+```php
+// Configuration instance
+$configuration = new WebSocket\Configuration(maxReceivedFrameSize: $maxReceivedFrameSize);
+$configuration->setMaxReceivedFrameSize($maxReceivedFrameSize);
+$maxReceivedFrameSize = $configuration->getMaxReceivedFrameSize();
+```
+
+### Max received message size
+
+```
+type: int<1, max>|null
+default: null
+```
+
+Will drop connection if message larger than limit is received.
+No limit by default. Minimum is `1` byte.
+
+```php
+// Configuration instance
+$configuration = new WebSocket\Configuration(maxReceivedMessageSize: $maxReceivedMessageSize);
+$configuration->setMaxReceivedMessageSize($maxReceivedMessageSize);
+$maxReceivedMessageSize = $configuration->getMaxReceivedMessageSize();
+```
+
 ### Opcode registry
 
 ```
@@ -154,7 +188,7 @@ default: Phrity\Net\OpcodeRegistry // Default mapping
 ```
 
 By default, opcodes are mapped to built-in classes (text, binary, close, ping, pong).
-With the OpcodeRegistry, the library can be configured to replace or add additional opcode imlementations.
+With the OpcodeRegistry, the library can be configured to replace or add additional opcode implementations.
 
 ```php
 // Configuration instance

@@ -17,7 +17,7 @@ use Phrity\Net\Mock\Stack\{
 };
 use RuntimeException;
 use Stringable;
-use WebSocket\ConnectionException;
+use WebSocket\Configuration;
 use WebSocket\Frame\{
     Frame,
     FrameHandler
@@ -238,6 +238,8 @@ class FrameHandlerTest extends TestCase
     public function testPullPayload65536(): void
     {
         $temp = tmpfile();
+
+        /** @var string $payload */
         $payload = file_get_contents(__DIR__ . '/../../mock/payload.65536.txt');
 
         $this->expectSocketStream();
@@ -257,10 +259,45 @@ class FrameHandlerTest extends TestCase
         })->setReturn(function () {
             return base64_decode('AAAAAAABAAA=');
         });
-        $this->expectSocketStreamRead()->addAssert(function ($method, $params) {
-            $this->assertEquals(65536, $params[0]);
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(8192, $params[0]);
         })->setReturn(function () use ($payload) {
-            return $payload;
+            return substr($payload, 0, 8192);
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(8192, $params[0]);
+        })->setReturn(function () use ($payload) {
+            return substr($payload, 8192, 8192);
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(8192, $params[0]);
+        })->setReturn(function () use ($payload) {
+            return substr($payload, 16384, 8192);
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(8192, $params[0]);
+        })->setReturn(function () use ($payload) {
+            return substr($payload, 24576, 8192);
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(8192, $params[0]);
+        })->setReturn(function () use ($payload) {
+            return substr($payload, 32768, 8192);
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(8192, $params[0]);
+        })->setReturn(function () use ($payload) {
+            return substr($payload, 40960, 8192);
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(8192, $params[0]);
+        })->setReturn(function () use ($payload) {
+            return substr($payload, 49152, 8192);
+        });
+        $this->expectSocketStreamRead()->addAssert(function (string $method, array $params) {
+            $this->assertEquals(8192, $params[0]);
+        })->setReturn(function () use ($payload) {
+            return substr($payload, 57344, 8192);
         });
         $frame = $handler->pull();
         $this->assertEquals($payload, $frame->getPayload());
@@ -312,6 +349,62 @@ class FrameHandlerTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(0);
         $this->expectExceptionMessage("Empty read; connection dead?");
+        $handler->pull();
+
+        fclose($temp);
+    }
+
+    public function testReceivedFrameSizeError(): void
+    {
+        $temp = tmpfile();
+
+        $configuration = new Configuration();
+        $configuration->setMaxReceivedFrameSize(11);
+
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectContext();
+        $stream = new SocketStream($temp);
+        $handler = new FrameHandler($stream, false, false, $configuration);
+
+        $this->expectSocketStreamRead()->addAssert(function ($method, $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('gQw=');
+        });
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(0);
+        $this->expectExceptionMessage("Frame larger than max received frame size configuration");
+        $handler->pull();
+
+        fclose($temp);
+    }
+
+    public function testReceivedFrameMemoryLimit(): void
+    {
+        $temp = tmpfile();
+
+        $configuration = new Configuration();
+
+        $this->expectSocketStream();
+        $this->expectSocketStreamGetMetadata();
+        $this->expectContext();
+        $stream = new SocketStream($temp);
+        $handler = new FrameHandler($stream, false, false);
+
+        $this->expectSocketStreamRead()->addAssert(function ($method, $params) {
+            $this->assertEquals(2, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('gX8=');
+        });
+        $this->expectSocketStreamRead()->addAssert(function ($method, $params) {
+            $this->assertEquals(8, $params[0]);
+        })->setReturn(function () {
+            return base64_decode('AAQAAAAAAAA=');
+        });
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(0);
+        $this->expectExceptionMessage("Can not read frame of 1125899906842624 bytes, would exhaust memory");
         $handler->pull();
 
         fclose($temp);
