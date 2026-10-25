@@ -70,12 +70,14 @@ class WebSocket\Configuration implements Psr\Log\LoggerAwareInterface, Stringabl
 {
     use WebSocket\Trait\StringableTrait;
 
-    public method __construct(Psr\Log\LoggerInterface|null $logger = null, Phrity\Net\Context|null $context = null, int|float|null $timeout = null, int|null $frameSize = null, bool|null $persistent = null, int|null $maxConnections = null, WebSocket\Message\OpcodeRegistry|null $opcodeRegistry = null);
+    public method __construct(Psr\Log\LoggerInterface|null $logger = null, Phrity\Net\Context|null $context = null, int|float|null $timeout = null, int|null $frameSize = null, bool|null $persistent = null, int|null $maxConnections = null, WebSocket\Message\OpcodeRegistry|null $opcodeRegistry = null, int|null $maxReceivedFrameSize = null, int|null $maxReceivedMessageSize = null);
     public method __toString(): string;
     public method getContext(): Phrity\Net\Context;
     public method getFrameSize(): int;
     public method getLogger(): Psr\Log\LoggerInterface;
     public method getMaxConnections(): int|null;
+    public method getMaxReceivedFrameSize(): int|null;
+    public method getMaxReceivedMessageSize(): int|null;
     public method getOpcodeRegistry(): WebSocket\Message\OpcodeRegistry;
     public method getTimeout(): int|float;
     public method isPersistent(): bool;
@@ -83,6 +85,8 @@ class WebSocket\Configuration implements Psr\Log\LoggerAwareInterface, Stringabl
     public method setFrameSize(int $frameSize): void;
     public method setLogger(Psr\Log\LoggerInterface $logger): void;
     public method setMaxConnections(int|null $maxConnections): void;
+    public method setMaxReceivedFrameSize(int|null $maxReceivedFrameSize): void;
+    public method setMaxReceivedMessageSize(int|null $maxReceivedMessageSize): void;
     public method setOpcodeRegistry(WebSocket\Message\OpcodeRegistry $opcodeRegistry): void;
     public method setPersistent(bool $persistent): void;
     public method setTimeout(int|float $timeout): void;

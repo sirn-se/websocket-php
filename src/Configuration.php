@@ -36,6 +36,10 @@ class Configuration implements LoggerAwareInterface, Stringable
     /** @var int<1, max>|null $maxConnections */
     private int|null $maxConnections;
     private OpcodeRegistry $opcodeRegistry;
+    /** @var int<1, max> $maxReceivedFrameSize */
+    private int|null $maxReceivedFrameSize;
+    /** @var int<1, max> $maxReceivedMessageSize */
+    private int|null $maxReceivedMessageSize;
 
 
     /* ---------- Magic methods ------------------------------------------------------------------------------------ */
@@ -43,11 +47,13 @@ class Configuration implements LoggerAwareInterface, Stringable
     /**
      * @param LoggerInterface|null $logger
      * @param Context|null $context
-     * @param int<0, max>|float $timeout
-     * @param int<1, max> $frameSize
-     * @param bool $persistent
+     * @param int<0, max>|float|null $timeout
+     * @param int<1, max>|null $frameSize
+     * @param bool|null $persistent
      * @param int<1, max>|null $maxConnections
-     * @param OpcodeRegistry $opcodeRegistry
+     * @param OpcodeRegistry|null $opcodeRegistry
+     * @param int<1, max>|null $maxReceivedFrameSize
+     * @param int<1, max>|null $maxReceivedMessageSize
      */
     public function __construct(
         LoggerInterface|null $logger = null,
@@ -57,11 +63,15 @@ class Configuration implements LoggerAwareInterface, Stringable
         bool|null $persistent = null,
         int|null $maxConnections = null,
         OpcodeRegistry|null $opcodeRegistry = null,
+        int|null $maxReceivedFrameSize = null,
+        int|null $maxReceivedMessageSize = null,
     ) {
         $this->setLogger($logger ?? new NullLogger());
         $this->setContext($context ?? new Context());
         $this->setTimeout($timeout ?? 60);
         $this->setFrameSize($frameSize ?? 4096);
+        $this->setMaxReceivedFrameSize($maxReceivedFrameSize);
+        $this->setMaxReceivedMessageSize($maxReceivedMessageSize);
         $this->setPersistent($persistent ?? false);
         $this->setMaxConnections($maxConnections);
         $this->setOpcodeRegistry($opcodeRegistry ?? new OpcodeRegistry());
@@ -137,7 +147,7 @@ class Configuration implements LoggerAwareInterface, Stringable
     /* ---------- FrameSize methods -------------------------------------------------------------------------------- */
 
     /**
-     * @return int<1, max> Frame size in bytes
+     * @return int<1, max> Frame payload size in bytes
      */
     public function getFrameSize(): int
     {
@@ -156,6 +166,7 @@ class Configuration implements LoggerAwareInterface, Stringable
         $this->frameSize = $frameSize;
     }
 
+
     /* ---------- OpcodeRegistry methods --------------------------------------------------------------------------- */
 
     /**
@@ -172,6 +183,52 @@ class Configuration implements LoggerAwareInterface, Stringable
     public function setOpcodeRegistry(OpcodeRegistry $opcodeRegistry): void
     {
         $this->opcodeRegistry = $opcodeRegistry;
+    }
+
+
+    /* ---------- MaxReceivedFrameSize methods --------------------------------------------------------------------- */
+
+    /**
+     * @return int<1, max>|null Max received frame payload size in bytes
+     */
+    public function getMaxReceivedFrameSize(): int|null
+    {
+        return $this->maxReceivedFrameSize;
+    }
+
+    /**
+     * @param int<1, max>|null $maxReceivedFrameSize Max received frame payload size in bytes
+     * @throws InvalidArgumentException If invalid maxReceivedFrameSize provided
+     */
+    public function setMaxReceivedFrameSize(int|null $maxReceivedFrameSize): void
+    {
+        if ($maxReceivedFrameSize !== null && $maxReceivedFrameSize < 1) {
+            throw new InvalidArgumentException("Invalid maxReceivedFrameSize '{$maxReceivedFrameSize}' provided");
+        }
+        $this->maxReceivedFrameSize = $maxReceivedFrameSize;
+    }
+
+
+    /* ---------- MaxReceivedMessageSize methods ------------------------------------------------------------------- */
+
+    /**
+     * @return int<1, max>|null Max received message size in bytes
+     */
+    public function getMaxReceivedMessageSize(): int|null
+    {
+        return $this->maxReceivedMessageSize;
+    }
+
+    /**
+     * @param int<1, max>|null $maxReceivedMessageSize Max received message size in bytes
+     * @throws InvalidArgumentException If invalid maxReceivedMessageSize provided
+     */
+    public function setMaxReceivedMessageSize(int|null $maxReceivedMessageSize): void
+    {
+        if ($maxReceivedMessageSize !== null && $maxReceivedMessageSize < 1) {
+            throw new InvalidArgumentException("Invalid maxReceivedMessageSize '{$maxReceivedMessageSize}' provided");
+        }
+        $this->maxReceivedMessageSize = $maxReceivedMessageSize;
     }
 
 

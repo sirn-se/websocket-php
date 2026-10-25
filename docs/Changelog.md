@@ -2,6 +2,18 @@
 
 # Websocket: Changelog
 
+## `v4.1`
+
+ > PHP version `^8.2`
+
+### `4.1.0`
+
+ * Max received frame and message size (@sirn-se)
+ * Read chunks from stream (@sirn-se)
+ * Pre-check memory is assignable (@sirn-se)
+ * Dev tool (@sirn-se)
+ * Fixed typos (@sirn-se)
+
 ## `v4.0`
 
  > PHP version `^8.2`
@@ -46,7 +58,7 @@
 
 ### `3.7.2`
 
- * Detach connection in failed handshake (@sirn-se)
+ * Detach connection on failed handshake (@sirn-se)
 
 ### `3.7.1`
 
@@ -317,7 +329,7 @@
  * getPier() deprecated, replaced by getRemoteName() (@sirn-se)
  * Client accepts `Psr\Http\Message\UriInterface` as input for URI:s (@sirn-se)
  * Bad URI throws exception when Client is instanciated, previously when used (@sirn-se)
- * Preparations for multiple conection and listeners (@sirn-se)
+ * Preparations for multiple connections and listeners (@sirn-se)
  * Major internal refactoring (@sirn-se)
 
 ## `v1.5`

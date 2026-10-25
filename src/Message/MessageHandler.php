@@ -7,6 +7,7 @@
 
 namespace WebSocket\Message;
 
+use RuntimeException;
 use Stringable;
 use WebSocket\Configuration;
 use WebSocket\Frame\{
@@ -68,6 +69,14 @@ class MessageHandler implements Stringable
     {
         do {
             $frame = $this->frameHandler->pull();
+            if ($this->configuration->getMaxReceivedMessageSize() !== null) {
+                $messageSize = array_reduce($this->frameBuffer, function (int $carry, Frame $frame) {
+                    return $carry + $frame->getPayloadlength();
+                }, $frame->getPayloadlength());
+                if ($this->configuration->getMaxReceivedMessageSize() < $messageSize) {
+                    throw new RuntimeException("Message larger than max received message size configuration");
+                }
+            }
             if ($frame->isFinal()) {
                 if ($frame->isContinuation()) {
                     $frames = array_merge($this->frameBuffer, [$frame]);

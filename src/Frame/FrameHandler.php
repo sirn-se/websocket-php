@@ -72,9 +72,11 @@ class FrameHandler implements Stringable
         if ($payloadLength > 125) {
             if ($payloadLength === 126) {
                 $data = $this->read(2); // 126: Payload length is a 16-bit unsigned int
+                /** @var int $payloadLength */
                 $payloadLength = current($this->unpack('n', $data));
             } else {
                 $data = $this->read(8); // 127: Payload length is a 64-bit unsigned int
+                /** @var int $payloadLength */
                 $payloadLength = current($this->unpack('J', $data));
             }
         }
@@ -82,6 +84,16 @@ class FrameHandler implements Stringable
         // Get masking key.
         if ($masked) {
             $maskingKey = $this->read(4);
+        }
+
+        if ($this->configuration->getMaxReceivedFrameSize() !== null) {
+            if ($this->configuration->getMaxReceivedFrameSize() < $payloadLength) {
+                throw new RuntimeException("Frame larger than max received frame size configuration");
+            }
+        }
+
+        if (!$this->canAssignMemory($payloadLength)) {
+            throw new RuntimeException("Can not read frame of {$payloadLength} bytes, would exhaust memory ");
         }
 
         // Get the actual payload, if any (might not be for e.g. close frames).
@@ -183,7 +195,7 @@ class FrameHandler implements Stringable
         $read = 0;
         while ($read < $length) {
             /** @var int<1, max> $readLength */
-            $readLength = $length - $read;
+            $readLength = min($length - $read, 8192);
             $got = $this->stream->read($readLength);
             if (empty($got)) {
                 throw new RuntimeException('Empty read; connection dead?');
@@ -214,5 +226,12 @@ class FrameHandler implements Stringable
         /** @var array<int> $result */
         $result = unpack($format, $string);
         return $result;
+    }
+
+    private function canAssignMemory(int $bytes): bool
+    {
+        $limit = ini_parse_quantity(ini_get('memory_limit'));
+        $usage = memory_get_usage(true);
+        return $limit < 0 || ($limit - $usage) >= $bytes;
     }
 }
