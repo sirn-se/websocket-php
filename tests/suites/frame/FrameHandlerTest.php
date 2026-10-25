@@ -39,6 +39,7 @@ class FrameHandlerTest extends TestCase
     public function tearDown(): void
     {
         $this->tearDownStack();
+        ini_restore('memory_limit');
     }
 
     public function testPushUnmaskedFrame(): void
@@ -382,6 +383,8 @@ class FrameHandlerTest extends TestCase
 
     public function testReceivedFrameMemoryLimit(): void
     {
+        ini_set('memory_limit', '64M');
+
         $temp = tmpfile();
 
         $configuration = new Configuration();
