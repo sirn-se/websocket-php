@@ -16,6 +16,8 @@ $configuration = new WebSocket\Configuration(
     bool $persistent,
     int $maxConnections,
     OpcodeRegistry $opcodeRegistry,
+    private int|null $maxReceivedFrameSize;
+    private int|null $maxReceivedMessageSize;
 );
 ```
 
@@ -153,7 +155,7 @@ type: int<1, max>|null
 default: null
 ```
 
-Will drop connection if frame larger than limit is received.
+Will drop connection if frame payload is larger than maxReceivedFrameSize is received.
 No limit by default. Minimum is `1` byte.
 
 ```php
@@ -170,7 +172,7 @@ type: int<1, max>|null
 default: null
 ```
 
-Will drop connection if message larger than limit is received.
+Will drop connection if message content larger than maxReceivedMessageSize is received.
 No limit by default. Minimum is `1` byte.
 
 ```php

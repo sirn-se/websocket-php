@@ -118,7 +118,7 @@ Read more on [Messages](Message.md).
 
 ## Sending messages
 
-To send a message to a server, call the send() method with a Message instance.
+To send a message to a server, call the `send()` method with a Message instance.
 Any of the five message types can be sent this way.
 
 ```php
@@ -210,9 +210,6 @@ echo "local:    {$client->getName()}\n";
 
 // View server name
 echo "remote:   {$client->getRemoteName()}\n";
-
-// Get meta data by key
-echo "meta:   {$client->getMeta('some-metadata')}\n";
 
 // Get response on handshake
 $response = $client->getHandshakeResponse();
